@@ -202,6 +202,29 @@ final class AppName
 
         assert.ok(existsSync(join(app.dir, 'app', 'Pages', 'Projects', 'ShowIssuePage.php')), 'no Page class');
         assert.ok(existsSync(join(app.dir, 'resources', 'js', 'pages', 'projects', 'show-issue.tsx')), 'no page component');
+        // In sync, but no test renders it yet, so tsc never checked its props against a Contract.
+        assertOutcome(await app.check(), {
+            outcome: 'fail',
+            errorContains: '✗ projects/show-issue: no feature test renders this page: add a feature test that requests a route returning App\\Pages\\Projects\\ShowIssuePage.',
+        });
+
+        writeFileSync(
+            join(app.dir, 'tests', 'Feature', 'ShowIssuePageTest.php'),
+            `<?php
+
+use App\\Pages\\Projects\\ShowIssuePage;
+use Illuminate\\Support\\Facades\\Route;
+
+test('an issue page shows its title', function () {
+    Route::get('issues/1', fn (): ShowIssuePage => new ShowIssuePage(title: 'Set up the repository'));
+
+    // The page isn't in the app's Vite build.
+    $this->withoutVite();
+
+    $this->get('issues/1')->assertOk();
+});
+`,
+        );
         assertOutcome(await app.check(), { outcome: 'pass' });
     });
 
@@ -232,6 +255,23 @@ namespace App\\Pages;
 use StrictlyLaravel\\Inertia\\Page;
 
 final class ProjectStatusesPage extends Page {}
+`,
+        );
+        writeFileSync(
+            join(app.dir, 'tests', 'Feature', 'ProjectStatusesPageTest.php'),
+            `<?php
+
+use App\\Pages\\ProjectStatusesPage;
+use Illuminate\\Support\\Facades\\Route;
+
+test('the project statuses page renders', function () {
+    Route::get('project-statuses', fn (): ProjectStatusesPage => new ProjectStatusesPage);
+
+    // The page isn't in the app's Vite build when the test runs.
+    $this->withoutVite();
+
+    $this->get('project-statuses')->assertOk();
+});
 `,
         );
         writeFileSync(

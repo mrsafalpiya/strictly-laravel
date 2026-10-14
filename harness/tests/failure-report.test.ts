@@ -216,4 +216,22 @@ Script phpstan analyse handling the types:check event returned with error code 1
             { file: 'tests/Feature/BrokenTest.php', line: 4, message: 'Tests\\Feature\\BrokenTest > broken: Failed asserting that 1 is identical to 2.' },
         ]);
     });
+
+    test('Contract Coverage', () => {
+        const output = `> @php artisan strictly:coverage --strict
+Contract Coverage: 2 gaps in the 13 recorded Contracts (✗ fails):
+
+ ✗ settings/appearance: no feature test renders this page: add a feature test that requests a route returning App\\Pages\\Settings\\AppearancePage.
+ ✗ LoginPage.status is only ever null (at auth/login › status): add a feature test that renders auth/login with status not null.
+Script @php artisan strictly:coverage --strict handling the ci:check:coverage event returned with error code 1
+`;
+
+        assert.deepEqual(failureReport('ci:check:coverage', output).diagnostics, [
+            {
+                message:
+                    'Contract Coverage: settings/appearance: no feature test renders this page: add a feature test that requests a route returning App\\Pages\\Settings\\AppearancePage.',
+            },
+            { message: 'Contract Coverage: LoginPage.status is only ever null (at auth/login › status): add a feature test that renders auth/login with status not null.' },
+        ]);
+    });
 });

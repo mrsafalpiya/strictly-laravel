@@ -1,0 +1,8 @@
+{
+    "problem": "P-066",
+    "description": "A prop typed as a union of Data classes that the feature tests only ever send as one of them, so tsc never checked the other variant: Contract Coverage fails ci:check, naming the variant and the test to add.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ SearchResultPage.match is never seen as IssueData (at search-result › match): add a feature test that renders search-result with match as IssueData."
+    }
+}
