@@ -1,0 +1,6 @@
+{
+    "problem": "P-017",
+    "description": "A controller action that takes a plain Data class, whose rules() would replace the inferred rules, fails PHPStan (strictly.inputData) until the class extends InputData.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "doesn't extend StrictlyLaravel\\Data\\InputData." }
+}
