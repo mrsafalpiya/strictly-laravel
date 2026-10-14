@@ -4,6 +4,6 @@
     "step": "tsc",
     "expect": {
         "outcome": "fail",
-        "errorContains": "Property 'blocked' is missing"
+        "errorContains": "error TS1360: Type '{ todo: string; in_progress: string; done: string; }' does not satisfy the expected type 'Record<IssueStatus, string>'.\n  Property 'blocked' is missing"
     }
 }
