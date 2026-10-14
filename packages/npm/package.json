@@ -12,6 +12,12 @@
         "./contracts": {
             "types": "./contracts/index.d.ts"
         },
+        "./jsx/jsx-runtime": {
+            "types": "./jsx/jsx-runtime.d.ts"
+        },
+        "./jsx/jsx-dev-runtime": {
+            "types": "./jsx/jsx-dev-runtime.d.ts"
+        },
         "./oxlint": "./oxlint/index.js",
         "./react": {
             "types": "./react/index.d.ts",
@@ -29,6 +35,7 @@
         "index.js",
         "index.d.ts",
         "contracts",
+        "jsx",
         "oxlint",
         "react",
         "routes",

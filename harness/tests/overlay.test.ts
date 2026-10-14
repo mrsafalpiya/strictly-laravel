@@ -386,6 +386,20 @@ export default function ProjectStatuses() {
         }
     });
 
+    test("the build compiles JSX with React's runtime: the narrowed JSX types change only the types (P-016)", async () => {
+        const app = await createApp('jsx-runtime-pinned');
+        const viteConfig = join(app.dir, 'vite.config.ts');
+
+        assertOutcome(await app.run('pnpm', ['exec', 'vite', 'build']), { outcome: 'pass' });
+
+        // Without the pin, the Vite React plugin follows tsconfig.json's jsxImportSource to a module with types only.
+        writeFileSync(viteConfig, readFileSync(viteConfig, 'utf8').replace("react({ jsxImportSource: 'react' })", 'react()'));
+        assertOutcome(await app.run('pnpm', ['exec', 'vite', 'build']), {
+            outcome: 'fail',
+            errorContains: '"./jsx/jsx-runtime" is not exported',
+        });
+    });
+
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
             assertOutcome(await runScenario(scenario), scenario.expect);
