@@ -10,12 +10,14 @@ use StrictlyLaravel\Install\GenerateFirst;
 use StrictlyLaravel\Install\GitignoreEntry;
 use StrictlyLaravel\Install\KitConversion;
 use StrictlyLaravel\Install\PackageManager;
+use StrictlyLaravel\Install\PestContractsHook;
 use StrictlyLaravel\Install\PhpstanInclude;
 use StrictlyLaravel\Install\ScratchCopy;
 use StrictlyLaravel\Install\TsconfigFlags;
 use StrictlyLaravel\Install\ViteLintPlugin;
 use StrictlyLaravel\Install\ViteTypesPlugin;
 use StrictlyLaravel\StrictlyServiceProvider;
+use StrictlyLaravel\Testing\ContractRecorder;
 use StrictlyLaravel\TypeScript\TypeGeneration;
 use StrictlyLaravel\Workarounds\WayfinderQueryVerb;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -100,6 +102,7 @@ final class InstallCommand extends Command
             'vite.config.ts: Strictly Laravel oxlint plugin' => fn () => ViteLintPlugin::register("{$root}/vite.config.ts"),
             'vite.config.ts: Strictly Laravel Vite plugin' => fn () => ViteTypesPlugin::register("{$root}/vite.config.ts"),
             'Generated TypeScript gitignored' => fn () => GitignoreEntry::ensure("{$root}/.gitignore", '/resources/js/'.TypeGeneration::OUTPUT_DIRECTORY),
+            'Recorded Contracts gitignored' => fn () => GitignoreEntry::ensure("{$root}/.gitignore", '/resources/js/'.ContractRecorder::DIRECTORY),
             'package.json scripts: build and types:check generate first' => fn () => GenerateFirst::ensure("{$root}/package.json"),
             'Wayfinder QUERY verb workaround' => fn () => WayfinderQueryVerb::patch("{$root}/resources/js/wayfinder/index.ts"),
         ];
@@ -115,6 +118,9 @@ final class InstallCommand extends Command
         $this->convertKit($root);
         // After Kit Conversion, which writes the include into a phpstan.neon it converts.
         $this->applyHook('PHPStan extension included in phpstan.neon', fn () => $this->includePhpstanExtension("{$root}/phpstan.neon"));
+        // After Kit Conversion too, which writes the hook into a tests/Pest.php it converts: applied before it, the hook
+        // would make the Base Kit's tests/Pest.php unknown content.
+        $this->applyHook('tests/Pest.php: feature tests record Contracts', fn () => PestContractsHook::ensure("{$root}/tests/Pest.php"));
     }
 
     /**

@@ -9,7 +9,8 @@ use stdClass;
 /**
  * Writes the app's `ci:check` Composer script as a sequence of steps, each one also runnable on its own as
  * `composer ci:check:<step>`: the installer's check that every hook is applied, generation, then the Base Kit's own
- * checks with its own tools.
+ * checks with its own tools, with `tsc` after the tests so that it also checks the Contracts they recorded (Problem
+ * P-065).
  */
 final class CiCheckScripts
 {
@@ -26,8 +27,8 @@ final class CiCheckScripts
             'install' => ['@php artisan strictly:install --check'], // every hook applied (P-080, P-082)
             'generate' => ['@php artisan strictly:generate'],   // TypeScript from PHP (gitignored): Data, enums, routes
             'lint' => [$packageManager->run('check')],          // Vite+: oxlint (type-aware) and oxfmt
-            'tsc' => [$packageManager->run('types:check')],     // tsc --noEmit
-            'test' => ['@test'],                                // Pint, PHPStan (Larastan) and Pest
+            'test' => ['@test'],                                // Pint, PHPStan (Larastan) and Pest, which records Contracts
+            'tsc' => [$packageManager->run('types:check')],     // tsc --noEmit: the app and the Contracts the tests recorded
         ];
     }
 
