@@ -1,0 +1,9 @@
+{
+    "problem": "P-066",
+    "description": "Contract Coverage run on its own before any feature test recorded a Contract (a fresh clone) fails and says to run the tests first, instead of passing on nothing or listing every page.",
+    "step": "coverage",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Contract Coverage: no Contracts are recorded. Run the feature tests first (composer ci:check:test), then this command."
+    }
+}

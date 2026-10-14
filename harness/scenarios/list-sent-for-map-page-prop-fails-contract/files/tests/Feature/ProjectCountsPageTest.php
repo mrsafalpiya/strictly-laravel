@@ -10,7 +10,7 @@ test('the counts list each lead', function () {
         /** @var array<string, int> $projectsByLead */
         $projectsByLead = Cache::get('projects-by-lead', []);
 
-        return new ProjectCountsPage(projectsByStatus: [], projectsByLead: $projectsByLead);
+        return new ProjectCountsPage(projectsByStatus: ['active' => 2], projectsByLead: $projectsByLead);
     });
 
     // Cached without the names the counts are keyed by: the map is sent as a list.

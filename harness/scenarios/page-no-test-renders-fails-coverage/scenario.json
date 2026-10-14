@@ -1,0 +1,8 @@
+{
+    "problem": "P-066",
+    "description": "A Page class and its component that no feature test renders, so tsc never checked its props against a Contract: Contract Coverage fails ci:check, naming the page and the test to add.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ projects: no feature test renders this page: add a feature test that requests a route returning App\\Pages\\ProjectsPage."
+    }
+}

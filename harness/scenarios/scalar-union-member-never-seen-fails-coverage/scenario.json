@@ -1,0 +1,8 @@
+{
+    "problem": "P-066",
+    "description": "A prop typed int|string that the feature tests only ever send as a string, so tsc never checked an int there: Contract Coverage fails ci:check, naming the member and the test to add.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ EstimatePage.estimate is never seen as int (at estimate › estimate): add a feature test that renders estimate with estimate as int."
+    }
+}
