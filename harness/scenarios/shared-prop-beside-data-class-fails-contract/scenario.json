@@ -1,0 +1,8 @@
+{
+    "problem": "P-088",
+    "description": "A key the share step sends next to the shared props Data class's props fails the shared props Contract that every feature test rendering a page records.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2353: Object literal may only specify known properties, and '\"features\"' does not exist in type '{ name: string; auth: { user: { id: number; name: string; email: string; email_verified_at: string | null; } | null; }; sidebarOpen: boolean; }'."
+    }
+}
