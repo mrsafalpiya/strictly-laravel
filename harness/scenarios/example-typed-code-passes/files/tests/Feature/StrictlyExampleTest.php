@@ -1,5 +1,8 @@
 <?php
 
-test('the strictly config is registered', function () {
-    expect(config('strictly'))->toBeArray();
+use Illuminate\Support\Facades\Artisan;
+
+test('the Overlay is installed', function () {
+    expect(config('strictly'))->toBeArray()
+        ->and(Artisan::all())->toHaveKey('strictly:install');
 });

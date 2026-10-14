@@ -74,7 +74,7 @@ Unknown keys are rejected. The examples are `example-typed-code-passes` and `exa
 ## Adding scenarios for a Problem
 
 1. Reproduce the Problem in a scratch app (`pnpm harness`, then edit `.fixtures/fresh-install`) until you know the exact edit and the diagnostic the fix should produce.
-2. Add a breaking scenario: the bug written the way an app developer would, with `expect.outcome` set to `fail` and the specific diagnostic.
+2. Add a breaking scenario: the Problem's reproduction written the way an app developer would, with `expect.outcome` set to `fail` and the specific diagnostic.
 3. Add a passing scenario: the typed way that should work, with `expect.outcome` set to `pass`.
 4. Set `"problem"` to the Problem's id and `"step"` to the tool that catches it (full `ci:check` if several do).
 5. Run `pnpm test <name>` and watch the breaking scenario fail for the right reason before the fix lands (red), then pass.
