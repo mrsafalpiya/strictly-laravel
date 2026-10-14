@@ -1,0 +1,9 @@
+{
+    "problem": "P-071",
+    "description": "Reading a Data property marked with laravel-data's #[Hidden] fails tsc, because the server never sends it.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2339: Property 'email' does not exist on type 'MemberData'."
+    }
+}
