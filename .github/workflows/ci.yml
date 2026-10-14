@@ -43,9 +43,6 @@ jobs:
       # The fixture cache starts empty here, so this generates the latest Base Kit first.
       - name: Package tests and harness scenarios
         run: pnpm test
-        env:
-          # The default for the runner's 4 CPUs is 2 apps at once; 3 keeps the CPUs busier.
-          STRICTLY_HARNESS_CONCURRENCY: 3
 
       - name: Upload fixture logs
         if: failure()
