@@ -30,6 +30,17 @@ export type InputOf<TRoute> = TRoute extends (...args: never[]) => infer TDefini
       : never;
 
 /**
+ * The `options` of a route function whose GET action takes a query Data class (a QueryData subclass), in place of
+ * Wayfinder's `RouteQueryOptions`: `index({ query: { statuses: ['active'], sort: 'name' } })`. Every key is optional,
+ * since every query property has a default; a misspelled key or a value of the wrong type fails `tsc`. `mergeQuery`
+ * keeps the current URL's other keys.
+ */
+export type QueryOptions<TQuery> = {
+    query?: Partial<TQuery>;
+    mergeQuery?: Partial<TQuery>;
+};
+
+/**
  * Every field name of an input type, including nested and array paths (`settings.notifyOnAssign`, `tags.0`,
  * `tasks.0.title`): the keys the server can report a validation error under. The validation-error Contracts prove
  * that every error key the server returns is one.
