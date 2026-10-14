@@ -37,6 +37,9 @@ jobs:
       - name: Pint (Composer package)
         run: pnpm lint:php --test
 
+      - name: PHPStan rule tests (Composer package)
+        run: pnpm test:php
+
       # The fixture cache starts empty here, so this generates the latest Base Kit first.
       - name: Package tests and harness scenarios
         run: pnpm test

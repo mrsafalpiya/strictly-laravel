@@ -1,0 +1,5 @@
+{
+    "problem": "P-072",
+    "description": "A Data class with no registration becomes a TypeScript type that a React component reads, and the full ci:check passes from no generated files.",
+    "expect": { "outcome": "pass" }
+}

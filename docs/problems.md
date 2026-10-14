@@ -67,10 +67,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | open |
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | open |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | open |
-| [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | open |
+| [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | open |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | open |
-| [P-034](#p-034) | Iterating an enum's values needs a cast | enums | open |
+| [P-034](#p-034) | Iterating an enum's values needs a cast | enums | closed |
 | [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | open |
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | open |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
@@ -107,6 +107,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
+| [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 
 ## Routes
 
@@ -538,11 +539,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums
 - **Source:** ecosystem A.3 and C
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `FlashToast.type: 'success' | 'info' | 'warning' | 'error'` (`resources/js/types/ui.ts`) is written by hand; a PHP-side change doesn't reach it.
 
 **Manual workaround:** every backed enum in `app/` is generated as a union of its values, with no registration.
+
+**Closed by:** `strictly:generate` ([`packages/laravel/src/TypeScript/TypeGeneration.php`](../packages/laravel/src/TypeScript/TypeGeneration.php)) turns every backed enum anywhere in `app/` into a union of its values in `@/generated`, with no registration. Scenarios: `enum-value-in-php-passes`, `enum-value-not-in-php-fails-tsc`.
 
 ### P-032
 
@@ -577,11 +580,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums
 - **Source:** overview §2; type-safety rule 6
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a picker lists statuses with `Object.keys(labels) as IssueStatus[]`: a cast, and wrong for int-backed enums (keys are strings).
 
 **Manual workaround:** `enumValues.IssueStatus` generated from PHP in case order (`EnumValuesProvider`); for a literal union, `allOf<WeekStart>()('monday', 'sunday')`.
+
+**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and rejecting type assertions is [P-068](#p-068). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
 
 ### P-035
 
@@ -1086,6 +1091,21 @@ Problems in generation or verification that affect every Type Boundary.
 **Manual workaround:** none; review.
 
 **Reasoning:** oxlint's JS plugins have no type information, so rules match syntax. The narrowed JSX types (ADR-0004) carry the one check where escaping through a variable mattered most; the rest is left to review.
+
+### P-072
+
+**Data shapes are hand-written or registered one by one**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 6, 10 and 17; overview §2
+- **Upstream:** by design: laravel-typescript-transformer v3's [published provider stub](https://github.com/spatie/laravel-typescript-transformer/blob/main/stubs/TypeScriptTransformerServiceProvider.stub) transforms only classes marked `#[TypeScript]`
+- **Status:** closed
+
+**Reproduction:** the Base Kit generates only routes, so a shape a laravel-data class sends is written by hand in TypeScript (`type Project = { name: string; openIssues: number }`); change `public int $openIssues` to `string` and React still compiles. With typescript-transformer's stock setup, each class needs `#[TypeScript]` to be generated.
+
+**Manual workaround:** the Reference Implementation's `TypeScriptTransformerServiceProvider` transforms every Data class in `app/`, its output is gitignored, and `composer types` runs before typecheck and tests.
+
+**Closed by:** `php artisan strictly:generate` ([`packages/laravel/src/Console/GenerateCommand.php`](../packages/laravel/src/Console/GenerateCommand.php)) generates every laravel-data class anywhere in `app/` into the gitignored `resources/js/generated/index.ts` (`@/generated`), with no registration, plus Wayfinder's routes. The installer gitignores the output and makes `build`, `build:ssr`, `types:check` and `ci:check` generate first. PHPStan rules `strictly.dataClassFinal` and `strictly.dataNamespace` keep Data classes final and alone in `App\Data`. Scenarios: `data-class-typed-passes`, `data-property-type-changed-fails-tsc`, `non-final-data-class-fails`, `non-data-class-in-data-namespace-fails`.
 
 ## Findings not registered
 

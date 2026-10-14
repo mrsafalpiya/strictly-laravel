@@ -1,0 +1,6 @@
+{
+    "problem": "P-031",
+    "description": "A value of the PHP backed enum is accepted by its generated TypeScript union.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

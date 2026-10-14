@@ -1,0 +1,9 @@
+{
+    "problem": "P-072",
+    "description": "A Data property changed from int to string fails tsc where a React component still reads it as a number, because types are regenerated from PHP before tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/components/project-summary.tsx(4,11): error TS2322: Type 'string' is not assignable to type 'number'."
+    }
+}

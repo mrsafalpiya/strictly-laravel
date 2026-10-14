@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { before, describe, test } from 'node:test';
 
@@ -7,6 +7,7 @@ import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
 import { createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { fixturesDir } from '../src/paths.ts';
+import { run } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
 
 // Every test here works on its own copy of one cached app (latest Base Kit + Overlay installed from local paths),
@@ -124,6 +125,56 @@ final class AppName
 
         assertOutcome(await app.check('tsc'), { outcome: 'fail', errorContains: "error TS2532: Object is possibly 'undefined'." });
         assertOutcome(await app.check('lint'), { outcome: 'fail', errorContains: 'strictly(no-hardcoded-urls): Hard-coded URL "/dashboard"' });
+    });
+
+    test('generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone', async () => {
+        const app = await createApp('generated-in-fresh-clone');
+        mkdirSync(join(app.dir, 'app', 'Enums'), { recursive: true });
+        writeFileSync(
+            join(app.dir, 'app', 'Enums', 'ProjectStatus.php'),
+            `<?php
+
+namespace App\\Enums;
+
+enum ProjectStatus: string
+{
+    case Active = 'active';
+    case Archived = 'archived';
+}
+`,
+        );
+        // A page, so the build bundles it and fails if `@/generated` doesn't resolve.
+        writeFileSync(
+            join(app.dir, 'resources', 'js', 'pages', 'project-statuses.tsx'),
+            `import { enumValues } from '@/generated';
+
+export default function ProjectStatuses() {
+    return (
+        <ul>
+            {enumValues.ProjectStatus.map((status) => (
+                <li key={status}>{status}</li>
+            ))}
+        </ul>
+    );
+}
+`,
+        );
+        await app.commitAll('an enum and a page that imports its generated values');
+
+        // What a fresh clone lacks: every generated directory, ours and Wayfinder's.
+        const generated = ['generated', 'wayfinder', 'routes', 'actions'].map((dir) => join(app.dir, 'resources', 'js', dir));
+        const freshClone = (): void => generated.forEach((dir) => rmSync(dir, { recursive: true, force: true }));
+        const inApp = { cwd: app.dir, logFile: join(app.dir, '..', `${app.name}.log`) };
+
+        freshClone();
+        assertOutcome(await app.check(), { outcome: 'pass' });
+        assert.deepEqual(app.changedFiles(), [], 'generated files are not gitignored');
+
+        freshClone();
+        assertOutcome(await run('pnpm', ['run', 'types:check'], inApp), { outcome: 'pass' });
+
+        freshClone();
+        assertOutcome(await run('pnpm', ['run', 'build'], inApp), { outcome: 'pass' });
     });
 
     for (const scenario of loadScenarios()) {

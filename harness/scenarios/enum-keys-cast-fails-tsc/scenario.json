@@ -1,0 +1,9 @@
+{
+    "problem": "P-034",
+    "description": "Listing an int-backed enum's values by casting a label map's keys fails tsc, because the keys are strings and the generated enum type is numbers.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2352: Conversion of type 'string[]' to type 'IssuePriority[]' may be a mistake"
+    }
+}

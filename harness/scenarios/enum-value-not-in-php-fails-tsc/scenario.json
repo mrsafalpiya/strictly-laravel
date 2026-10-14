@@ -1,0 +1,9 @@
+{
+    "problem": "P-031",
+    "description": "A value the PHP backed enum has no case for fails tsc, because the enum's TypeScript union is generated from PHP with no registration.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/lib/project-status.ts(3,14): error TS2322: Type '\"deleted\"' is not assignable to type 'ProjectStatus'."
+    }
+}
