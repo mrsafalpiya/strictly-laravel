@@ -40,6 +40,10 @@ _Avoid_: page DTO, view model
 The Data class a controller action type-hints to receive a request's payload: it extends `InputData`, validates the request with rules inferred from its types, and brands the action's Wayfinder route, so the form's payload and error keys come from it. A route whose action takes one is a **form endpoint**.
 _Avoid_: form request, request DTO
 
+**Query class**:
+The Data class a GET action type-hints to receive its query string (list filters): it extends `QueryData`, is parsed leniently (an invalid value falls back to its default, never a 422), and types the `query` option of the action's Wayfinder route. A Page class can send it back as a prop, so the filter UI is typed by it too.
+_Avoid_: filter request, search DTO
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture

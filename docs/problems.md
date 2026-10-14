@@ -41,7 +41,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-003](#p-003) | Route parameters are structural, so any model's key fits | routes | open |
 | [P-004](#p-004) | Wayfinder's output formatter collapses function arguments | routes | open |
 | [P-005](#p-005) | `withoutScopedBindings()` inside `scopeBindings()` has no effect | routes | open |
-| [P-006](#p-006) | Query strings are untyped | routes | open |
+| [P-006](#p-006) | Query strings are untyped | routes | closed |
+| [P-104](#p-104) | A query property without a default fails on a URL that leaves its key out | routes | closed |
+| [P-105](#p-105) | A query value the route function leaves out of the URL reads as a different default | routes | closed |
+| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
 | [P-009](#p-009) | Page props are hand-written per page | page props | closed |
@@ -199,11 +202,56 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §2; type-safety rule 12; the Tracklane spec, [`research/showcase-spec.md`](research/showcase-spec.md) (issue list filters)
 - **Upstream:** none (missing feature: Wayfinder's `query` option is `RouteQueryOptions`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `index(workspace, { query: { statuse: ['todo'] } })` compiles, and the server reads `$request->query('status')` with nothing tying the two together. An invalid value from an old bookmark is a 422 or a 500.
 
 **Manual workaround:** a `QueryData` class type-hinted on the GET action (`index(IssueFiltersData $filters)`), parsed leniently (invalid items fall back to defaults); a Wayfinder template override types the route function's `query` option as `QueryOptions<IssueFiltersData>` (`RouteTypes::queryOptions`). The same object is sent back as a prop so the filter UI is typed by it.
+
+**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class still take any query: [P-106](#p-106). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
+
+### P-104
+
+**A query property without a default fails on a URL that leaves its key out**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-006](#p-006)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** a query class with `public ProjectSort $sort` and no default. `QueryOptions` makes every key optional, so `index()` and `index({ query: { statuses: ['active'] } })` compile, and both URLs leave `sort` out: laravel-data can't build the class, and the request is a 500. A key that fails validation is left out the same way, so it has nothing to fall back to either.
+
+**Manual workaround:** give every query property a default (the Reference Implementation's convention, unchecked).
+
+**Closed by:** the PHPStan rule `strictly.queryDefault` ([`QueryDefaultRule`](../packages/laravel/src/PHPStan/QueryDefaultRule.php)) rejects a property of a `QueryData` subclass, promoted or declared, without a default. A nullable property without one is `null` and an Optional one is Optional, as laravel-data fills them, so those pass. Scenarios: `query-filters-typed-passes`, `query-property-without-default-fails-phpstan`.
+
+### P-105
+
+**A query value the route function leaves out of the URL reads as a different default**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-006](#p-006)
+- **Upstream:** by design: Wayfinder's `queryParams()` skips a `null` value and writes nothing for an empty list
+- **Status:** closed
+
+**Reproduction:** a query class with `public ?string $search = 'launch'` and `/** @var list<ProjectStatus> */ public array $statuses = [ProjectStatus::Active]`. `index({ query: { search: null, statuses: [] } })` compiles, but the URL is `/projects`, so the server reads `search: 'launch'` and `statuses: [Active]`: not what the client sent, and nothing fails.
+
+**Manual workaround:** none.
+
+**Closed by:** the PHPStan rule `strictly.queryDefault` ([`QueryDefaultRule`](../packages/laravel/src/PHPStan/QueryDefaultRule.php)) requires a nullable query property to default to `null` and a list to `[]`, the values an absent key stands for. Scenarios: `query-filters-typed-passes`, `query-default-not-sendable-fails-phpstan`.
+
+### P-106
+
+**A route whose action takes no query class accepts any query string**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-006](#p-006)
+- **Upstream:** none (Wayfinder's `query` option is `RouteQueryOptions` on every route)
+- **Status:** open
+
+**Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). Vendor GETs that do read a query string (Fortify's password reset reads `email`) have no class to type it by yet ([P-025](#p-025)). A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
+
+**Manual workaround:** take a query class on every action that reads its query string.
 
 ### P-007
 

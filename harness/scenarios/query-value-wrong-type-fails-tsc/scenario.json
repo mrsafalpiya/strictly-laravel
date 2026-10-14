@@ -1,0 +1,9 @@
+{
+    "problem": "P-006",
+    "description": "A route function whose GET action takes a query Data class rejects a query value its type doesn't allow: a sort that isn't a ProjectSort case fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type '\"oldest\"' is not assignable to type 'ProjectSort | undefined'."
+    }
+}
