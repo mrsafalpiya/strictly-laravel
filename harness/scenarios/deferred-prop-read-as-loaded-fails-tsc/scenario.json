@@ -1,0 +1,9 @@
+{
+    "problem": "P-043",
+    "description": "A deferred page prop (Lazy|Data built with Lazy::inertiaDeferred()) is generated as optional, so a page component that reads it as if it were already loaded fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/pages/reports.tsx(9,18): error TS18048: 'stats' is possibly 'undefined'."
+    }
+}

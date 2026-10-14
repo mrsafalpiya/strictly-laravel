@@ -1,0 +1,5 @@
+{
+    "problem": "P-046",
+    "description": "Partial reloads (a nested one, `only: ['report.stats']`, which returns just that subtree, and one with `except`) record Contracts checked as PartialReload of the page's props, which pass: the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

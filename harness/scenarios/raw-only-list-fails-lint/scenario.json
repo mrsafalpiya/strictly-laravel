@@ -1,0 +1,9 @@
+{
+    "problem": "P-045",
+    "description": "A partial reload that names its props as a raw string list, which no tool checks against the page's props, fails the lint step with strictly/typed-prop-names.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly(typed-prop-names): `only` must be `page.only(…)` with `const page = forPage<'component'>()`"
+    }
+}

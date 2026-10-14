@@ -1,0 +1,9 @@
+{
+    "problem": "P-045",
+    "description": "Importing Inertia's own Deferred, whose data takes any string, fails the lint step with strictly/typed-inertia-components, which points to forPage()'s typed one.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly(typed-inertia-components): Use `page.Deferred` from `const page = forPage<'component'>()`"
+    }
+}
