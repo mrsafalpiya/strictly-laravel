@@ -8,13 +8,13 @@ Run these from the repo root. First-time setup: `composer install && pnpm instal
 
 | Command | What it does |
 |---|---|
-| `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, Kit Conversion leaves unknown content alone, its manifest records every earlier converted version, every scenario. |
+| `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, Kit Conversion leaves unknown content alone, its manifest records every earlier converted version, the oxlint plugin's rule-tester cases (`harness/tests/oxlint-plugin.test.ts`), every scenario. |
 | `pnpm test <pattern>...` | Only the tests whose names match, e.g. `pnpm test example-type-error-fails-tsc`. |
 | `pnpm harness` | Fresh install only: `strictly:install` and every `ci:check` step must pass on the latest Base Kit + Overlay (the nightly check). Each step runs on its own, and a failure names the stage and the files that broke. |
 | `pnpm harness <scenario>... [--step <step>]` | Run the named scenarios and report each one. `--step` overrides the scenario's step. |
 | `pnpm harness --list` | List the scenarios. |
 | `pnpm harness --fresh` / `STRICTLY_FRESH_BASE_KIT=1 pnpm test` | Regenerate the latest Base Kit first. |
-| `pnpm typecheck` | Typecheck the harness (strict `tsc`). |
+| `pnpm typecheck` | Typecheck the harness and the oxlint plugin (strict `tsc`, JSDoc types for the plugin's JS). |
 | `pnpm lint:php` | Run Pint on the Composer package (`--test` to check only, as CI does). |
 
 Timings on a warm cache: about 8 s for a scenario that runs a single step and about 20 s for a full `ci:check`. A fresh Base Kit takes about 1.5 min to generate, plus about 20 s to install the packages.
@@ -50,7 +50,7 @@ Every fixture command runs without the AI-agent environment variables (`AI_AGENT
 
 | Step | Runs |
 |---|---|
-| `lint` | `<pm> run check` (Vite+: type-aware oxlint + oxfmt) |
+| `lint` | `<pm> run check` (Vite+: type-aware oxlint with the Strictly Laravel oxlint plugin, + oxfmt) |
 | `tsc` | `<pm> run types:check` (`tsc --noEmit`) |
 | `test` | `@test` (Pint, PHPStan, Pest) |
 

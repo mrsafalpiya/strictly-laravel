@@ -1,0 +1,6 @@
+{
+    "problem": "P-007",
+    "description": "A Link whose href comes from the Wayfinder route function passes the lint step.",
+    "step": "lint",
+    "expect": { "outcome": "pass" }
+}

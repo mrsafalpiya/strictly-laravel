@@ -1,0 +1,9 @@
+{
+    "problem": "P-007",
+    "description": "A hard-coded app URL in a Link's href fails the lint step with strictly/no-hardcoded-urls.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly(no-hardcoded-urls): Hard-coded URL \"/dashboard\""
+    }
+}

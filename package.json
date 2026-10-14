@@ -13,7 +13,9 @@
         "lint:php": "vendor/bin/pint packages/laravel"
     },
     "devDependencies": {
+        "@oxlint/plugins": "1.79.0",
         "@types/node": "^26.6.5",
+        "oxlint": "1.79.0",
         "typescript": "^7.0.2"
     }
 }

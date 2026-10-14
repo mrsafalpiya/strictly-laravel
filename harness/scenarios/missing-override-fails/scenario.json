@@ -1,0 +1,9 @@
+{
+    "problem": "none",
+    "description": "noImplicitOverride: redeclaring a base class member without override fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS4114: This member must have an 'override' modifier because it overrides a member in the base class 'Error'."
+    }
+}

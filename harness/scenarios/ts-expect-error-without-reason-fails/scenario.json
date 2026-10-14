@@ -1,0 +1,9 @@
+{
+    "problem": "none",
+    "description": "ADR-0007: a @ts-expect-error without a reason fails the lint step with strictly/require-suppression-reason.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly(require-suppression-reason): `@ts-expect-error` needs a written reason"
+    }
+}
