@@ -1,0 +1,5 @@
+# Only the published packages are workspace members.
+# reference/ (read-only prior art) and .fixtures/ (harness apps with their own
+# pnpm workspace) must never be added here.
+packages:
+    - packages/*
