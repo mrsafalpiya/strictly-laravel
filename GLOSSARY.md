@@ -40,6 +40,10 @@ _Avoid_: page DTO, view model
 The Data class a controller action type-hints to receive a request's payload: it extends `InputData`, validates the request with rules inferred from its types, and brands the action's Wayfinder route, so the form's payload and error keys come from it. A route whose action takes one is a **form endpoint**.
 _Avoid_: form request, request DTO
 
+**Route key**:
+A model's key as the routes bound to that model take it (`show(Project $project)` takes a project's `id`, `{project:slug}` its `slug`), typed nominally by the model: `RouteKey<'Project', number>`, so another model's key or a plain number doesn't fit. A Data class property holds one when the class is built from the model (a `from…(Project $project)` method) and the property is named after a binding field the routes use for it, or when it declares `#[RouteKeyOf(Project::class)]`. Feature tests check every route key the server sends is an existing key of its model.
+_Avoid_: ID type, typed id
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture

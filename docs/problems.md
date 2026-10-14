@@ -37,13 +37,15 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | ID | Problem | Type Boundary | Status |
 |---|---|---|---|
 | [P-001](#p-001) | Wayfinder output fails `tsc` on Laravel 13.35+ (`QUERY` verb) | routes | open |
-| [P-002](#p-002) | Wayfinder reads binding keys only from controller type-hints | routes | open |
-| [P-003](#p-003) | Route parameters are structural, so any model's key fits | routes | open |
+| [P-002](#p-002) | Wayfinder reads binding keys only from controller type-hints | routes | closed |
+| [P-003](#p-003) | Route parameters are structural, so any model's key fits | routes | closed |
 | [P-004](#p-004) | Wayfinder's output formatter collapses function arguments | routes | open |
 | [P-005](#p-005) | `withoutScopedBindings()` inside `scopeBindings()` has no effect | routes | open |
 | [P-006](#p-006) | Query strings are untyped | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
+| [P-116](#p-116) | A route-key brand can be put on a value that isn't its model's key | routes | closed |
+| [P-117](#p-117) | A Data class built from no single model gets no route-key brand on its key | routes | accepted gap |
 | [P-009](#p-009) | Page props are hand-written per page | page props | closed |
 | [P-010](#p-010) | Nothing ties a page name to a page component file | page props | closed |
 | [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | closed |
@@ -146,11 +148,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §4; type-safety rule 15
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** route `/w/{workspace:slug}` to `public function show(string $workspace)` (bound model not type-hinted). Wayfinder doesn't know the parameter is bound to `Workspace` by `slug`, so the generated function has no `{ slug }` object form and `show({ workspace })` can't take a `WorkspaceData`.
 
 **Manual workaround:** always type-hint bound models in the controller action (`show(Workspace $workspace)`); a rule in type-safety.md, unenforced.
+
+**Closed by:** `strictly:generate` (the `generate` step of `ci:check`, and `build` and `types:check`, which generate first) fails on a route parameter that names a binding field (`{workspace:slug}`) when its action doesn't type-hint a model for it, listing each one as `GET w/{workspace}: {workspace:slug} in App\Http\Controllers\WorkspaceController@show` (`StrictlyLaravel\Routes\RouteKeys::untypedBindings()`). With the model type-hinted, the route takes that model's [route key](#p-003) by the field: a `WorkspaceData` (its `slug`) or the `slug`. A parameter without a binding field (`{token}`) stays a plain `string | number`; one bound by `Route::bind()` is [P-008](#p-008)'s. Scenarios: `route-binding-field-typed-passes`, `route-binding-field-untyped-fails-generate`.
 
 ### P-003
 
@@ -159,11 +163,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §2 and §4; type-safety rule 15
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Wayfinder types a bound parameter as `string | { key: string }`. With `show({ workspace, project })` expecting a project, `show({ workspace, project: issue })` or `show({ workspace, project: member.user })` type-checks because both have a `key`.
 
 **Manual workaround:** nominal route keys. A Wayfinder template override types parameters bound to `Project` as `RouteKey<'Project', string>` (`App\Support\Wayfinder\RouteKeys`, `RouteTypes::arguments`); the route-key property of a Data class built by `fromModel(Project $project)` is generated with the same brand (`RouteKeysDataClassTransformer`), and a property holding another model's key declares `#[RouteKeyOf(Project::class)]`. Tests check every branded value sent is an existing key of its model (`tests/Support/RouteKeyChecks.php`), with a disjoint id range per table.
+
+**Closed by:** nominal route keys ([`StrictlyLaravel\Routes\RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php)). The package's Wayfinder `function-arguments` template ([`WayfinderTemplates::functionArguments()`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types a parameter whose action type-hints a model (`show(Project $project)`) as `RouteKey<'Project', number> | { id: RouteKey<'Project', number> }`, from the npm package's [`routes` types](../packages/npm/routes/index.d.ts). A Data class built from the model (a static `from…(Project $project)` method) has each property named after a binding field the routes use for that model generated as `RouteKey<'Project', …>`, and so does a property declaring [`#[RouteKeyOf(Project::class)]`](../packages/laravel/src/Data/RouteKeyOf.php), per item for a list ([`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Input classes are never branded. So `show(project)`, `show(project.id)` and `show(issue.project_id)` pass, and `show(issue)`, `show(issue.id)` or a plain number fail `tsc` with TS2345. Contracts check a route key as its plain value (`Contract<T>`), and the feature tests check it is an existing key of its model ([P-116](#p-116)). Kit Conversion types the Base Kit's passkey ids as `PasskeyData['id']`, since `destroy(passkey)` takes a passkey's key. Scenarios: `route-keys-nominal-passes`, `route-key-of-another-model-fails-tsc`, `route-key-plain-number-fails-tsc`.
 
 ### P-004
 
@@ -177,6 +183,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 **Reproduction:** a Wayfinder template override that writes a parameter type containing `import('@/lib/routes').RouteKey<'Project', string>` across several lines. The formatter collapses the argument list up to the first `)`, which here is inside `import(…)`, and the generated signature comes out mangled.
 
 **Manual workaround:** render the whole parameters argument on one line (`RouteTypes::arguments`).
+
+The Overlay's own `function-arguments` template does the same ([`WayfinderTemplates::functionArguments()`](../packages/laravel/src/Routes/WayfinderTemplates.php)), so the route-key brands ([P-003](#p-003)) come out intact; the defect remains for any other template override.
 
 ### P-005
 
@@ -233,6 +241,36 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 **Manual workaround:** build route-key properties only through `fromModel()`, so a key always comes from its own model.
 
 **Reasoning:** the types can prove which model a key belongs to, and the tests can prove the key exists. Proving it is the *right* row is a question about program logic, not about the type at the Type Boundary; no type can express it.
+
+### P-116
+
+**A route-key brand can be put on a value that isn't its model's key**
+
+- **Type Boundary:** routes
+- **Source:** overview §5; `reference/showcase/tests/Support/RouteKeyChecks.php`
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an `IssueData` declares `#[RouteKeyOf(Project::class)] public int $project_id`, but `fromModel()` fills it with the issue's `id`. The generated type says it is a project's key, so `show(issue.project_id)` type-checks and links to the wrong project, or to none. With one id sequence per table starting at 1, as a fresh test database has, the first issue's id is also the first project's, so even a test that looks the key up finds a project.
+
+**Manual workaround:** the Reference Implementation's `RouteKeyChecks`: while a test serialises a Data object, every branded value must be an existing key of its model, and every table gets its own id range in tests.
+
+**Closed by:** [`StrictlyLaravel\Testing\RouteKeyChecks`](../packages/laravel/src/Testing/RouteKeyChecks.php), started for every feature test by the installer's Pest hook (`RecordsContracts`). While a test's request is handled, laravel-data's serialisation checks every property typed as a [route key](#p-003): a value that isn't an existing key of its model fails the request with `GET /issues/4000001 sent a value typed as a model's route key that is no key of that model (Problem P-116): App\Data\IssueData.project_id is not the id of any App\Models\Project: 4000001`. A test that uses `RefreshDatabase` (or `DatabaseMigrations`) on SQLite gives every table its own range of a million ids, so ids of different models never coincide. Scenarios: `route-keys-nominal-passes` (its tests also prove the ranges are disjoint), `route-key-not-a-key-of-its-model-fails-test`. What remains, a key of the right model but the wrong row, is [P-008](#p-008).
+
+### P-117
+
+**A Data class built from no single model gets no route-key brand on its key**
+
+- **Type Boundary:** routes
+- **Source:** issue #20
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `ProjectData::from($project)` relies on laravel-data's own model normaliser, so the class has no `from…(Project $project)` method; or an `ActivityData` has both `fromIssue(Issue $issue)` and `fromComment(Comment $comment)`. Its `id` is generated as a plain `number`, so passing it to `show(project)` fails `tsc` although it is a project's key (the second class's `id` may be either model's).
+
+**Manual workaround:** give the class a `fromModel(Project $project)` method, or split it into one Data class per model; a property that holds a known model's key can declare `#[RouteKeyOf(Project::class)]`.
+
+**Reasoning:** the brand has to be derived from the PHP code, and only a `from…()` method's parameter type says which model a class's properties come from. Guessing would brand a key with the wrong model, which `tsc` would then trust; leaving it plain only refuses a call, which the developer fixes by naming the model.
 
 ## Page props
 
