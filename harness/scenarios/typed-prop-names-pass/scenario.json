@@ -1,0 +1,5 @@
+{
+    "problem": "P-045",
+    "description": "A page that names its props through forPage<'reports'>() (only, except, reset, an optimistic update, Deferred, WhenVisible and InfiniteScroll, with own and shared prop names) passes the full ci:check, lint included.",
+    "expect": { "outcome": "pass" }
+}

@@ -1,6 +1,8 @@
 import type { Deferred, InfiniteScroll, WhenVisible } from '@inertiajs/react';
 import type { ComponentProps, ForwardRefExoticComponent, ReactElement, ReactNode } from 'react';
 
+import type { PropPath } from '../contracts/index.js';
+
 /**
  * The app's pages and shared props, which the generated types register (`@/generated`, written by
  * `php artisan strictly:generate`):
@@ -36,6 +38,12 @@ export type PagePropsOf<K extends PageName> = Pages[K] & SharedProps;
 export type PropName<K extends PageName> = Extract<keyof Pages[K] | keyof SharedProps, string>;
 
 /**
+ * What a partial reload of page K can ask for: a prop name, or a dotted path to a prop inside one of its own props
+ * (`project.stats`), which Inertia then sends with just that prop.
+ */
+export type ReloadPath<K extends PageName> = PropPath<Pages[K]> | Extract<keyof SharedProps, string>;
+
+/**
  * What `optimistic` in a visit's options takes. Inertia types the callback's props as the shared props plus an index
  * signature, so its own `router.optimistic<TProps>()` trusts any props type the caller names; build one with
  * `forPage<'component'>().optimistic()` instead, typed by the page's props.
@@ -43,24 +51,25 @@ export type PropName<K extends PageName> = Extract<keyof Pages[K] | keyof Shared
 export type PageOptimisticUpdate = (props: any) => object | void;
 
 /**
- * Typed versions of every Inertia API that names a page's props with plain strings, returned by `forPage()`.
+ * Typed versions of every Inertia API that names a page's props with plain strings, returned by `forPage()`. They are
+ * properties, not methods, so `<page.Deferred>` and `page.only` can be used unbound.
  */
 export interface PageHelpers<K extends PageName> {
     /** `only` for a reload, a visit or `<Link>`: `router.reload({ only: page.only('stats') })`. */
-    only(...props: PropName<K>[]): PropName<K>[];
+    only: (...props: ReloadPath<K>[]) => ReloadPath<K>[];
     /** `except` for a reload, a visit or `<Link>`. */
-    except(...props: PropName<K>[]): PropName<K>[];
+    except: (...props: ReloadPath<K>[]) => ReloadPath<K>[];
     /** `reset` (props replaced instead of merged) for a reload, a visit or `<Link>`. */
-    reset(...props: PropName<K>[]): PropName<K>[];
+    reset: (...props: ReloadPath<K>[]) => ReloadPath<K>[];
     /**
      * An optimistic update of this page's props, for a visit's `optimistic` option: the callback receives the page's
      * props and returns the ones to change.
      */
-    optimistic(callback: (props: PagePropsOf<K>) => Partial<PagePropsOf<K>> | void): PageOptimisticUpdate;
+    optimistic: (callback: (props: PagePropsOf<K>) => Partial<PagePropsOf<K>> | void) => PageOptimisticUpdate;
     /** Inertia's `<Deferred>`, whose `data` names deferred props of this page. */
-    Deferred(props: Omit<ComponentProps<typeof Deferred>, 'data'> & { data: PropName<K> | PropName<K>[] }): ReactNode;
+    Deferred: (props: Omit<ComponentProps<typeof Deferred>, 'data'> & { data: PropName<K> | PropName<K>[] }) => ReactNode;
     /** Inertia's `<WhenVisible>`, whose `data` names props of this page. */
-    WhenVisible(props: Omit<ComponentProps<typeof WhenVisible>, 'data'> & { data?: PropName<K> | PropName<K>[] }): ReactNode;
+    WhenVisible: (props: Omit<ComponentProps<typeof WhenVisible>, 'data'> & { data?: PropName<K> | PropName<K>[] }) => ReactNode;
     /** Inertia's `<InfiniteScroll>`, whose `data` names a scroll prop of this page. */
     InfiniteScroll: ForwardRefExoticComponent<Omit<ComponentProps<typeof InfiniteScroll>, 'data'> & { data: PropName<K> }>;
 }
