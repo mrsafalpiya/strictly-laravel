@@ -2,7 +2,9 @@
 /**
  * The Strictly Laravel Vite plugin. `strictly:install` registers it in the app's vite.config.ts. While the dev server
  * runs (`composer dev`), it regenerates the TypeScript types (`@/generated`) whenever a PHP file under app/ is saved,
- * so the editor sees a changed Data class or enum without a command (Problem P-064):
+ * so the editor sees a changed Data class or enum without a command (Problem P-064), and whenever a page component
+ * file is created or deleted under resources/js/pages, so the generated checks that tie each one to its Page class
+ * list the files there are (Problem P-010):
  *
  * - saves are debounced, runs never overlap, and saves during a run queue at most one more run;
  * - a run that fails (a half-written PHP file) leaves the last good types in place, because `strictly:generate`
@@ -40,9 +42,12 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
             const root = server.config.root;
             const regenerate = serialised(() => generate(command, root, server.config.logger));
 
-            /** @param {string} file */
-            const onFileEvent = (file) => {
-                if (!isAppPhpFile(root, file)) {
+            /**
+             * @param {'add' | 'change' | 'unlink'} event
+             * @returns {(file: string) => void}
+             */
+            const on = (event) => (file) => {
+                if (!regeneratesTypes(event, relative(root, file).split(sep).join('/'))) {
                     return;
                 }
 
@@ -50,9 +55,9 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
                 timer = setTimeout(regenerate, debounceMs);
             };
 
-            server.watcher.on('add', onFileEvent);
-            server.watcher.on('change', onFileEvent);
-            server.watcher.on('unlink', onFileEvent);
+            server.watcher.on('add', on('add'));
+            server.watcher.on('change', on('change'));
+            server.watcher.on('unlink', on('unlink'));
 
             regenerate();
         },
@@ -63,13 +68,18 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
 }
 
 /**
- * @param {string} root
- * @param {string} file
+ * Whether a file event changes the types: any PHP file under app/, and a page component file created or deleted (its
+ * contents aren't generated from, so saving one changes nothing).
+ *
+ * @param {'add' | 'change' | 'unlink'} event
+ * @param {string} path relative to the project root, with forward slashes
  */
-function isAppPhpFile(root, file) {
-    const path = relative(root, file).split(sep).join('/');
+function regeneratesTypes(event, path) {
+    if (path.startsWith('app/')) {
+        return path.endsWith('.php');
+    }
 
-    return path.startsWith('app/') && path.endsWith('.php');
+    return event !== 'change' && path.startsWith('resources/js/pages/');
 }
 
 /**

@@ -126,7 +126,18 @@ describe('Vite plugin: live regeneration', () => {
         await until('a run after the deleted file finished', () => finishedRuns(dev) === 3);
     });
 
-    test('files that are not PHP under app/ are ignored', async () => {
+    test('a page component file created or deleted under resources/js/pages regenerates too', async () => {
+        const dev = await startDevServer();
+        await until('the first run finished', () => finishedRuns(dev) === 1);
+
+        dev.create('resources/js/pages/projects/index.tsx');
+        await until('a run after the new page file finished', () => finishedRuns(dev) === 2);
+
+        dev.remove('resources/js/pages/projects/index.tsx');
+        await until('a run after the deleted page file finished', () => finishedRuns(dev) === 3);
+    });
+
+    test('files that are not PHP under app/ are ignored, and so are saves to page component files', async () => {
         const dev = await startDevServer();
         await until('the first run finished', () => finishedRuns(dev) === 1);
 

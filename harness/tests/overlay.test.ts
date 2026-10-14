@@ -8,7 +8,7 @@ import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
 import { appConcurrency, createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { fixturesDir } from '../src/paths.ts';
-import { type BackgroundCommand, tail } from '../src/run.ts';
+import { type BackgroundCommand, type CommandResult, tail } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
 
 // Every test here works on its own copy of one cached app (latest Base Kit + Overlay installed from local paths), in its
@@ -199,13 +199,17 @@ export default function ProjectStatuses() {
         assertOutcome(await app.run('pnpm', ['run', 'build']), { outcome: 'pass' });
     });
 
-    test('while the dev server runs, a saved Data class regenerates its type and a half-written one keeps the last good types', async () => {
+    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types', async () => {
         const app = await createApp('live-regeneration');
         const dataClass = join(app.dir, 'app', 'Data', 'ProjectData.php');
-        const generated = join(app.dir, 'resources', 'js', 'generated', 'index.ts');
-        const generatedType = () => (existsSync(generated) ? /^export type ProjectData = \{\n[^}]*\};$/m.exec(readFileSync(generated, 'utf8'))?.[0] : undefined);
         const projectData = (properties: string) =>
             `<?php\n\nnamespace App\\Data;\n\nuse Spatie\\LaravelData\\Data;\n\nfinal class ProjectData extends Data\n{\n    public function __construct(\n${properties}\n}\n`;
+        const usage = join(app.dir, 'resources', 'js', 'lib', 'project.ts');
+        const useProject = (fields: string) =>
+            `import type { ProjectData } from '@/generated';\n\nexport const project = { ${fields} } satisfies ProjectData;\n`;
+        const pageFile = join(app.dir, 'resources', 'js', 'pages', 'projects', 'index.tsx');
+        // What the editor sees: `tsc` on the types as they are, without generating them first as `types:check` does.
+        const tsc = () => app.run('pnpm', ['exec', 'tsc', '--noEmit']);
         if (app.dir.split(sep).includes('.claude')) {
             // The Base Kit's dev server ignores `**/.claude/**` (agent folders). When the monorepo itself sits in a
             // .claude/ directory (an agent's worktree), that matches every file of the app, so nothing is watched.
@@ -219,16 +223,24 @@ export default function ProjectStatuses() {
 
             mkdirSync(dirname(dataClass), { recursive: true });
             writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n    ) {}'));
-            await until('ProjectData was generated', () => generatedType()?.includes('openIssues: number') === true, dev);
-            const lastGood = generatedType();
+            writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3"));
+            await untilTsc('tsc passes with the new ProjectData', tsc, 'pass', dev);
 
             writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues\n        public stri'));
             await until('the parse error was reported', () => dev.output().includes('app/Data/ProjectData.php:12: syntax error'), dev);
-            assert.equal(generatedType(), lastGood, 'a half-written Data class changed the generated types');
+            assertOutcome(await tsc(), { outcome: 'pass' });
             assert.equal(dev.exited(), false, 'the dev server stopped');
 
             writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}'));
-            await until('the finished edit was generated', () => generatedType()?.includes('lead: string') === true, dev);
+            writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3, lead: 'Ada'"));
+            await untilTsc('tsc passes with the finished edit', tsc, 'pass', dev);
+
+            mkdirSync(dirname(pageFile), { recursive: true });
+            writeFileSync(pageFile, 'export default function Index() {\n    return <h1>Projects</h1>;\n}\n');
+            await untilTsc('tsc fails on the page file without a Page class', tsc, 'fail', dev, `error TS2344: Type '"projects/index"' does not satisfy the constraint 'keyof InertiaPages'.`);
+
+            rmSync(pageFile);
+            await untilTsc('tsc passes once the page file is deleted', tsc, 'pass', dev);
         } finally {
             await dev.stop();
         }
@@ -251,5 +263,32 @@ async function until(what: string, condition: () => boolean, command: Background
         }
 
         await sleep(50);
+    }
+}
+
+/** Run `tsc` until it ends as expected (it changes once the dev server regenerates the types); fail with its last output. */
+async function untilTsc(
+    what: string,
+    tsc: () => Promise<CommandResult>,
+    outcome: 'pass' | 'fail',
+    command: BackgroundCommand,
+    errorContains?: string,
+    timeoutMs = 60_000,
+): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+
+    for (;;) {
+        const result = await tsc();
+        const ended = outcome === 'pass' ? result.exitCode === 0 : result.exitCode !== 0 && result.output.includes(errorContains ?? '');
+
+        if (ended) {
+            return;
+        }
+
+        if (Date.now() > deadline || command.exited()) {
+            assert.fail(`${command.exited() ? 'exited' : 'timed out'} before ${what}\n--- tsc ---\n${tail(result.output)}\n--- dev server ---\n${tail(command.output())}`);
+        }
+
+        await sleep(500);
     }
 }
