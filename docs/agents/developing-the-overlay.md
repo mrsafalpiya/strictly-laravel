@@ -19,7 +19,7 @@ Each Problem gets at least two scenarios in the fixture-app harness ([`harness.m
 - a **passing** scenario: the typed way works, and the app's checks pass;
 - a **breaking** scenario: a known edit that reproduces the Problem, which must make the checks fail with a specific diagnostic (the `tsc`, PHPStan or oxlint message, or the failing Contract).
 
-Each scenario names the Problem ID it guards. Write the breaking scenario first and watch it go **red** before the fix: the app's checks still pass on the broken edit, which is the Problem reproduced. Then build the fix until both scenarios are green.
+Each scenario names the Problem ID it guards. A scenario is **green** when the app's checks end the way it expects (pass for a passing scenario, fail with the named diagnostic for a breaking one) and **red** otherwise. Write the breaking scenario first and watch it go red before the fix: the checks still pass on the broken edit, which is the Problem reproduced. Then build the fix until both scenarios are green.
 
 Assert on what an app developer sees: pass, or fail with the expected diagnostic. Generator internals, intermediate files and private classes stay out of assertions. A scenario may run only the relevant step of `ci:check` (for example `tsc` alone) for speed. Use the secondary seams only where the harness is too coarse: PHPStan's rule-test kit for a PHPStan rule, oxlint's rule tester for a lint rule.
 

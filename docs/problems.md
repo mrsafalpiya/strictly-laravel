@@ -20,6 +20,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Upstream.** For a Problem caused by a third-party tool: a link to the upstream issue or PR that matches it, "by design" with the link that shows it, or "no upstream issue filed". When one is filed, link it here and in the code comment of the isolated workaround. Problems that aren't a tool's defect say "none".
 
+**Reference Implementation names.** Manual workarounds use the Reference Implementation's names: `config/types.php`, the `type-safety/*` lint rules, the `@/lib/*` modules. In the Overlay the config is `config/strictly.php` and suppressible rules are `strictly/<rule>` (oxlint) and `strictly.<rule>` (PHPStan), per ADR-0007.
+
 **Adding a Problem.** Copy an entry, take the next free ID, add a row to the index, and give a reproduction concrete enough to become a breaking scenario.
 
 **Sources** cited by the entries:
@@ -210,7 +212,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Reproduction:** a `ProjectData` whose `key` is filled with another project's key passes the route-key check: it is still a project key. Also: keys scoped to a parent (an issue `number` within a project) are checked against all rows; brands are per model (class basename), not per binding field; parameters bound by `Route::bind()` closures or to non-Eloquent `UrlRoutable`s stay plain `string | number`; disjoint id ranges are applied on SQLite test databases only.
 
-**Manual workaround:** none; build route-key properties only through `fromModel()`.
+**Manual workaround:** build route-key properties only through `fromModel()`, so a key always comes from its own model.
 
 **Reasoning:** the types can prove which model a key belongs to, and the tests can prove the key exists. Proving it is the *right* row is a question about program logic, not about the type at the Type Boundary; no type can express it.
 
