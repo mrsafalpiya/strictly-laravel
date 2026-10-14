@@ -47,7 +47,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-009](#p-009) | Page props are hand-written per page | page props | closed |
 | [P-010](#p-010) | Nothing ties a page name to a page component file | page props | closed |
 | [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | closed |
-| [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | open |
+| [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | closed |
 | [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | open |
 | [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | open |
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | open |
@@ -59,7 +59,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | open |
 | [P-021](#p-021) | Typed iterables are not cast by default | form payloads | open |
 | [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | open |
-| [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | open |
+| [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
+| [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | open |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | open |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
@@ -68,16 +69,17 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | open |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | open |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
-| [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | open |
-| [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | open |
+| [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
+| [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
 | [P-034](#p-034) | Iterating an enum's values needs a cast | enums | closed |
-| [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | open |
+| [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | closed |
+| [P-074](#p-074) | A label map typed loosely isn't tied to the enum | enums | accepted gap |
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | open |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | open |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
-| [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | open |
-| [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | open |
+| [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
+| [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
 | [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
 | [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | open |
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | open |
@@ -97,7 +99,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | open |
 | [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | open |
 | [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | open |
-| [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | open |
+| [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | closed |
 | [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
 | [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
@@ -274,11 +276,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props (every Data class)
 - **Source:** overview §2 and §4; eval-02 §3 and §9
 - **Upstream:** no upstream issue filed (laravel-typescript-transformer 3.3: `DataClassPropertyProcessor` combines its checks with `&&`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a Data property marked with laravel-data's `#[Hidden]` is never sent, but stays a required key in the generated type; `tsc` trusts a value that is always missing.
 
 **Manual workaround:** mark the property with both attributes, `#[DataHidden, TsHidden]` (laravel-data's and typescript-transformer's `Hidden`).
+
+**Closed by:** [`HiddenDataProperties`](../packages/laravel/src/Workarounds/TypeScriptTransformer/HiddenDataProperties.php) leaves every property marked with laravel-data's `#[Hidden]` out of the generated type; typescript-transformer's own attribute is no longer needed. Scenarios: `hidden-data-property-left-out-passes`, `hidden-data-property-read-fails-tsc`.
 
 ## Shared props
 
@@ -434,11 +438,26 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads (also page props)
 - **Source:** eval-02 §4, §5 and §9; type-safety rule 5; eval-01 M5
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** every date is generated as `string`, so a due date and a timestamp look the same to React. `#[Date]` on a Carbon property validates `2026-05-01`, then the default cast throws `CannotCastDate`: a 500.
 
 **Manual workaround:** a `#[DateOnly]` attribute with `DateOnlyCast`: `"2026-10-14"` both ways; other dates are ISO-8601 strings.
+
+**Closed by:** the `#[DateOnly]` attribute ([`packages/laravel/src/Data/DateOnly.php`](../packages/laravel/src/Data/DateOnly.php)) on a `CarbonInterface` property of a Data class. Its cast reads and sends `"2026-10-14"` and rejects anything else (a timestamp, an impossible date such as `2026-02-30`) with a validation error on the field instead of a 500; the property is generated as `DateOnly` (`` `${number}-${number}-${number}` ``), with an `isDateOnly()` guard in `@/generated` that turns an `<input type="date">` value into one without a cast ([`DateOnlyTypes`](../packages/laravel/src/TypeScript/DateOnlyTypes.php)). Every other date is an ISO-8601 `string`. A plain datetime input given anything but an ISO-8601 timestamp is still a 500: [P-075](#p-075). Scenarios: `date-only-round-trips-passes`, `timestamp-for-date-only-fails-tsc`.
+
+### P-075
+
+**A datetime input that isn't an ISO-8601 timestamp is a 500**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-023](#p-023)
+- **Upstream:** no upstream issue filed (laravel-data infers no rule for a `DateTimeInterface` property, so its cast is the first to see the value)
+- **Status:** open
+
+**Reproduction:** an input Data class with `public CarbonImmutable $startsAt`; posting `startsAt: '2026-10-14'` or `'tomorrow'` passes validation, then laravel-data's `DateTimeInterfaceCast` throws `CannotCastDate` ("Could not cast date `2026-10-14` into a `Carbon\CarbonImmutable` using formats: Y-m-d\TH:i:sP"): a 500 instead of a 422, while the TypeScript type `string` accepts the value.
+
+**Manual workaround:** `#[DateFormat(DATE_ATOM)]` on every datetime input property, or `#[DateOnly]` for a calendar date.
 
 ### P-024
 
@@ -561,11 +580,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums (also every discriminated union)
 - **Source:** overview §2 and §4; type-safety rule 8
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var ActivityType::Commented */ public ActivityType $type` and `/** @var 'monday'|'sunday' */ public string $weekStartsOn` both generate `unknown`, so discriminated unions and exhaustive `switch` statements are impossible.
 
 **Manual workaround:** `LiteralTypesTranspiler` turns PHPDoc string, int, float, bool and enum-case constants into TypeScript literals (`type: 'commented'`).
+
+**Closed by:** `strictly:generate` turns PHPDoc string, int, float, `true`/`false`, class-constant and enum-case types into TypeScript literals at any depth of a type, an enum case as its backing value ([`LiteralTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/LiteralTypes.php), applied through the Overlay's Data class transformer). Validating a literal union on input is still [P-020](#p-020). Scenarios: `literal-types-discriminate-union-passes`, `literal-type-outside-union-fails-tsc`.
 
 ### P-033
 
@@ -574,11 +595,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums
 - **Source:** eval-02 §3 and §9; overview §2; type-safety rule 7
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var array<ProjectStatus, int> */` generates `Record<ProjectStatus, number>`, claiming every status is a key, while the server sends only the statuses it counted. An empty PHP map also serialises as `[]`, not `{}`.
 
 **Manual workaround:** `/** @var array<value-of<Status>, int> */` generates `Partial<Record<Status, number>>` (`LiteralTypesTranspiler`); prefer a list of objects with a `status` field.
+
+**Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; checking recorded payloads against it is the Contract recorder's job ([P-065](#p-065)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
 
 ### P-034
 
@@ -602,11 +625,28 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums
 - **Source:** type-safety rule 6; overview §2
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** add `case Blocked = 'blocked'` to `IssueStatus`; a label map typed `Record<string, string>` or built with a cast still compiles and shows nothing for the new case.
 
 **Manual workaround:** labels, colours and icons live in `resources/js/lib/domain.ts` as `satisfies Record<IssueStatus, …>`, so `tsc` fails until the case is handled; unions end with `x satisfies never`.
+
+**Closed by:** the enum unions generated from PHP ([P-031](#p-031)): a label map written `satisfies Record<IssueStatus, …>` fails `tsc` until it handles a case added in PHP. A map typed loosely (`Record<string, string>`) isn't tied to the enum: [P-074](#p-074). Scenarios: `enum-labels-cover-every-case-passes`, `new-enum-case-without-label-fails-tsc`.
+
+### P-074
+
+**A label map typed loosely isn't tied to the enum**
+
+- **Type Boundary:** enums
+- **Source:** found while closing [P-035](#p-035)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `const labels: Record<string, string> = { todo: 'To do', done: 'Done' }` keeps compiling after `case Blocked = 'blocked'` is added to `IssueStatus`, and shows nothing for the new case.
+
+**Manual workaround:** write label, colour and icon maps `satisfies Record<IssueStatus, …>` and end switches over enum values with `x satisfies never`.
+
+**Reasoning:** a map typed with `string` keys is a legitimate TypeScript type that says nothing about the enum, so `tsc` has nothing to check, and a lint rule can't see which enum a map is meant to cover (oxlint's JS plugins are syntactic, [P-070](#p-070)). The typed way costs nothing and is caught by `tsc`; casts are [P-068](#p-068).
 
 ## Models
 
@@ -675,11 +715,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** pagination and deferred props
 - **Source:** overview §2 and §4; eval-02 §3 and §9
 - **Upstream:** no upstream issue filed (laravel-typescript-transformer); [spatie/typescript-transformer#116](https://github.com/spatie/typescript-transformer/issues/116) reported a different cursor paginator mismatch against v2
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a `PaginatedDataCollection` prop: the shipped `LengthAwarePaginator` type lacks `links[].page` (sent as `number | null` since Laravel 11). A `CursorPaginatedDataCollection` from `X::collect($cursorPaginator, …)` is keyed `array-key`, so `data` becomes a `Record` instead of `X[]`.
 
 **Manual workaround:** `PaginatorTypesProvider` replaces both types (`data: TValue[]`, `links` with `page`), registered after the laravel-data extension; a typed `<Pagination>` component.
+
+**Closed by:** [`PaginatorTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/PaginatorTypes.php) replaces the shipped `LengthAwarePaginator` and `CursorPaginator` types (`data: TValue[]`, page links with `page: number | null`), so `PaginatedDataCollection` and `CursorPaginatedDataCollection` props are `{ data, links, meta }` as Laravel sends them. The npm package's `Pagination` component (`@mrsafalpiya/strictly-laravel/react`, [`packages/npm/react/index.d.ts`](../packages/npm/react/index.d.ts)) takes a page paginator: the generated type fits it, a cursor paginator doesn't. Scenarios: `paginators-typed-as-laravel-sends-them-passes`, `paginator-link-without-page-fails-tsc`, `cursor-paginator-in-pagination-fails-tsc`.
 
 ### P-041
 
@@ -688,11 +730,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** pagination and deferred props
 - **Source:** overview §2 and §4; `reference/template/app/Support/TypeScript/UnwrapInertiaPropsVisitor.php`
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `->replaceType(ScrollProp::class, 'never')` for `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, ActivityData>> */` emits the invalid `never<…>` and generation crashes.
 
 **Manual workaround:** `UnwrapInertiaPropsVisitor`, a visitor hook that replaces `ScrollProp<T>`, `MergeProp<T>`, `DeferProp<T>`, `OptionalProp<T>` and `OnceProp<T>` with `T`.
+
+**Closed by:** [`InertiaPropWrappers`](../packages/laravel/src/Workarounds/TypeScriptTransformer/InertiaPropWrappers.php), a visitor that replaces `ScrollProp<T>`, `MergeProp<T>` and `OnceProp<T>` with `T`. `DeferProp<T>` and `OptionalProp<T>` are absent on the first load, so they aren't unwrapped to a required `T`: they fail generation as unmapped classes ([P-061](#p-061)), and deferred props remain [P-043](#p-043). Scenarios: `scroll-prop-typed-as-its-items-passes`, `scroll-prop-items-misused-fails-tsc`.
 
 ### P-042
 
@@ -970,11 +1014,13 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary (seen in form payloads and page props)
 - **Source:** overview §2 and §4; eval-02 §3 and §9; `reference/showcase/app/Data/Attachments/StoreAttachmentData.php`
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public UploadedFile $file` generates `file: undefined`; a `DateTimeInterface` property generates `undefined` (the Laravel extension maps only `CarbonInterface`). Any class without a transformer does the same with only a warning.
 
 **Manual workaround:** `->replaceType(UploadedFile::class, new TypeScriptRaw('File'))` (with `File | null` in `useRouteForm` until a file is picked) and `->replaceType(DateTimeInterface::class, 'string')`.
+
+**Closed by:** [`UnmappedClassTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnmappedClassTypes.php) generates `UploadedFile` (and subclasses) as `File` and any `DateTimeInterface` as `string`; every other PHP class without a TypeScript type fails `strictly:generate` with the property and the class named, and the previous output stays ([`UnmappedClassCheck`](../packages/laravel/src/TypeScript/UnmappedClassCheck.php)). `File | null` until a file is picked belongs to the typed forms ([P-014](#p-014)). Scenarios: `uploaded-file-and-datetime-typed-passes`, `file-name-for-uploaded-file-fails-tsc`, `unmapped-class-fails-generation`.
 
 ### P-062
 

@@ -8,7 +8,10 @@ import { spec } from 'node:test/reporters';
 import { repoRoot } from './paths.ts';
 
 const patterns = process.argv.slice(2);
-const files = globSync('harness/tests/**/*.test.ts', { cwd: repoRoot }).map((file) => join(repoRoot, file));
+// The npm package's own tests sit next to it, so its dependencies (react, react-dom) resolve to its copies.
+const files = globSync(['harness/tests/**/*.test.ts', 'packages/npm/tests/**/*.test.ts'], { cwd: repoRoot }).map((file) =>
+    join(repoRoot, file),
+);
 
 run({ files, ...(patterns.length > 0 ? { testNamePatterns: patterns } : {}) })
     .on('test:fail', () => {

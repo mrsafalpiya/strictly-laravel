@@ -10,6 +10,10 @@
             "default": "./index.js"
         },
         "./oxlint": "./oxlint/index.js",
+        "./react": {
+            "types": "./react/index.d.ts",
+            "default": "./react/index.js"
+        },
         "./vite": {
             "types": "./vite/index.d.ts",
             "default": "./vite/index.js"
@@ -19,10 +23,20 @@
         "index.js",
         "index.d.ts",
         "oxlint",
+        "react",
         "vite"
     ],
     "peerDependencies": {
+        "@inertiajs/react": "^3.0.0",
+        "react": "^19.2.0",
         "vite": ">=8"
+    },
+    "devDependencies": {
+        "@inertiajs/react": "^3.9.1",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0"
     },
     "sideEffects": false
 }

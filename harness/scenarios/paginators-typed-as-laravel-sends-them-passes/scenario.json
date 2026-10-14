@@ -1,0 +1,6 @@
+{
+    "problem": "P-040",
+    "description": "Page and cursor paginated Data collections are generated as Laravel sends them ({ data: T[], links with page, meta }), and the npm package's typed Pagination component renders the generated page paginator.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

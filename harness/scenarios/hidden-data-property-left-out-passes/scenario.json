@@ -1,0 +1,6 @@
+{
+    "problem": "P-071",
+    "description": "A Data property marked with laravel-data's #[Hidden] alone is left out of the generated type, which matches what the server sends.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,9 @@
+{
+    "problem": "P-041",
+    "description": "Using a ScrollProp's items as the wrong type fails tsc, because the property is generated as the paginated items it wraps.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'string[]' is not assignable to type 'number[]'."
+    }
+}

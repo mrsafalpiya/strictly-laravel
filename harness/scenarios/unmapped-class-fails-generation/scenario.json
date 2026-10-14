@@ -1,0 +1,9 @@
+{
+    "problem": "P-061",
+    "description": "A Data property typed with a PHP class that has no TypeScript type fails generation, naming the property and the class, instead of being generated as undefined.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "ImportData.source is typed with the PHP class SplFileInfo, which has no TypeScript type"
+    }
+}
