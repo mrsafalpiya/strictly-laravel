@@ -1,0 +1,6 @@
+{
+    "problem": "P-035",
+    "description": "A label map written with satisfies Record<Enum, string> type-checks when it has a label for every case of the PHP enum.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

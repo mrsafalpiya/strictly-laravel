@@ -44,10 +44,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-006](#p-006) | Query strings are untyped | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
-| [P-009](#p-009) | Page props are hand-written per page | page props | open |
-| [P-010](#p-010) | Nothing ties a page name to a page component file | page props | open |
-| [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | open |
-| [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | open |
+| [P-009](#p-009) | Page props are hand-written per page | page props | closed |
+| [P-010](#p-010) | Nothing ties a page name to a page component file | page props | closed |
+| [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | closed |
+| [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | closed |
 | [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | open |
 | [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | open |
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | open |
@@ -59,7 +59,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | open |
 | [P-021](#p-021) | Typed iterables are not cast by default | form payloads | open |
 | [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | open |
-| [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | open |
+| [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
+| [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | open |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | open |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
@@ -68,16 +69,17 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | open |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | open |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
-| [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | open |
-| [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | open |
+| [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
+| [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
 | [P-034](#p-034) | Iterating an enum's values needs a cast | enums | closed |
-| [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | open |
+| [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | closed |
+| [P-074](#p-074) | A label map typed loosely isn't tied to the enum | enums | accepted gap |
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | open |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | open |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
-| [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | open |
-| [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | open |
+| [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
+| [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
 | [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
 | [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | open |
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | open |
@@ -97,10 +99,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | open |
 | [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | open |
 | [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | open |
-| [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | open |
+| [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | closed |
 | [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
-| [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | open |
+| [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | open |
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | open |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
@@ -108,6 +110,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
+| [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
 
 ## Routes
 
@@ -228,11 +231,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props
 - **Source:** overview §1; ecosystem A.3 and C; eval-03 §5
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `resources/js/pages/auth/login.tsx` declares `type Props = { status?: string; canResetPassword: boolean }` for `Inertia::render('auth/login', [...])` in `FortifyServiceProvider`; `status` is actually sent as `null`. Renaming a key in the PHP array compiles.
 
 **Manual workaround:** one `Page` class per page (`App\Pages\Auth\LoginPage`) whose constructor defines the props; `PageProps<'auth/login'>` is generated (`InertiaPagesProvider`). An arch test forbids `Inertia::render()` with an array.
+
+**Closed by:** Page classes: a page's props are the constructor of a final class extending `StrictlyLaravel\Inertia\Page` ([`packages/laravel/src/Inertia/Page.php`](../packages/laravel/src/Inertia/Page.php)), which a controller returns, and `strictly:generate` turns each one into `PageProps<'component'>` in `@/generated` ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php), with types named after the page component by [`PageTransformer`](../packages/laravel/src/TypeScript/PageTransformer.php)). The PHPStan rule `strictly.inertiaRender` ([`InertiaRenderRule`](../packages/laravel/src/PHPStan/InertiaRenderRule.php)) rejects `Inertia::render()`, `inertia('…')`, `ResponseFactory::render()` and `Route::inertia()`, so no page is rendered from an untyped array. Kit Conversion turns the Base Kit's pages, controllers and routes into Page classes and removes the hand-written props types from its page components and from the components the security settings page passes its props to (`manage-passkeys`, `manage-two-factor`, `passkey-item`, whose hand-written `Passkey` type gives way to the generated `PasskeyData`). Scenarios: `page-class-props-typed-passes`, `page-prop-renamed-fails-tsc`, `inertia-render-with-array-fails-phpstan`.
 
 ### P-010
 
@@ -241,11 +246,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props
 - **Source:** eval-01 §4; eval-02 §8; overview §2
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Inertia::render('project/show', …)` when the file is `pages/projects/show.tsx` compiles; the Base Kit only catches it at test time (`testing.ensure_pages_exist`), and nothing checks that the component's props match. A page file with no PHP counterpart is not reported.
 
 **Manual workaround:** the page component name derives from the `Page` class; the generated `__PageComponentCheck` (`CheckPage<'projects/show', typeof import('@/pages/projects/show').default>`) fails `tsc` when the file is missing or asks for a prop the class doesn't send. An arch test fails a page file without a class. `php artisan make:page` creates both.
+
+**Closed by:** the page component's name derives from the Page class's (`App\Pages\Projects\ShowPage` is `projects/show`), and `@/generated` carries two checks ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php)): `__PageComponentCheck` fails `tsc` when a Page class's component file is missing or declares a prop the class doesn't send (even an optional one, which would always be missing), and `__PageFileCheck` fails it when a file under `resources/js/pages` has no Page class. `php artisan make:page projects/show` ([`MakePageCommand`](../packages/laravel/src/Console/MakePageCommand.php)) creates both, already in sync (harness test `make:page creates a Page class and its page component, already in sync`). The file check lists the page files found when the types were last generated, so the Vite plugin regenerates them when a file is created or deleted under `resources/js/pages` while the dev server runs (`ci:check`, `types:check` and `build` always generate first). Scenarios: `page-component-accepting-page-props-passes`, `page-component-missing-fails-tsc`, `page-component-unsent-prop-fails-tsc`, `page-component-optional-unsent-prop-fails-tsc`, `page-file-without-class-fails-tsc`; harness test "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types".
 
 ### P-011
 
@@ -254,11 +261,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props
 - **Source:** eval-01 §2 (PG) and §4; ecosystem A.3
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's views (`Fortify::loginView(fn () => Inertia::render('auth/login', [...]))`) and `Route::inertia('dashboard', 'dashboard')` pages have no controller action, so no generator sees a props type for them.
 
 **Manual workaround:** Kit Conversion by hand: each view closure returns a `Page` (`Fortify::loginView(fn (Request $request) => new LoginPage(...))`), and `Route::inertia()` pages become `DashboardPage`/`WelcomePage`.
+
+**Closed by:** a vendor view closure or a route closure returns a Page class like a controller does (Fortify renders any `Responsable` its view closure returns). Kit Conversion converts the Base Kit's Fortify views and its `Route::inertia()` pages (welcome, dashboard, settings/appearance) to Page classes, and the PHPStan rule `strictly.inertiaRender` rejects `Route::inertia()` and `Inertia::render()` in a closure as anywhere else. Scenarios: `vendor-view-page-props-typed-passes`, `route-inertia-without-page-class-fails-phpstan`.
 
 ### P-071
 
@@ -267,11 +276,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props (every Data class)
 - **Source:** overview §2 and §4; eval-02 §3 and §9
 - **Upstream:** no upstream issue filed (laravel-typescript-transformer 3.3: `DataClassPropertyProcessor` combines its checks with `&&`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a Data property marked with laravel-data's `#[Hidden]` is never sent, but stays a required key in the generated type; `tsc` trusts a value that is always missing.
 
 **Manual workaround:** mark the property with both attributes, `#[DataHidden, TsHidden]` (laravel-data's and typescript-transformer's `Hidden`).
+
+**Closed by:** [`HiddenDataProperties`](../packages/laravel/src/Workarounds/TypeScriptTransformer/HiddenDataProperties.php) leaves every property marked with laravel-data's `#[Hidden]` out of the generated type; typescript-transformer's own attribute is no longer needed. Scenarios: `hidden-data-property-left-out-passes`, `hidden-data-property-read-fails-tsc`.
 
 ## Shared props
 
@@ -427,11 +438,26 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads (also page props)
 - **Source:** eval-02 §4, §5 and §9; type-safety rule 5; eval-01 M5
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** every date is generated as `string`, so a due date and a timestamp look the same to React. `#[Date]` on a Carbon property validates `2026-05-01`, then the default cast throws `CannotCastDate`: a 500.
 
 **Manual workaround:** a `#[DateOnly]` attribute with `DateOnlyCast`: `"2026-10-14"` both ways; other dates are ISO-8601 strings.
+
+**Closed by:** the `#[DateOnly]` attribute ([`packages/laravel/src/Data/DateOnly.php`](../packages/laravel/src/Data/DateOnly.php)) on a `Carbon`, `CarbonImmutable` or `CarbonInterface` property of a Data class, which keeps the declared class. Its cast reads and sends `"2026-10-14"` and rejects anything else (a timestamp, an impossible date such as `2026-02-30`) with a validation error on the field instead of a 500; the property is generated as `DateOnly` (`` `${number}-${number}-${number}` ``), with an `isDateOnly()` guard in `@/generated` that turns an `<input type="date">` value into one without a cast ([`DateOnlyTypes`](../packages/laravel/src/TypeScript/DateOnlyTypes.php)). Every other date is an ISO-8601 `string`. A plain datetime input given anything but an ISO-8601 timestamp is still a 500: [P-075](#p-075). Scenarios: `date-only-round-trips-passes`, `timestamp-for-date-only-fails-tsc`.
+
+### P-075
+
+**A datetime input that isn't an ISO-8601 timestamp is a 500**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-023](#p-023)
+- **Upstream:** no upstream issue filed (laravel-data infers no rule for a `DateTimeInterface` property, so its cast is the first to see the value)
+- **Status:** open
+
+**Reproduction:** an input Data class with `public CarbonImmutable $startsAt`; posting `startsAt: '2026-10-14'` or `'tomorrow'` passes validation, then laravel-data's `DateTimeInterfaceCast` throws `CannotCastDate` ("Could not cast date `2026-10-14` into a `Carbon\CarbonImmutable` using formats: Y-m-d\TH:i:sP"): a 500 instead of a 422, while the TypeScript type `string` accepts the value.
+
+**Manual workaround:** `#[DateFormat(DATE_ATOM)]` on every datetime input property, or `#[DateOnly]` for a calendar date.
 
 ### P-024
 
@@ -554,11 +580,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums (also every discriminated union)
 - **Source:** overview §2 and §4; type-safety rule 8
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var ActivityType::Commented */ public ActivityType $type` and `/** @var 'monday'|'sunday' */ public string $weekStartsOn` both generate `unknown`, so discriminated unions and exhaustive `switch` statements are impossible.
 
 **Manual workaround:** `LiteralTypesTranspiler` turns PHPDoc string, int, float, bool and enum-case constants into TypeScript literals (`type: 'commented'`).
+
+**Closed by:** `strictly:generate` turns PHPDoc string, int, float, `true`/`false`, class-constant and enum-case types into TypeScript literals at any depth of a type, an enum case as its backing value ([`LiteralTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/LiteralTypes.php), applied through the Overlay's Data class transformer). Validating a literal union on input is still [P-020](#p-020). Scenarios: `literal-types-discriminate-union-passes`, `literal-type-outside-union-fails-tsc`.
 
 ### P-033
 
@@ -567,11 +595,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums
 - **Source:** eval-02 §3 and §9; overview §2; type-safety rule 7
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var array<ProjectStatus, int> */` generates `Record<ProjectStatus, number>`, claiming every status is a key, while the server sends only the statuses it counted. An empty PHP map also serialises as `[]`, not `{}`.
 
 **Manual workaround:** `/** @var array<value-of<Status>, int> */` generates `Partial<Record<Status, number>>` (`LiteralTypesTranspiler`); prefer a list of objects with a `status` field.
+
+**Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; checking recorded payloads against it is the Contract recorder's job ([P-065](#p-065)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
 
 ### P-034
 
@@ -595,11 +625,28 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** enums
 - **Source:** type-safety rule 6; overview §2
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** add `case Blocked = 'blocked'` to `IssueStatus`; a label map typed `Record<string, string>` or built with a cast still compiles and shows nothing for the new case.
 
 **Manual workaround:** labels, colours and icons live in `resources/js/lib/domain.ts` as `satisfies Record<IssueStatus, …>`, so `tsc` fails until the case is handled; unions end with `x satisfies never`.
+
+**Closed by:** the enum unions generated from PHP ([P-031](#p-031)): a label map written `satisfies Record<IssueStatus, …>` fails `tsc` until it handles a case added in PHP. A map typed loosely (`Record<string, string>`) isn't tied to the enum: [P-074](#p-074). Scenarios: `enum-labels-cover-every-case-passes`, `new-enum-case-without-label-fails-tsc`.
+
+### P-074
+
+**A label map typed loosely isn't tied to the enum**
+
+- **Type Boundary:** enums
+- **Source:** found while closing [P-035](#p-035)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `const labels: Record<string, string> = { todo: 'To do', done: 'Done' }` keeps compiling after `case Blocked = 'blocked'` is added to `IssueStatus`, and shows nothing for the new case.
+
+**Manual workaround:** write label, colour and icon maps `satisfies Record<IssueStatus, …>` and end switches over enum values with `x satisfies never`.
+
+**Reasoning:** a map typed with `string` keys is a legitimate TypeScript type that says nothing about the enum, so `tsc` has nothing to check, and a lint rule can't see which enum a map is meant to cover (oxlint's JS plugins are syntactic, [P-070](#p-070)). The typed way costs nothing and is caught by `tsc`; casts are [P-068](#p-068).
 
 ## Models
 
@@ -668,11 +715,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** pagination and deferred props
 - **Source:** overview §2 and §4; eval-02 §3 and §9
 - **Upstream:** no upstream issue filed (laravel-typescript-transformer); [spatie/typescript-transformer#116](https://github.com/spatie/typescript-transformer/issues/116) reported a different cursor paginator mismatch against v2
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a `PaginatedDataCollection` prop: the shipped `LengthAwarePaginator` type lacks `links[].page` (sent as `number | null` since Laravel 11). A `CursorPaginatedDataCollection` from `X::collect($cursorPaginator, …)` is keyed `array-key`, so `data` becomes a `Record` instead of `X[]`.
 
 **Manual workaround:** `PaginatorTypesProvider` replaces both types (`data: TValue[]`, `links` with `page`), registered after the laravel-data extension; a typed `<Pagination>` component.
+
+**Closed by:** [`PaginatorTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/PaginatorTypes.php) replaces the shipped `LengthAwarePaginator` and `CursorPaginator` types (`data: TValue[]`, page links with `page: number | null`), so `PaginatedDataCollection` and `CursorPaginatedDataCollection` props are `{ data, links, meta }` as Laravel sends them. The npm package's `Pagination` component (`@mrsafalpiya/strictly-laravel/react`, [`packages/npm/react/index.d.ts`](../packages/npm/react/index.d.ts)) takes a page paginator: the generated type fits it, a cursor paginator doesn't. Scenarios: `paginators-typed-as-laravel-sends-them-passes`, `paginator-link-without-page-fails-tsc`, `cursor-paginator-in-pagination-fails-tsc`.
 
 ### P-041
 
@@ -681,11 +730,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** pagination and deferred props
 - **Source:** overview §2 and §4; `reference/template/app/Support/TypeScript/UnwrapInertiaPropsVisitor.php`
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `->replaceType(ScrollProp::class, 'never')` for `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, ActivityData>> */` emits the invalid `never<…>` and generation crashes.
 
 **Manual workaround:** `UnwrapInertiaPropsVisitor`, a visitor hook that replaces `ScrollProp<T>`, `MergeProp<T>`, `DeferProp<T>`, `OptionalProp<T>` and `OnceProp<T>` with `T`.
+
+**Closed by:** [`InertiaPropWrappers`](../packages/laravel/src/Workarounds/TypeScriptTransformer/InertiaPropWrappers.php), a visitor that replaces `ScrollProp<T>`, `MergeProp<T>` and `OnceProp<T>` with `T`. `DeferProp<T>` and `OptionalProp<T>` are absent on the first load, so they aren't unwrapped to a required `T`: they fail generation as unmapped classes ([P-061](#p-061)), and deferred props remain [P-043](#p-043). Scenarios: `scroll-prop-typed-as-its-items-passes`, `scroll-prop-items-misused-fails-tsc`.
 
 ### P-042
 
@@ -963,11 +1014,13 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary (seen in form payloads and page props)
 - **Source:** overview §2 and §4; eval-02 §3 and §9; `reference/showcase/app/Data/Attachments/StoreAttachmentData.php`
 - **Upstream:** no upstream issue filed (typescript-transformer)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public UploadedFile $file` generates `file: undefined`; a `DateTimeInterface` property generates `undefined` (the Laravel extension maps only `CarbonInterface`). Any class without a transformer does the same with only a warning.
 
 **Manual workaround:** `->replaceType(UploadedFile::class, new TypeScriptRaw('File'))` (with `File | null` in `useRouteForm` until a file is picked) and `->replaceType(DateTimeInterface::class, 'string')`.
+
+**Closed by:** [`UnmappedClassTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnmappedClassTypes.php) generates `UploadedFile` (and subclasses) as `File` and any `DateTimeInterface` as `string`; every other PHP class without a TypeScript type fails `strictly:generate` with the property and the class named, and the previous output stays ([`UnmappedClassCheck`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnmappedClassCheck.php)). `File | null` until a file is picked belongs to the typed forms ([P-014](#p-014)). Scenarios: `uploaded-file-and-datetime-typed-passes`, `file-name-for-uploaded-file-fails-tsc`, `unmapped-class-fails-generation`.
 
 ### P-062
 
@@ -1000,13 +1053,15 @@ Problems in generation or verification that affect every Type Boundary.
 **Generated types go stale or missing**
 
 - **Type Boundary:** every Type Boundary
-- **Source:** eval-02 §7 and §9; eval-01 §6; overview §2
-- **Upstream:** none
-- **Status:** open
+- **Source:** eval-02 §7 and §9; eval-01 §6; overview §2; spec user stories 8 and 9
+- **Upstream:** no upstream issue filed for spatie/php-structure-discoverer reading a PHP file that doesn't parse as if it were empty (`TokenCollection::fromCode()` swallows the `ParseError`)
+- **Status:** closed
 
-**Reproduction:** edit a Data class while `composer dev` runs: without a watcher, the editor and `tsc` check against the old types. typescript-transformer's `--watch` is slow and dies on a provider exception; Wayfinder's Vite plugin watches only routes and `Http`; generation fails in a fresh clone because the gitignored output directory doesn't exist.
+**Reproduction:** edit a Data class while `composer dev` runs: without a watcher, the editor and `tsc` check against the old types. typescript-transformer's `--watch` is slow and dies on a provider exception; Wayfinder's Vite plugin watches only routes and `Http`; generation fails in a fresh clone because the gitignored output directory doesn't exist. And a Data class saved half-written (`public int $openIssues` followed by `public stri`) makes `strictly:generate` exit 0 with the type missing from `@/generated`, so every component that uses it breaks while the developer types.
 
 **Manual workaround:** a Vite plugin (`vite-plugins/php-types.ts`) that regenerates on PHP changes under `app/`, plus `File::ensureDirectoryExists()` before generating; build, typecheck and CI regenerate first.
+
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
 
 ### P-065
 
@@ -1106,6 +1161,19 @@ Problems in generation or verification that affect every Type Boundary.
 **Manual workaround:** the Reference Implementation's `TypeScriptTransformerServiceProvider` transforms every Data class in `app/`, its output is gitignored, and `composer types` runs before typecheck and tests.
 
 **Closed by:** `php artisan strictly:generate` ([`packages/laravel/src/Console/GenerateCommand.php`](../packages/laravel/src/Console/GenerateCommand.php)) generates every laravel-data class anywhere in `app/` into the gitignored `resources/js/generated/index.ts` (`@/generated`), with no registration, plus Wayfinder's routes. The installer gitignores the output and makes `build`, `build:ssr`, `types:check` and `ci:check` generate first. PHPStan rules `strictly.dataClassFinal` and `strictly.dataNamespace` keep Data classes final and alone in `App\Data`. Scenarios: `data-class-typed-passes`, `data-property-type-changed-fails-tsc`, `non-final-data-class-fails`, `non-data-class-in-data-namespace-fails`.
+
+### P-073
+
+**A Data class that parses but can't be loaded silently drops its type**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-064](#p-064)
+- **Upstream:** no upstream issue filed (typescript-transformer's `DiscoverTypesAction` catches the reflection error and skips the class)
+- **Status:** open
+
+**Reproduction:** save `final class ProjectData extends Dat` (a half-typed parent class) while `composer dev` runs. The file parses, so `strictly:generate` runs; loading the class throws, typescript-transformer skips it, and generation exits 0 with `ProjectData` missing from `@/generated`. Every component that uses the type breaks until the class loads again. `ci:check` still fails (PHPStan reports the unknown class), so only the dev loop is affected.
+
+**Manual workaround:** none; finish the edit and the next save regenerates the type.
 
 ## Findings not registered
 

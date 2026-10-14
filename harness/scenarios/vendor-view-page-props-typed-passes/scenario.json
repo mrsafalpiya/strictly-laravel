@@ -1,0 +1,5 @@
+{
+    "problem": "P-011",
+    "description": "Fortify's login view, which Kit Conversion makes return a Page class, has props typed in React and seen by a feature test, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

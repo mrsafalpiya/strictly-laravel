@@ -98,6 +98,71 @@ export function run(command: string, args: string[], options: RunOptions): Promi
     });
 }
 
+/** A long-running command started with start(), such as a dev server. */
+export interface BackgroundCommand {
+    /** Everything it printed so far (stdout and stderr interleaved, ANSI codes stripped). */
+    output(): string;
+    /** Whether it has exited on its own (or been stopped). */
+    exited(): boolean;
+    /** Stop it and every process it started; resolves once they are gone. */
+    stop(): Promise<CommandResult>;
+}
+
+/**
+ * Start a command in the background, in its own process group so stop() also ends the processes it spawns (a package
+ * manager running `vite`, for example). Its output is appended to the log file when it exits.
+ */
+export function start(command: string, args: string[], options: RunOptions): BackgroundCommand {
+    const display = [command, ...args].join(' ');
+    const child = spawn(command, args, {
+        cwd: options.cwd,
+        env: { ...fixtureEnv(), ...options.env },
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: true,
+    });
+    const chunks: Buffer[] = [];
+    const output = () => Buffer.concat(chunks).toString('utf8').replace(ansi, '');
+    const exit = new Promise<CommandResult>((resolve) => {
+        child.on('close', (code, signal) => {
+            if (options.logFile !== undefined) {
+                appendFileSync(options.logFile, `\n$ (cd ${options.cwd} && ${display}) [background]\n${output()}\n[exit ${code ?? signal}]\n`);
+            }
+
+            resolve({ command: display, exitCode: code ?? 1, output: output() });
+        });
+    });
+    let exited = false;
+    void exit.then(() => (exited = true));
+
+    child.stdout.on('data', (chunk: Buffer) => chunks.push(chunk));
+    child.stderr.on('data', (chunk: Buffer) => chunks.push(chunk));
+    child.on('error', (error) => chunks.push(Buffer.from(`\n${String(error)}\n`)));
+
+    return {
+        output,
+        exited: () => exited,
+        stop: async () => {
+            const pid = child.pid;
+            const signal = (name: NodeJS.Signals) => {
+                try {
+                    if (pid !== undefined) {
+                        process.kill(-pid, name);
+                    }
+                } catch {
+                    // Already gone.
+                }
+            };
+
+            if (!exited) {
+                signal('SIGTERM');
+                setTimeout(() => signal('SIGKILL'), 5000).unref();
+            }
+
+            return exit;
+        },
+    };
+}
+
 /** A command run with runOrThrow() exited non-zero; carries its full result. */
 export class CommandFailed extends Error {
     readonly result: CommandResult;

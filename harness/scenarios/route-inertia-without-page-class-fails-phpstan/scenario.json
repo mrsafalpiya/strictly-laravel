@@ -1,0 +1,6 @@
+{
+    "problem": "P-011",
+    "description": "A page rendered with Route::inertia(), which has no controller action and no Page class for a generator to read, fails PHPStan.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Route::inertia() renders a page whose props have no generated type." }
+}

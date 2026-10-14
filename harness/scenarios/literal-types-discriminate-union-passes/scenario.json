@@ -1,0 +1,6 @@
+{
+    "problem": "P-032",
+    "description": "PHPDoc enum-case, string, int and true literal types become TypeScript literals, so Data classes discriminated by an enum case form a union that an exhaustive switch narrows.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

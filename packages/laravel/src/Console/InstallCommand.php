@@ -13,6 +13,7 @@ use StrictlyLaravel\Install\PackageManager;
 use StrictlyLaravel\Install\PhpstanInclude;
 use StrictlyLaravel\Install\TsconfigFlags;
 use StrictlyLaravel\Install\ViteLintPlugin;
+use StrictlyLaravel\Install\ViteTypesPlugin;
 use StrictlyLaravel\StrictlyServiceProvider;
 use StrictlyLaravel\TypeScript\TypeGeneration;
 use StrictlyLaravel\Workarounds\WayfinderQueryVerb;
@@ -40,6 +41,7 @@ final class InstallCommand extends Command
             "Composer scripts: ci:check and its steps (using {$packageManager->value})" => fn () => $this->writeCiCheck($packageManager),
             'tsconfig.json: strictness flags' => fn () => TsconfigFlags::patch($this->laravel->basePath('tsconfig.json')),
             'vite.config.ts: Strictly Laravel oxlint plugin' => fn () => ViteLintPlugin::register($this->laravel->basePath('vite.config.ts')),
+            'vite.config.ts: Strictly Laravel Vite plugin' => fn () => ViteTypesPlugin::register($this->laravel->basePath('vite.config.ts')),
             'Generated TypeScript gitignored' => fn () => GitignoreEntry::ensure(
                 $this->laravel->basePath('.gitignore'),
                 '/resources/js/'.TypeGeneration::OUTPUT_DIRECTORY,
@@ -121,7 +123,9 @@ final class InstallCommand extends Command
             };
 
             if ($outcome === ConversionOutcome::Unknown) {
-                $skipped[] = "{$path} (sha256 ".KitConversion::hash($this->laravel->basePath($path)).')';
+                $adds = KitConversion::addedBy($path);
+                $skipped[] = "{$path} (sha256 ".KitConversion::hash($this->laravel->basePath($path)).')'
+                    .($adds === [] ? '' : ' and the files its conversion adds ('.implode(', ', $adds).')');
             }
 
             $this->components->twoColumnDetail($path, $status);
@@ -129,7 +133,7 @@ final class InstallCommand extends Command
 
         if ($skipped !== []) {
             $this->components->warn('Kit Conversion left these files untouched because their content is not a known Base Kit version: '
-                .implode(', ', $skipped).'. Compare each with its converted version in '
+                .implode('; ', $skipped).'. Compare each with its converted version in '
                 .'vendor/mrsafalpiya/strictly-laravel/kit/ and apply the changes by hand.');
         }
 

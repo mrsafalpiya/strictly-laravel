@@ -1,0 +1,9 @@
+{
+    "problem": "P-035",
+    "description": "A case added to the PHP enum fails tsc in every label map written with satisfies Record<Enum, string> until the map handles it.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS1360: Type '{ todo: string; in_progress: string; done: string; }' does not satisfy the expected type 'Record<IssueStatus, string>'.\n  Property 'blocked' is missing"
+    }
+}

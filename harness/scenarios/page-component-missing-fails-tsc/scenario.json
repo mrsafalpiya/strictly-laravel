@@ -1,0 +1,6 @@
+{
+    "problem": "P-010",
+    "description": "A Page class whose page component file doesn't exist (a typo in the page name) fails tsc instead of rendering a blank screen.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2307: Cannot find module '@/pages/projects/show'" }
+}

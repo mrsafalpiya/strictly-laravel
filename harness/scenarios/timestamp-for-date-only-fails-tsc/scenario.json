@@ -1,0 +1,9 @@
+{
+    "problem": "P-023",
+    "description": "A timestamp where a #[DateOnly] property expects a calendar date fails tsc, because date-only properties are generated as DateOnly rather than string.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'string' is not assignable to type '`${number}-${number}-${number}`'."
+    }
+}

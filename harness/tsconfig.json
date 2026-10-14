@@ -17,5 +17,12 @@
         "allowJs": true,
         "checkJs": true
     },
-    "include": ["src/**/*.ts", "tests/**/*.ts", "../packages/npm/oxlint/**/*.js"]
+    "include": [
+        "src/**/*.ts",
+        "tests/**/*.ts",
+        "../packages/npm/oxlint/**/*.js",
+        "../packages/npm/react/**/*.js",
+        "../packages/npm/tests/**/*.ts",
+        "../packages/npm/vite/**/*.js"
+    ]
 }

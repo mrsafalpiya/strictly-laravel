@@ -1,0 +1,6 @@
+{
+    "problem": "P-010",
+    "description": "A page component file with no Page class, so nothing can render it with typed props, fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2344: Type '\"projects/index\"' does not satisfy the constraint 'keyof InertiaPages'." }
+}

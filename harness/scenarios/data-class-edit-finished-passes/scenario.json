@@ -1,0 +1,6 @@
+{
+    "problem": "P-064",
+    "description": "The same Data class with its edit finished generates again, and a component reading the new property passes tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

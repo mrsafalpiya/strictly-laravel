@@ -1,0 +1,9 @@
+{
+    "problem": "P-032",
+    "description": "A value outside a PHPDoc literal union fails tsc, because the property is generated as that union instead of unknown.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type '\"tuesday\"' is not assignable to type '\"monday\" | \"sunday\"'."
+    }
+}

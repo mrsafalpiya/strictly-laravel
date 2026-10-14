@@ -1,0 +1,6 @@
+{
+    "problem": "P-009",
+    "description": "Renaming a Page class's constructor property fails tsc where the page component still reads the old prop name.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'title' does not exist on type 'ProjectsShowPage'." }
+}

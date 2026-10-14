@@ -1,0 +1,9 @@
+{
+    "problem": "P-061",
+    "description": "Sending a file's name where the Data class takes an UploadedFile fails tsc, because the property is generated as File.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'string' is not assignable to type 'File'."
+    }
+}

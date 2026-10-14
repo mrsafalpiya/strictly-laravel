@@ -14,6 +14,8 @@ import { composerPackageDir, repoRoot } from '../src/paths.ts';
 interface ManifestEntry {
     upstream: string[];
     earlierConversions: string[];
+    /** Files the conversion adds, written only together with it, so they never need earlier versions recorded. */
+    adds?: string[];
 }
 
 const kitDir = join(composerPackageDir, 'kit');
@@ -29,8 +31,10 @@ function git(args: string[]): string {
 }
 
 describe('Kit Conversion manifest', () => {
-    test('lists exactly the files under kit/', () => {
-        assert.deepEqual(Object.keys(manifest).sort(), globSync('**/*', { cwd: kitDir, withFileTypes: true })
+    test('lists exactly the files under kit/, each once', () => {
+        const listed = Object.entries(manifest).flatMap(([path, entry]) => [path, ...(entry.adds ?? [])]);
+
+        assert.deepEqual(listed.sort(), globSync('**/*', { cwd: kitDir, withFileTypes: true })
             .filter((entry) => entry.isFile())
             .map((entry) => join(entry.parentPath, entry.name).slice(kitDir.length + 1))
             .sort());
