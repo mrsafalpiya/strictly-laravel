@@ -1,0 +1,9 @@
+{
+    "problem": "P-033",
+    "description": "Reading an enum-keyed map's entry as always present fails tsc, because the server sends only the keys it has and the map is generated as Partial<Record<Enum, V>>.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'number | undefined' is not assignable to type 'number'."
+    }
+}

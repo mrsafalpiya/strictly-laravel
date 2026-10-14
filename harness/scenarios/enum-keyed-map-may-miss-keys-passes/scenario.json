@@ -1,0 +1,6 @@
+{
+    "problem": "P-033",
+    "description": "An array<value-of<Enum>, V> map becomes Partial<Record<Enum, V>>, so a map missing statuses (even an empty one) type-checks and a status keys it with no cast.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

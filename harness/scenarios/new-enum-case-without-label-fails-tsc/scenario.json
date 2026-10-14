@@ -1,0 +1,9 @@
+{
+    "problem": "P-035",
+    "description": "A case added to the PHP enum fails tsc in every label map written with satisfies Record<Enum, string> until the map handles it.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Property 'blocked' is missing"
+    }
+}
