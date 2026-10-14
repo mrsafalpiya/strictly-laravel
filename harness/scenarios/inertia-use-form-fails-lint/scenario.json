@@ -1,0 +1,6 @@
+{
+    "problem": "P-014",
+    "description": "Inertia's untyped useForm() fails the lint step through the strictly/typed-requests rule, which points to useRouteForm(route, defaults).",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Inertia's `useForm()` is untyped: use `useRouteForm(route, defaults)`" }
+}
