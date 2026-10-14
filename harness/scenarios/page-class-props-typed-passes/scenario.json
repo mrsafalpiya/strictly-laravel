@@ -1,0 +1,5 @@
+{
+    "problem": "P-009",
+    "description": "A route returns a Page class, its component reads the props through PageProps<'projects/show'>, a feature test sees those props, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

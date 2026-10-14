@@ -1,0 +1,6 @@
+{
+    "problem": "P-010",
+    "description": "Page components that take all, some or none of their Page class's props pass tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,6 @@
+{
+    "problem": "P-010",
+    "description": "A page component that declares a prop its Page class doesn't send fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "does not satisfy the constraint '(props: ProjectsShowPage) => unknown'" }
+}
