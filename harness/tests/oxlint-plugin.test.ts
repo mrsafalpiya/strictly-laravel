@@ -33,6 +33,8 @@ describe('oxlint plugin: strictly/no-hardcoded-urls', () => {
             "fetch(show.url(project));",
             "<img src=\"/logo.svg\" />;",
             "const slug = path.replace('/', '-');",
+            "form.submit('post', store.url());",
+            "let location = ''; location = name;",
         ],
         invalid: [
             { code: '<Link href="/dashboard">Home</Link>;', errors: [{ message: /Hard-coded URL "\/dashboard"/ }] },
@@ -43,11 +45,14 @@ describe('oxlint plugin: strictly/no-hardcoded-urls', () => {
             { code: "router.visit(response.redirect ?? '/dashboard');", errors: 1 },
             { code: "router.get(cond ? '/a' : dashboard());", errors: 1 },
             { code: "visit('/dashboard');", errors: 1 },
+            { code: "submit('post', '/login');", errors: 1 },
+            { code: "form.submit('post', '/login');", errors: 1 },
             { code: "fetch('/api/projects');", errors: 1 },
             { code: "window.location.assign('/login');", errors: 1 },
             { code: "location.replace('/login');", errors: 1 },
             { code: "window.location.href = '/login';", errors: 1 },
             { code: "window.location = '/login';", errors: 1 },
+            { code: "location = '/login';", errors: 1 },
         ],
     });
 });

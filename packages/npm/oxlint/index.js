@@ -46,14 +46,15 @@ function isLocation(node) {
     return nameOf(node) === 'location' || (node.type === 'MemberExpression' && nameOf(node.property) === 'location');
 }
 
-/** Callees whose first argument is a URL: `visit(url)`, `submit(url)`, `fetch(url)`. */
-const urlFunctions = new Set(['visit', 'submit', 'fetch']);
+/** Callees whose first argument is a URL: `visit(url)`, `fetch(url)`. */
+const urlFunctions = new Set(['visit', 'fetch']);
 
 /**
  * P-007: URLs come from Wayfinder (`@/routes/…`, `@/actions/…`), so a renamed or removed route fails to compile. A
  * string that starts with a single `/` (an app-relative path) where a URL is expected is rejected: in `href` and
- * `action` attributes, as the first argument of `visit`, `submit`, `fetch`, `router.*`, `location.assign` and
- * `location.replace`, and assigned to `location` or `.href`. Both branches of `??`, `||` and `? :` are checked, as is
+ * `action` attributes, as the first argument of `visit`, `fetch`, `router.*`, `location.assign` and `location.replace`,
+ * as either of the first two arguments of `submit` (Inertia's `form.submit(method, url)`), and assigned to `location`
+ * or `.href`. Both branches of `??`, `||` and `? :` are checked, as is
  * the left side of a `+` concatenation.
  *
  * @type {Rule}
@@ -106,12 +107,19 @@ const noHardcodedUrls = {
 
                 if (takesUrl) {
                     check(node.arguments[0]);
+                } else if (nameOf(callee) === 'submit' || (callee.type === 'MemberExpression' && nameOf(callee.property) === 'submit')) {
+                    // Inertia's `form.submit(method, url)`; also a `submit(url, …)` helper.
+                    check(node.arguments[0]);
+                    check(node.arguments[1]);
                 }
             },
             AssignmentExpression(node) {
                 const target = node.left;
 
-                if (target.type === 'MemberExpression' && ['href', 'location'].includes(nameOf(target.property) ?? '')) {
+                if (
+                    nameOf(target) === 'location' ||
+                    (target.type === 'MemberExpression' && ['href', 'location'].includes(nameOf(target.property) ?? ''))
+                ) {
                     check(node.right);
                 }
             },

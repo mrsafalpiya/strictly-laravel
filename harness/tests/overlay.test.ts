@@ -3,6 +3,7 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path';
 import { before, describe, test } from 'node:test';
 
+import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
 import { createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { fixturesDir } from '../src/paths.ts';
@@ -100,13 +101,21 @@ final class AppName
                 .replace(/^\s*\/\/ "noUncheckedIndexedAccess".*\n/m, '')
                 .replace(/^(\s*)\/\/ ("noImplicitOverride": )true,.*$/m, '$1$2false,'),
         );
-        writeFileSync(viteConfig, readFileSync(viteConfig, 'utf8').replace(/^( {4}lint: \{\n)/m, "$1        rules: {\n            'no-debugger': 'error',\n        },\n"));
+        writeFileSync(
+            viteConfig,
+            readFileSync(viteConfig, 'utf8').replace(/^( {4}lint: \{\n)/m, "$1        jsPlugins: [],\n        rules: {\n            'no-debugger': 'error',\n        },\n"),
+        );
 
         await app.install();
         await app.commitAll('after strictly:install');
         await app.install();
 
         assert.deepEqual(app.changedFiles(), [], 'a second strictly:install changed files');
+        const lintConfig = readFileSync(viteConfig, 'utf8');
+        assert.match(lintConfig, /jsPlugins: \['@mrsafalpiya\/strictly-laravel\/oxlint'\],/);
+        for (const rule of Object.keys(plugin.rules)) {
+            assert.ok(lintConfig.includes(`'strictly/${rule}': 'error',`), `the oxlint rule strictly/${rule} is not turned on`);
+        }
         assertOutcome(await app.check('lint'), { outcome: 'pass' });
 
         mkdirSync(join(app.dir, 'resources', 'js', 'lib'), { recursive: true });
