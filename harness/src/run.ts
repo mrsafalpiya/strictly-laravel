@@ -98,12 +98,23 @@ export function run(command: string, args: string[], options: RunOptions): Promi
     });
 }
 
-/** Run a command that must succeed; throws with its output otherwise. */
+/** A command run with runOrThrow() exited non-zero; carries its full result. */
+export class CommandFailed extends Error {
+    readonly result: CommandResult;
+
+    constructor(result: CommandResult) {
+        super(`Command failed (exit ${result.exitCode}): ${result.command}\n${tail(result.output)}`);
+        this.name = 'CommandFailed';
+        this.result = result;
+    }
+}
+
+/** Run a command that must succeed; throws CommandFailed otherwise. */
 export async function runOrThrow(command: string, args: string[], options: RunOptions): Promise<CommandResult> {
     const result = await run(command, args, options);
 
     if (result.exitCode !== 0) {
-        throw new Error(`Command failed (exit ${result.exitCode}): ${result.command}\n${tail(result.output)}`);
+        throw new CommandFailed(result);
     }
 
     return result;

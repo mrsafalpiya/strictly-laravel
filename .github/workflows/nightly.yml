@@ -1,0 +1,39 @@
+name: Nightly fresh install
+
+# Generates the latest upstream Base Kit, installs the Overlay and runs strictly:install plus every ci:check step, so
+# upstream changes that break the hooks or Kit Conversion fail here before a user hits them. Each failure is reported
+# as an annotation naming the stage (strictly:install or ci:check:<step>) and the files that broke.
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-install:
+    name: Fresh install on the latest Base Kit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the monorepo
+        uses: ./.github/actions/setup
+
+      - name: Fresh install on the latest Base Kit
+        run: pnpm harness --fresh
+
+      - name: Upload fixture logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixture-logs
+          path: .fixtures/*.log
+          if-no-files-found: ignore

@@ -10,14 +10,25 @@ Run these from the repo root. First-time setup: `composer install && pnpm instal
 |---|---|
 | `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, every scenario. |
 | `pnpm test <pattern>...` | Only the tests whose names match, e.g. `pnpm test example-type-error-fails-tsc`. |
-| `pnpm harness` | Fresh install only: `ci:check` must pass on the latest Base Kit + Overlay (the nightly check). |
+| `pnpm harness` | Fresh install only: `strictly:install` and every `ci:check` step must pass on the latest Base Kit + Overlay (the nightly check). Each step runs on its own, and a failure names the stage and the files that broke. |
 | `pnpm harness <scenario>... [--step <step>]` | Run the named scenarios and report each one. `--step` overrides the scenario's step. |
 | `pnpm harness --list` | List the scenarios. |
 | `pnpm harness --fresh` / `STRICTLY_FRESH_BASE_KIT=1 pnpm test` | Regenerate the latest Base Kit first. |
 | `pnpm typecheck` | Typecheck the harness (strict `tsc`). |
-| `pnpm lint:php` | Run Pint on the Composer package. |
+| `pnpm lint:php` | Run Pint on the Composer package (`--test` to check only, as CI does). |
 
 Timings on a warm cache: about 8 s for a scenario that runs a single step and about 20 s for a full `ci:check`. A fresh Base Kit takes about 1.5 min to generate, plus about 20 s to install the packages.
+
+## CI
+
+| Workflow | When | Runs |
+|---|---|---|
+| `.github/workflows/ci.yml` | Every push to `main` and every pull request | `pnpm typecheck`, `pnpm lint:php --test`, then `pnpm test`. The runner starts with no fixture cache, so `pnpm test` always uses a freshly generated Base Kit. |
+| `.github/workflows/nightly.yml` | Daily at 03:17 UTC, or by hand (`gh workflow run nightly.yml`) | `pnpm harness --fresh`: the fresh-install check against the latest upstream Base Kit. |
+
+Both workflows share their setup through `.github/actions/setup` and upload `.fixtures/*.log` when they fail. Under GitHub Actions, `pnpm harness` also prints every fresh-install failure as an `::error` annotation titled `Fresh install failed at <stage>`. The stage is `strictly:install` or `ci:check:<step>`, and the annotation lists the files the tool named, so a red nightly run shows what broke on its summary page.
+
+The files come from `harness/src/failure-report.ts`, which knows the output formats of tsc, oxlint, oxfmt, Pint, PHPStan and Pest. When no format matches, the report falls back to the tail of the output. When you add a `ci:check` step that runs a new tool, teach that module its format and add a unit test in `harness/tests/failure-report.test.ts` that uses the tool's real output. For `strictly:install`, any installer row (`<label> .... <status>`) whose status isn't `applied` or `unchanged` counts as a failure. A label that is an app-relative path is reported as the file, so a Kit Conversion skip should be reported as a row of its own, labelled with the skipped file's path. Such a row fails the fresh install even when `strictly:install` exits 0, as ADR-0005 requires of the nightly run. When generating the Base Kit or requiring the packages fails, the report names the failed command.
 
 ## Where the fixtures live
 

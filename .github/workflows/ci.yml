@@ -1,0 +1,50 @@
+name: CI
+
+# Package tests and every harness scenario, on each push to main and each pull request. See docs/agents/harness.md.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # A newer push supersedes a pull request's run; every commit on main keeps its own.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    name: Package tests and harness scenarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the monorepo
+        uses: ./.github/actions/setup
+
+      - name: Typecheck the harness
+        run: pnpm typecheck
+
+      - name: Pint (Composer package)
+        run: pnpm lint:php --test
+
+      # The fixture cache starts empty here, so this generates the latest Base Kit first.
+      - name: Package tests and harness scenarios
+        run: pnpm test
+
+      - name: Upload fixture logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixture-logs
+          path: .fixtures/*.log
+          if-no-files-found: ignore

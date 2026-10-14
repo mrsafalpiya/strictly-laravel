@@ -134,9 +134,9 @@ export interface App {
 
 /**
  * A fresh app: a copy of the installed fixture (call prepareInstalledFixture() first) on which
- * `strictly:install` has run. Any previous app of the same name is replaced.
+ * `strictly:install` has run, unless `install: false`. Any previous app of the same name is replaced.
  */
-export async function createApp(name: string): Promise<App> {
+export async function createApp(name: string, options: { install?: boolean } = {}): Promise<App> {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(name) || ['base-kit', 'installed'].includes(name)) {
         throw new Error(`Invalid app name "${name}"`);
     }
@@ -181,7 +181,9 @@ export async function createApp(name: string): Promise<App> {
         },
     };
 
-    await app.install();
+    if (options.install ?? true) {
+        await app.install();
+    }
 
     return app;
 }
