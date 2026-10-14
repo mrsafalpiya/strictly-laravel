@@ -111,6 +111,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
+| [P-080](#p-080) | An existing app silently lacks a hook a newer release adds, or one it lost | every Type Boundary | closed |
+| [P-081](#p-081) | A half-updated app runs one release's Composer package with another's npm package | every Type Boundary | closed |
+| [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
 
 ## Routes
 
@@ -1174,6 +1177,51 @@ Problems in generation or verification that affect every Type Boundary.
 **Reproduction:** save `final class ProjectData extends Dat` (a half-typed parent class) while `composer dev` runs. The file parses, so `strictly:generate` runs; loading the class throws, typescript-transformer skips it, and generation exits 0 with `ProjectData` missing from `@/generated`. Every component that uses the type breaks until the class loads again. `ci:check` still fails (PHPStan reports the unknown class), so only the dev loop is affected.
 
 **Manual workaround:** none; finish the edit and the next save regenerates the type.
+
+### P-080
+
+**An existing app silently lacks a hook a newer release adds, or one it lost**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 68 and 69
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app installed with an earlier release runs `composer update` and `npm update`, but the installer hooks it got at install time are the only ones it has. A hook a newer release adds (a tsconfig flag, a lint rule, a `ci:check` step) never reaches it. The same happens when an app loses a hook by accident, for example a merge that drops `"noUncheckedIndexedAccess": true` from `tsconfig.json`: `text.split(' ')[0].toUpperCase()` then compiles, and `ci:check` passes.
+
+**Manual workaround:** diff the app against a fresh install by hand after every update.
+
+**Closed by:** `strictly:install` is safe to run again ([`InstallCommand`](../packages/laravel/src/Console/InstallCommand.php)). It applies every hook that is missing, never touches converted or user files, and changes nothing on an app that is fully installed. `strictly:install --check` applies everything to a scratch copy of the app ([`ScratchCopy`](../packages/laravel/src/Install/ScratchCopy.php)). It fails, naming each hook, when the installer would change something. `ci:check` runs it as its first step (`ci:check:install`). The [upgrade guide](../packages/laravel/UPGRADE.md) tells an app to run the installer after every update. Scenarios: `hook-removed-fails-install-check`, `hook-removed-restored-by-reinstall-passes`, `hook-removed-restored-by-reinstall-catches-unchecked-index`. Harness tests: "strictly:install is idempotent: running it again on a fully installed app is a no-op" and "re-running strictly:install restores a missing hook and reports one it can't apply, leaving that file alone".
+
+### P-081
+
+**A half-updated app runs one release's Composer package with another's npm package**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user story 71; ADR-0001 (one version for both packages)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `composer update` brings `mrsafalpiya/strictly-laravel` 0.2.0 while `@mrsafalpiya/strictly-laravel` stays at 0.1.0, or the other way round. One release then generates the types, and the other release's React helpers, JSX types and lint rules check them. Nothing tells the developer.
+
+**Manual workaround:** compare `composer show mrsafalpiya/strictly-laravel` with `npm ls @mrsafalpiya/strictly-laravel` after every update.
+
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js)) compares its own version with the Composer package's version in `vendor/composer/installed.json`. When they differ it prints a `[strictly]` warning in the dev server and in every build, naming both versions and pointing to the upgrade guide. A Composer dev version (`dev-main`) carries no release number, so it isn't compared. Harness tests: "the dev server and the build warn when the Composer and npm package versions differ", which first checks that a build with matching versions prints no warning, and "Vite plugin: Composer and npm package versions" (`harness/tests/vite-plugin.test.ts`).
+
+### P-082
+
+**A release's app-side change the installer can't make goes unnoticed**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 69 and 70
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app's `vite.config.ts` builds its plugin list in a function (`plugins: lazyPlugins(plugins)`), which the installer can't patch. The installer reports the Strictly Laravel Vite plugin as `not applied` once, and then nothing else does. `ci:check` passes, and the dev server never regenerates the types. A release that needs any change only the app's developer can make (one the installer can't apply) has the same gap.
+
+**Manual workaround:** read the installer's output and the release notes carefully.
+
+**Closed by:** `ci:check:install` (`strictly:install --check`, [P-080](#p-080)) fails while any hook is `not applied`, and the error says what to do by hand. A hook the developer applied by hand counts as applied. The [upgrade guide](../packages/laravel/UPGRADE.md) lists each release's app-side changes and documents the release-check convention: every such change is applied by a hook, or detected by a hook that fails until it's made, or checked by a rule in the earliest tool that can express it, or marked as having no check, with the reason. Scenarios: `vite-plugin-unpatchable-fails-install-check`, `vite-plugin-registered-by-hand-passes`.
 
 ## Findings not registered
 

@@ -22,11 +22,16 @@ export interface Scenario {
     expect: Expectation;
     /** App-relative paths to delete before the check. */
     delete: string[];
+    /**
+     * Run `strictly:install` again after the edits, as an app does after updating the packages. When it fails, that is
+     * the scenario's result and the check doesn't run.
+     */
+    reinstall: boolean;
     /** Directory whose tree is copied over the app root (written or overwritten), when present. */
     filesDir?: string;
 }
 
-const allowedKeys = new Set(['problem', 'description', 'step', 'expect', 'delete']);
+const allowedKeys = new Set(['problem', 'description', 'step', 'expect', 'delete', 'reinstall']);
 
 export function loadScenarios(): Scenario[] {
     return readdirSync(scenariosDir, { withFileTypes: true })
@@ -59,7 +64,7 @@ export function loadScenario(name: string): Scenario {
         fail(`unknown keys: ${unknownKeys.join(', ')}`);
     }
 
-    const { problem, description, step, expect, delete: deletions = [] } = data;
+    const { problem, description, step, expect, delete: deletions = [], reinstall = false } = data;
 
     if (typeof problem !== 'string' || problem === '') {
         fail('"problem" must be the guarded Problem id, or "none"');
@@ -77,6 +82,10 @@ export function loadScenario(name: string): Scenario {
         fail('"delete" must be a list of app-relative paths');
     }
 
+    if (typeof reinstall !== 'boolean') {
+        fail('"reinstall" must be true or false');
+    }
+
     const filesDir = join(dir, 'files');
     const scenario: Scenario = {
         name,
@@ -84,6 +93,7 @@ export function loadScenario(name: string): Scenario {
         description: description as string,
         expect: parseExpectation(expect, fail),
         delete: deletions as string[],
+        reinstall: reinstall as boolean,
     };
 
     if (step !== undefined) {
@@ -129,7 +139,19 @@ export async function runScenario(scenario: Scenario, options: { step?: string }
         cpSync(scenario.filesDir, app.dir, { recursive: true, force: true });
     }
 
-    return app.check(options.step ?? scenario.step);
+    if (!scenario.reinstall) {
+        return app.check(options.step ?? scenario.step);
+    }
+
+    const install = await app.run('php', ['artisan', 'strictly:install', '--no-interaction']);
+
+    if (install.exitCode !== 0) {
+        return install;
+    }
+
+    const check = await app.check(options.step ?? scenario.step);
+
+    return { command: `${install.command} && ${check.command}`, exitCode: check.exitCode, output: `${install.output}${check.output}` };
 }
 
 /** Assert a check result matches an expectation; failures carry the tail of the check's output. */
