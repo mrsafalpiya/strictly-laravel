@@ -177,6 +177,8 @@ describe('oxlint plugin: strictly/typed-requests', () => {
             "import { router } from '@inertiajs/react'; router.visit(dashboard(), { preserveScroll: true });",
             "import { Link } from '@inertiajs/react'; <Link href={dashboard()}>Home</Link>;",
             "import { useForm } from 'react-hook-form'; useForm();",
+            "import { useRouteHttp } from '@mrsafalpiya/strictly-laravel/react'; useRouteHttp(search(), { q: '' });",
+            "import { useHttp } from './hooks/use-http'; useHttp();",
             "const router = makeRouter(); router.post('/x', {});",
             "import Link from 'next/link'; <Link data={x} />;",
         ],
@@ -187,6 +189,12 @@ describe('oxlint plugin: strictly/typed-requests', () => {
             },
             { code: "import { useForm as useInertiaForm } from '@inertiajs/react'; useInertiaForm();", errors: 1 },
             { code: "import * as Inertia from '@inertiajs/react'; Inertia.useForm();", errors: 1 },
+            {
+                code: "import { useHttp } from '@inertiajs/react'; const http = useHttp<{ q: string }, SearchResults>({ q: '' });",
+                errors: [{ message: /`useHttp\(\)` is untyped: use `useRouteHttp\(route, init\)`/ }],
+            },
+            { code: "import { useHttp as useJson } from '@inertiajs/react'; useJson();", errors: 1 },
+            { code: "import * as Inertia from '@inertiajs/react'; Inertia.useHttp();", errors: 1 },
             {
                 code: "import { router } from '@inertiajs/react'; router.post(store.url(), { name });",
                 errors: [{ message: /`router.post\(\)` is untyped: use `submit\(route, data\)`/ }],

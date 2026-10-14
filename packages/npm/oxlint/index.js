@@ -295,8 +295,8 @@ const untypedRouterMethods = new Map([
  * P-014: requests go through the typed helpers of `@mrsafalpiya/strictly-laravel/react`, which take the payload, the
  * error keys and the target from the Wayfinder route (`useRouteForm(route, defaults)`, `submit(route, data)`,
  * `visit(route)`). Inertia's own request APIs accept any payload, so they are rejected when imported from
- * `@inertiajs/react` or `@inertiajs/core` (by name, renamed or through a namespace import): `useForm()`,
- * `router.get/post/put/patch/delete()`, `router.visit()` given `data` or `method`, and `<Link data>`. Other router
+ * `@inertiajs/react` or `@inertiajs/core` (by name, renamed or through a namespace import): `useForm()`, `useHttp()`
+ * (P-048: `useRouteHttp(route, init)` types a JSON endpoint's response), `router.get/post/put/patch/delete()`, `router.visit()` given `data` or `method`, and `<Link data>`. Other router
  * methods (`reload`, `on`, `visit(route)` alone) stay allowed. Matching is syntactic: an alias such as
  * `const r = router` escapes it (P-070).
  *
@@ -363,6 +363,16 @@ const typedRequests = {
                         node,
                         message:
                             "Inertia's `useForm()` is untyped: use `useRouteForm(route, defaults)` from `@mrsafalpiya/strictly-laravel/react`, which takes the payload and error keys from the route.",
+                    });
+
+                    return;
+                }
+
+                if (inertiaExport(callee) === 'useHttp') {
+                    context.report({
+                        node,
+                        message:
+                            "Inertia's `useHttp()` is untyped: use `useRouteHttp(route, init)` from `@mrsafalpiya/strictly-laravel/react`, which takes the request from the route's input and the response from the Data class its action returns.",
                     });
 
                     return;
