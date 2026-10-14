@@ -32,6 +32,10 @@ _Avoid_: schema, master definition
 A spatie/laravel-data class: the PHP definition of a shape that crosses a Type Boundary, from which its TypeScript type is generated. Final, and the only kind of class in the app's Data namespace (`App\Data`).
 _Avoid_: DTO, resource
 
+**Page class**:
+The Data class that holds the props of exactly one Inertia page, under `App\Pages`; its constructor defines the props, its name gives the page component's (`App\Pages\Settings\ProfilePage` is `settings/profile`), and a controller renders the page by returning it.
+_Avoid_: page DTO, view model
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture

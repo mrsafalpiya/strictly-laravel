@@ -44,9 +44,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-006](#p-006) | Query strings are untyped | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
-| [P-009](#p-009) | Page props are hand-written per page | page props | open |
-| [P-010](#p-010) | Nothing ties a page name to a page component file | page props | open |
-| [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | open |
+| [P-009](#p-009) | Page props are hand-written per page | page props | closed |
+| [P-010](#p-010) | Nothing ties a page name to a page component file | page props | closed |
+| [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | closed |
 | [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | open |
 | [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | open |
 | [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | open |
@@ -228,11 +228,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props
 - **Source:** overview §1; ecosystem A.3 and C; eval-03 §5
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `resources/js/pages/auth/login.tsx` declares `type Props = { status?: string; canResetPassword: boolean }` for `Inertia::render('auth/login', [...])` in `FortifyServiceProvider`; `status` is actually sent as `null`. Renaming a key in the PHP array compiles.
 
 **Manual workaround:** one `Page` class per page (`App\Pages\Auth\LoginPage`) whose constructor defines the props; `PageProps<'auth/login'>` is generated (`InertiaPagesProvider`). An arch test forbids `Inertia::render()` with an array.
+
+**Closed by:** Page classes: a page's props are the constructor of a final class extending `StrictlyLaravel\Inertia\Page` ([`packages/laravel/src/Inertia/Page.php`](../packages/laravel/src/Inertia/Page.php)), which a controller returns, and `strictly:generate` turns each one into `PageProps<'component'>` in `@/generated` ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php), with types named after the page component by [`PageTransformer`](../packages/laravel/src/TypeScript/PageTransformer.php)). The PHPStan rule `strictly.inertiaRender` ([`InertiaRenderRule`](../packages/laravel/src/PHPStan/InertiaRenderRule.php)) rejects `Inertia::render()`, `inertia('…')`, `ResponseFactory::render()` and `Route::inertia()`, so no page is rendered from an untyped array. Kit Conversion turns the Base Kit's pages, controllers and routes into Page classes and removes the hand-written props types from its page components. Scenarios: `page-class-props-typed-passes`, `page-prop-renamed-fails-tsc`, `inertia-render-with-array-fails-phpstan`.
 
 ### P-010
 
@@ -241,11 +243,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props
 - **Source:** eval-01 §4; eval-02 §8; overview §2
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Inertia::render('project/show', …)` when the file is `pages/projects/show.tsx` compiles; the Base Kit only catches it at test time (`testing.ensure_pages_exist`), and nothing checks that the component's props match. A page file with no PHP counterpart is not reported.
 
 **Manual workaround:** the page component name derives from the `Page` class; the generated `__PageComponentCheck` (`CheckPage<'projects/show', typeof import('@/pages/projects/show').default>`) fails `tsc` when the file is missing or asks for a prop the class doesn't send. An arch test fails a page file without a class. `php artisan make:page` creates both.
+
+**Closed by:** the page component's name derives from the Page class's (`App\Pages\Projects\ShowPage` is `projects/show`), and `@/generated` carries two checks ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php)): `__PageComponentCheck` fails `tsc` when a Page class's component file is missing or asks for a prop the class doesn't send, and `__PageFileCheck` fails it when a file under `resources/js/pages` has no Page class. `php artisan make:page projects/show` ([`MakePageCommand`](../packages/laravel/src/Console/MakePageCommand.php)) creates both, already in sync (harness test `make:page creates a Page class and its page component, already in sync`). The file check lists the page files found when the types were last generated: the Vite plugin regenerates on PHP changes only, so a new page file is checked once anything regenerates (`ci:check`, `types:check` and `build` always do). Scenarios: `page-component-accepting-page-props-passes`, `page-component-missing-fails-tsc`, `page-component-unsent-prop-fails-tsc`, `page-file-without-class-fails-tsc`.
 
 ### P-011
 
@@ -254,11 +258,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** page props
 - **Source:** eval-01 §2 (PG) and §4; ecosystem A.3
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's views (`Fortify::loginView(fn () => Inertia::render('auth/login', [...]))`) and `Route::inertia('dashboard', 'dashboard')` pages have no controller action, so no generator sees a props type for them.
 
 **Manual workaround:** Kit Conversion by hand: each view closure returns a `Page` (`Fortify::loginView(fn (Request $request) => new LoginPage(...))`), and `Route::inertia()` pages become `DashboardPage`/`WelcomePage`.
+
+**Closed by:** a vendor view closure or a route closure returns a Page class like a controller does (Fortify renders any `Responsable` its view closure returns). Kit Conversion converts the Base Kit's Fortify views and its `Route::inertia()` pages (welcome, dashboard, settings/appearance) to Page classes, and the PHPStan rule `strictly.inertiaRender` rejects `Route::inertia()` and `Inertia::render()` in a closure as anywhere else. Scenarios: `vendor-view-page-props-typed-passes`, `route-inertia-without-page-class-fails-phpstan`.
 
 ### P-071
 
