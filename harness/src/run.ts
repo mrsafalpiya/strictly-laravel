@@ -111,12 +111,15 @@ export interface BackgroundCommand {
 /**
  * Start a command in the background, in its own process group so stop() also ends the processes it spawns (a package
  * manager running `vite`, for example). Its output is appended to the log file when it exits.
+ *
+ * A background command is a dev server, and laravel-vite-plugin refuses to start one when `CI` is set, so the check is
+ * bypassed: the harness runs dev servers in CI on purpose.
  */
 export function start(command: string, args: string[], options: RunOptions): BackgroundCommand {
     const display = [command, ...args].join(' ');
     const child = spawn(command, args, {
         cwd: options.cwd,
-        env: { ...fixtureEnv(), ...options.env },
+        env: { ...fixtureEnv(), LARAVEL_BYPASS_ENV_CHECK: '1', ...options.env },
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: true,
     });
