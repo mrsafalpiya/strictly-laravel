@@ -1,0 +1,5 @@
+{
+    "problem": "P-113",
+    "description": "An input that declares every key its rules validate (#[Confirmed] password with a password_confirmation field, plus its own rules()) records an input Contract that passes tsc; the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
