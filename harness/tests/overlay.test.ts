@@ -283,6 +283,39 @@ export default function ProjectStatuses() {
         }
     });
 
+    test('the dev server and the build warn when the Composer and npm package versions differ', async () => {
+        const app = await createApp('package-versions-differ');
+        const warning = 'the Composer package mrsafalpiya/strictly-laravel is 0.0.1 but the npm package @mrsafalpiya/strictly-laravel is';
+        const build = async () => {
+            const result = await app.run('pnpm', ['exec', 'vite', 'build']);
+            assertOutcome(result, { outcome: 'pass' });
+
+            return result.output;
+        };
+
+        assert.ok(!(await build()).includes('[strictly] '), 'the build warned although both packages have the same version');
+
+        // A half-updated app: `composer update` ran, the npm package wasn't updated (or the other way round).
+        const installedJson = join(app.dir, 'vendor', 'composer', 'installed.json');
+        const installed = JSON.parse(readFileSync(installedJson, 'utf8')) as { packages: { name: string; version: string }[] };
+        for (const entry of installed.packages) {
+            if (entry.name === 'mrsafalpiya/strictly-laravel') {
+                entry.version = '0.0.1';
+            }
+        }
+        rmSync(installedJson); // a hard link shared with every app; replace it rather than writing through it
+        writeFileSync(installedJson, JSON.stringify(installed));
+
+        assert.ok((await build()).includes(warning), 'the build did not warn about the differing versions');
+
+        const dev = app.start('pnpm', ['run', 'dev']);
+        try {
+            await until('the dev server warned about the differing versions', () => dev.output().includes(warning), dev);
+        } finally {
+            await dev.stop();
+        }
+    });
+
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
             assertOutcome(await runScenario(scenario), scenario.expect);
