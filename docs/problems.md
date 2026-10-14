@@ -67,7 +67,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | closed |
 | [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
 | [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
-| [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | open |
+| [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
+| [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
+| [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | open |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | open |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
 | [P-027](#p-027) | `FieldName` proves a name came from some `field()`, not this form's | form payloads | accepted gap |
@@ -554,11 +556,41 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; type-safety rule 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an action taking `StoreProjectData $data` also reads `$request->boolean('notify')`. The form's type has no `notify`, so the client never sends it and the server silently uses the default.
 
 **Manual workaround:** the test request records every key read (`input()`, `boolean()`, `only()`, `has()`, magic properties; `tests/Support/InputReads.php`) and the Contract `read satisfies InputKey<StoreProjectData>[]` fails on an undeclared key.
+
+**Closed by:** every feature test's request is a [`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php) ([`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) overrides the test case's `createTestRequest()`), which reports each input key the app reads by name (`input()`, `boolean()`, `string()`, `filled()`, `has()`, `hasAny()`, `only()`, `all('key')`, `query()`, `post()`, `file()`, `json()`, `$request->key`, `$request['key']`; a route parameter read as a property isn't input) to [`InputReads`](../packages/laravel/src/Testing/InputReads.php). A request to a form endpoint records the keys its action read, from the moment it reached its route, in its `form` Contract as `export const read = [...] satisfies InputKey<StoreProjectData>[]`, which fails `tsc` on a key the input type lacks: `Type '"notify"' is not assignable to type '"name" | "public"'.` Framework plumbing is ignored: keys starting with `_` (the CSRF token, `_method`) and the reads of the paginators (`page`, `cursor`) and of laravel-data (its `include`, `exclude`, `only` and `except` response partials). A read that names no key isn't seen: [P-026](#p-026). An action without an input class isn't checked: [P-112](#p-112). Scenarios: `input-reads-declared-fields-pass-contract`, `input-read-not-a-field-fails-contract`.
+
+### P-113
+
+**An input's rules can validate a key it doesn't declare**
+
+- **Type Boundary:** form payloads
+- **Source:** the Reference Implementation's validation Contract (`validated satisfies InputKey<…>[]`, overview §2); recorded while closing [P-024](#p-024)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an input with `#[Confirmed] public string $password` and no `password_confirmation` property, or whose own `rules()` add `'terms' => ['accepted']` for a key it doesn't declare. A feature test that posts the extra key passes, but the generated type has no such field, so the typed form never sends it and every real submit is refused.
+
+**Manual workaround:** the validation Contract `validated satisfies InputKey<UpdatePasswordData>[]`, fed by a validator resolver that records every rule key (and the field a `confirmed` rule compares with).
+
+**Closed by:** [`ValidatedFields`](../packages/laravel/src/Testing/ValidatedFields.php) wraps the validation factory's resolver (keeping one the app set) during feature tests and records the key of every rule a validator is made with, plus `{field}_confirmation` for `confirmed` (`confirmed:other` for `other`); a `*` segment stands for the first item (`tasks.*.title` → `tasks.0.title`). A request to a form endpoint records the fields validated since it reached its route in its `form` Contract as `export const validated = [...] satisfies InputKey<UpdatePasswordData>[]`, which fails `tsc` on a key the input type lacks: `Type '"password_confirmation"' is not assignable to type '"password"'.` A validator the action makes for data that isn't the request's (an imported file's rows) is recorded too, so validate such data outside the request's handling or declare its keys. Scenarios: `confirmed-input-declares-confirmation-passes`, `validated-key-not-an-input-field-fails-contract`.
+
+### P-112
+
+**An action without an input class has its payload checked by nothing**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-024](#p-024)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` validates `current_password` and `password` through a FormRequest and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form's type is hand-written (the Base Kit's settings forms use Inertia's untyped `<Form>`, [P-096](#p-096)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing.
+
+**Manual workaround:** take an input class on every action that reads the request's input; a GET action's query string is [P-006](#p-006).
 
 ### P-025
 
@@ -582,11 +614,11 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Upstream:** none
 - **Status:** accepted gap
 
-**Reproduction:** a vendor reading the whole input (`$request->all()['x']`, `except()`) names no field, so a key read that way and missing from the declaration isn't detected. Reads in code paths no test reaches aren't seen; a `final` vendor FormRequest can't be tracked (its fields then fail as never read). Framework plumbing (`_token`-style keys, the paginator's `page`/`cursor`, laravel-data's `include`/`exclude`) is ignored.
+**Reproduction:** an action reading the whole input (`$request->all()['notify']`, `$request->input()['notify']`, `collect($request->all())`, `except('name')`, `$request->request->get('notify')`) names no field, so a key read that way and missing from the input type isn't detected; the same holds for a vendor action's declared payload ([P-025](#p-025)), where a `final` vendor FormRequest can't be tracked at all. Reads in code paths no test reaches aren't seen. Framework plumbing is ignored on purpose: keys starting with `_` (the CSRF token, `_method`), the paginators' `page` and `cursor`, and laravel-data's `include`, `exclude`, `only` and `except` response partials.
 
-**Manual workaround:** a field read that way must also be validated, or Contract Coverage reports it as never used; it can't pass silently.
+**Manual workaround:** read the input through the input class (`$data->notify`), never through the request; a vendor field read that way must also be validated, or Contract Coverage reports it as never used.
 
-**Reasoning:** reads are recorded through the request's accessors, so a read that names no key can't be attributed to a field. The remaining risk is small: such a field must still be validated or Contract Coverage fails, and it only arises in vendor code the app doesn't own.
+**Reasoning:** reads are recorded through the request's accessors ([`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php), [P-024](#p-024)), so a read that names no key can't be attributed to a field. The typed way doesn't read the request at all (the input class is the payload), so the gap only bites code that bypasses it, and in vendor code a field read that way must still be validated or Contract Coverage fails.
 
 ### P-027
 
@@ -659,7 +691,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** the validation Contract `errors satisfies InputKey<StoreIssueData>[]` fails on any key that isn't a field; refusals that aren't about a field are error toasts (`Flash::error('…'); return back();`).
 
-**Closed by:** every request a feature test sends to a form endpoint (a route whose action takes an InputData) is recorded, and the validation errors it is refused with, flashed before a redirect or in a 422 JSON response, become a Contract, `export const errors = {…} satisfies ErrorsOf<StoreProjectData>`, which fails `tsc` on a key that isn't a field of the input ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). A refusal that isn't about a field is an error toast through the flash Data class (`FlashData::toast(ToastType::Error, …)`, [P-047](#p-047)). Contract Coverage fails on a form endpoint no feature test submits to ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), scenario `form-endpoint-no-test-submits-fails-coverage`). Scenarios: `validation-errors-are-input-fields-pass-contract`, `error-key-not-an-input-field-fails-contract`.
+**Closed by:** every request a feature test sends to a form endpoint (a route whose action takes an InputData) is recorded, and the validation errors it is refused with, flashed before a redirect or in a 422 JSON response, become a Contract, `export const errors = {…} satisfies ErrorsOf<StoreProjectData>`, which fails `tsc` on a key that isn't a field of the input ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). A refusal that isn't about a field is an error toast through the flash Data class (`FlashData::toast(ToastType::Error, …)`, [P-047](#p-047)). The same `form` Contract checks the fields the server validated and the input keys the action read ([P-113](#p-113), [P-024](#p-024)). Contract Coverage fails on a form endpoint no feature test submits to ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), scenario `form-endpoint-no-test-submits-fails-coverage`). Scenarios: `validation-errors-are-input-fields-pass-contract`, `error-key-not-an-input-field-fails-contract`.
 
 ### P-030
 
