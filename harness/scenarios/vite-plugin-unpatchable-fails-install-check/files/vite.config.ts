@@ -46,6 +46,9 @@ export default defineConfig({
         rules: {
             'strictly/no-hardcoded-urls': 'error',
             'strictly/require-suppression-reason': 'error',
+            'strictly/typed-inertia-components': 'error',
+            'strictly/typed-optimistic-updates': 'error',
+            'strictly/typed-prop-names': 'error',
         },
         ignorePatterns: [
             'vendor/**',
