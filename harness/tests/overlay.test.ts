@@ -77,10 +77,13 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
         );
         assert.match(reinstall.output, /ERROR\s+vite\.config\.ts has no `plugins: \[` array written over several lines; add `import \{ strictlyLaravel \}/);
         assert.match(readFileSync(gitignore, 'utf8'), /^\/resources\/js\/generated$/m, 'the missing .gitignore entry was not restored');
-        assertOutcome(await app.check('install'), {
+        const check = await app.check('install');
+        assertOutcome(check, {
             outcome: 'fail',
             errorContains: 'Strictly Laravel is not fully applied to this app: vite.config.ts: Strictly Laravel Vite plugin (not applied).',
         });
+        const guide = /(vendor\/mrsafalpiya\/strictly-laravel\/UPGRADE\.md) lists what each release needs/.exec(check.output)?.[1];
+        assert.ok(guide !== undefined && existsSync(join(app.dir, guide)), 'the check does not point to an upgrade guide the app has');
     });
 
     test('Kit Conversion leaves a Base Kit file with unknown content untouched and reports it', async () => {
