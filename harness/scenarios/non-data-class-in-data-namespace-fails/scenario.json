@@ -1,0 +1,9 @@
+{
+    "problem": "none",
+    "description": "Data convention: a class in App\\Data that isn't a Data class fails PHPStan, so the Data namespace holds only shapes with generated types.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Class App\\Data\\ProjectFormatter is in the App\\Data namespace but is"
+    }
+}

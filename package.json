@@ -10,7 +10,8 @@
         "harness": "node harness/src/cli.ts",
         "test": "node harness/src/test.ts",
         "typecheck": "tsc -p harness",
-        "lint:php": "vendor/bin/pint packages/laravel"
+        "lint:php": "vendor/bin/pint packages/laravel",
+        "test:php": "vendor/bin/phpunit"
     },
     "devDependencies": {
         "@types/node": "^26.6.5",

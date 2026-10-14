@@ -3,3 +3,6 @@
 
 /vendor/
 node_modules/
+
+# PHPUnit cache (pnpm test:php)
+/.phpunit.cache/

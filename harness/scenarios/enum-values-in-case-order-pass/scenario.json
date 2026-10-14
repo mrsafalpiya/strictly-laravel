@@ -1,0 +1,6 @@
+{
+    "problem": "P-034",
+    "description": "Every backed enum's values, string- and int-backed, are generated as enumValues in case order and iterate as the enum type with no cast; a pure enum is left out.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}
