@@ -1,0 +1,8 @@
+{
+    "problem": "P-019",
+    "description": "An int property of an input Data class is validated as integer, so a fraction gets a 422 instead of being truncated, and a whole number is accepted.",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}
