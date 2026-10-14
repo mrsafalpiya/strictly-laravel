@@ -416,7 +416,124 @@ const typedRequests = {
     },
 };
 
-const lintDirective = /^(?:oxlint|eslint)-disable(?:-next-line|-line)?(?=\s|$)/;
+/** What the form rules point to. */
+const typedForm = `\`<TypedForm {...route.form()}>\` from \`${reactHelpers}\``;
+
+/**
+ * P-096: forms go through `<TypedForm {...route.form()}>`, which takes the payload, the field names and the error keys
+ * from the Wayfinder route. Inertia's `<Form>` takes any of them, so importing or re-exporting it from
+ * `@inertiajs/react`, or using it through a namespace import (`<Inertia.Form>`), is rejected.
+ *
+ * @type {Rule}
+ */
+const typedForms = {
+    meta: {
+        type: 'problem',
+        docs: { description: "Use <TypedForm> instead of Inertia's untyped <Form>." },
+    },
+    create(context) {
+        const message = `Inertia's \`<Form>\` is untyped: use ${typedForm}, which takes the payload, the field names and the error keys from the route.`;
+        /** Local names of namespace imports of `@inertiajs/react`. */
+        const namespaces = new Set();
+
+        /** @param {ESTree.ImportDeclaration | ESTree.ExportNamedDeclaration} node */
+        const check = (node) => {
+            if (node.source?.value !== '@inertiajs/react') {
+                return;
+            }
+
+            for (const specifier of node.specifiers) {
+                if (specifier.type === 'ImportNamespaceSpecifier') {
+                    namespaces.add(specifier.local.name);
+
+                    continue;
+                }
+
+                const imported = specifier.type === 'ImportSpecifier' ? specifier.imported : specifier.type === 'ExportSpecifier' ? specifier.local : null;
+
+                if (nameOf(imported) === 'Form') {
+                    context.report({ node: specifier, message });
+                }
+            }
+        };
+
+        return {
+            ImportDeclaration: check,
+            ExportNamedDeclaration: check,
+            JSXOpeningElement(node) {
+                if (node.name.type === 'JSXMemberExpression' && namespaces.has(nameOf(node.name.object) ?? '') && nameOf(node.name.property) === 'Form') {
+                    context.report({ node, message });
+                }
+            },
+        };
+    },
+};
+
+/**
+ * P-015: a form control's name comes from `field()` in `<TypedForm>`'s render prop, a `FieldName` checked against the
+ * route's input. `tsc` enforces it on raw controls and on components that declare `name` as a FieldName (the app's
+ * JSX types, ADR-0004); this rule is the backstop for third-party components that type `name` as a plain string:
+ * inside `<TypedForm>`, a literal `name` on any element is rejected (the form element's own attributes aside).
+ *
+ * @type {Rule}
+ */
+const typedFormFields = {
+    meta: {
+        type: 'problem',
+        docs: { description: 'Field names inside <TypedForm> must come from field() so they are type-checked.' },
+    },
+    create(context) {
+        /** Local names `<TypedForm>` is used under: its own and any alias it is imported as. */
+        const formNames = new Set(['TypedForm']);
+        let depth = 0;
+
+        /** @param {ESTree.Node} node */
+        const isTypedForm = (node) => node.type === 'JSXElement' && formNames.has(nameOf(node.openingElement.name) ?? '');
+
+        return {
+            ImportDeclaration(node) {
+                for (const specifier of node.specifiers) {
+                    if (specifier.type === 'ImportSpecifier' && nameOf(specifier.imported) === 'TypedForm') {
+                        formNames.add(specifier.local.name);
+                    }
+                }
+            },
+            JSXElement(node) {
+                if (isTypedForm(node)) {
+                    depth++;
+                }
+            },
+            'JSXElement:exit'(node) {
+                if (isTypedForm(node)) {
+                    depth--;
+                }
+            },
+            JSXOpeningElement(node) {
+                if (depth === 0 || formNames.has(nameOf(node.name) ?? '')) {
+                    return;
+                }
+
+                for (const attribute of node.attributes) {
+                    if (attribute.type !== 'JSXAttribute' || nameOf(attribute.name) !== 'name') {
+                        continue;
+                    }
+
+                    const value = attribute.value?.type === 'JSXExpressionContainer' ? attribute.value.expression : attribute.value;
+                    const text = leadingText(value);
+
+                    if (text !== null) {
+                        context.report({
+                            node: attribute,
+                            message: `Untyped field name "${text}": use \`name={field('…')}\` from \`<TypedForm>\`'s render prop, so it is checked against the route's input.`,
+                        });
+                    }
+                }
+            },
+        };
+    },
+};
+
+const lintDirective =/^(?:oxlint|eslint)-disable(?:-next-line|-line)?(?=\s|$)/;
 const tsDirective = /^@ts-(?:expect-error|ignore|nocheck)(?=[\s:]|$)/;
 
 /**
@@ -479,6 +596,8 @@ export default {
     rules: {
         'no-hardcoded-urls': noHardcodedUrls,
         'require-suppression-reason': requireSuppressionReason,
+        'typed-form-fields': typedFormFields,
+        'typed-forms': typedForms,
         'typed-inertia-components': typedInertiaComponents,
         'typed-optimistic-updates': typedOptimisticUpdates,
         'typed-prop-names': typedPropNames,

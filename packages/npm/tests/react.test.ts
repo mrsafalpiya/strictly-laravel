@@ -6,8 +6,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { Deferred, InfiniteScroll, WhenVisible } from '@inertiajs/react';
 
-import { forPage, Pagination } from '../react/index.js';
-import type { PagePaginator, PaginatorLink } from '../react/index.js';
+import { forPage, Pagination, TypedForm } from '../react/index.js';
+import type { PagePaginator, PaginatorLink, RouteFormTarget } from '../react/index.js';
+import type { WithInput } from '../routes/index.js';
 
 // Lives next to the npm package so react and react-dom resolve to the package's own copies, the ones its helpers use.
 // The harness scenarios prove the helpers type-check in an app; these render them.
@@ -82,5 +83,29 @@ describe('npm package: forPage', () => {
         const update = (props: { title: string }) => ({ title: `${props.title}!` });
 
         assert.equal(page.optimistic(update), update);
+    });
+});
+
+type ProjectInput = { title: string; tasks: { title: string }[] };
+
+describe('npm package: TypedForm', () => {
+    const store: RouteFormTarget & WithInput<ProjectInput> = { action: '/projects', method: 'post' };
+
+    test("renders Inertia's form for the route, and field() names its controls by their field paths", () => {
+        const html = renderToStaticMarkup(
+            createElement(TypedForm<ProjectInput>, {
+                ...store,
+                className: 'project',
+                children: ({ field, processing }) => createElement('input', { name: field('tasks.0.title'), disabled: processing }),
+            }),
+        );
+
+        assert.equal(html, '<form class="project" action="/projects" method="post"><input name="tasks.0.title"/></form>');
+    });
+
+    test('renders plain children as they are', () => {
+        const html = renderToStaticMarkup(createElement(TypedForm, { action: '/logout', method: 'post', children: 'Log out' }));
+
+        assert.equal(html, '<form action="/logout" method="post">Log out</form>');
     });
 });

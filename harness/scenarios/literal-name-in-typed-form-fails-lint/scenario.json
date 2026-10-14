@@ -1,0 +1,6 @@
+{
+    "problem": "P-015",
+    "description": "A literal name on a third-party component inside <TypedForm>, which tsc can't catch when the component types name as a plain string, fails the lint step through the strictly/typed-form-fields rule.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Untyped field name \"email\": use `name={field('…')}` from `<TypedForm>`'s render prop" }
+}

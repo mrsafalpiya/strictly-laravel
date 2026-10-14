@@ -1,0 +1,6 @@
+{
+    "problem": "P-096",
+    "description": "A misspelled field name in <TypedForm>'s field() fails tsc: the names come from the input Data class the route is branded with.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2345: Argument of type '\"nmae\"' is not assignable to parameter of type" }
+}

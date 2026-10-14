@@ -1,9 +1,9 @@
-import type { VisitOptions } from '@inertiajs/core';
+import type { FormComponentProps, FormComponentSlotProps, VisitOptions } from '@inertiajs/core';
 import type { Deferred, InertiaFormProps, InfiniteScroll, WhenVisible } from '@inertiajs/react';
-import type { ComponentProps, ForwardRefExoticComponent, ReactElement, ReactNode } from 'react';
+import type { ComponentProps, FormHTMLAttributes, ForwardRefExoticComponent, ReactElement, ReactNode } from 'react';
 
 import type { PropPath } from '../contracts/index.js';
-import type { ErrorsOf, FormState, InputOf, RouteTarget } from '../routes/index.js';
+import type { ErrorsOf, FieldName, FormState, InputKey, InputOf, RouteTarget, WithInput } from '../routes/index.js';
 
 /**
  * The app's pages and shared props, which the generated types register (`@/generated`, written by
@@ -153,6 +153,51 @@ export declare function useRouteForm<TRoute extends RouteTarget>(
     route: TRoute & TakesInput<TRoute>,
     defaults: FormState<InputOf<TRoute>>,
 ): RouteForm<InputOf<TRoute>>;
+
+export type { FieldName } from '../routes/index.js';
+
+/** What a Wayfinder `.form()` returns (`store.form()`, `update.form(project)`): the attributes of an HTML form. */
+export type RouteFormTarget = { action: string; method: 'get' | 'post' };
+
+/** Inertia's `<Form>` state and methods for an input, without the parts `<TypedForm>` types by the input. */
+type FormSlot<TInput> = FormComponentSlotProps<FormState<TInput> extends Record<string, any> ? FormState<TInput> : never>;
+
+/** What `<TypedForm>`'s render prop receives: Inertia's `<Form>` slot, keyed by the route's input. */
+export type TypedFormSlot<TInput> = Omit<FormSlot<TInput>, 'errors'> & {
+    /** The validation errors, keyed by every field path of the input (`settings.notifyOnAssign`, `tasks.0.title`). */
+    errors: ErrorsOf<TInput>;
+    /** The `name` of a control for a field of the input: `<Input name={field('email')} />`, `field('tasks.0.title')`. */
+    field: (name: InputKey<TInput>) => FieldName;
+};
+
+/** The props of `<TypedForm>`: a Wayfinder `.form()`, Inertia's `<Form>` options and the form element's attributes. */
+export type TypedFormProps<TInput> = RouteFormTarget &
+    WithInput<TInput> &
+    Omit<FormComponentProps<FormState<TInput>>, 'action' | 'method' | 'onError' | 'resetOnSuccess' | 'resetOnError'> &
+    Omit<FormHTMLAttributes<HTMLFormElement>, keyof FormComponentProps | 'children'> & {
+        /** Reset every field after a successful submit, or the ones named. */
+        resetOnSuccess?: boolean | NoInfer<InputKey<TInput>>[];
+        /** Reset every field after a failed submit, or the ones named. */
+        resetOnError?: boolean | NoInfer<InputKey<TInput>>[];
+        onError?: (errors: NoInfer<ErrorsOf<TInput>>) => void;
+        children: ReactNode | ((slot: NoInfer<TypedFormSlot<TInput>>) => ReactNode);
+    };
+
+/**
+ * Inertia's `<Form>`, typed by the route it submits to (Problem P-096). Spread the route's `.form()` into it; the
+ * payload is the input Data class Wayfinder brands that route with, so `field()`, `errors`, `resetOnSuccess` and
+ * `resetOnError` take only that input's field paths, and a misspelled one fails `tsc`:
+ *
+ *     <TypedForm {...store.form()}>
+ *         {({ errors, field }) => <Input name={field('name')} aria-invalid={errors.name !== undefined} />}
+ *     </TypedForm>
+ *
+ * A route whose action takes no input gets a form without fields (`field()` accepts nothing). `field()` returns a
+ * `FieldName`, the only `name` the app's JSX types accept on a form control (ADR-0004, P-015). The oxlint rules
+ * `strictly/typed-forms` and `strictly/typed-form-fields` reject Inertia's `<Form>` and a literal `name` inside
+ * `<TypedForm>`.
+ */
+export declare function TypedForm<TInput extends object = {}>(props: TypedFormProps<TInput>): ReactElement;
 
 /** One link of a page paginator, as Laravel sends it (`page` since Laravel 11). */
 export type PaginatorLink = {
