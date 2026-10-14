@@ -1,0 +1,6 @@
+{
+    "problem": "P-021",
+    "description": "Typed iterables are cast: a test that expects a list<IssueStatus> input to hold the raw strings sent fails, because it holds the enum cases.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Failed asserting that two arrays are identical." }
+}

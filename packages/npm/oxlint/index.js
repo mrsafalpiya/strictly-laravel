@@ -279,6 +279,143 @@ const typedOptimisticUpdates = {
     },
 };
 
+/** The modules Inertia's request APIs are imported from. */
+const inertiaModules = new Set(['@inertiajs/react', '@inertiajs/core']);
+
+/** `router.<method>()` calls that send a request, with the typed helper to use instead. */
+const untypedRouterMethods = new Map([
+    ['get', 'visit(route)'],
+    ['post', 'submit(route, data)'],
+    ['put', 'submit(route, data)'],
+    ['patch', 'submit(route, data)'],
+    ['delete', 'visit(route)` (or `submit(route, data)` when the action takes an input'],
+]);
+
+/**
+ * P-014: requests go through the typed helpers of `@mrsafalpiya/strictly-laravel/react`, which take the payload, the
+ * error keys and the target from the Wayfinder route (`useRouteForm(route, defaults)`, `submit(route, data)`,
+ * `visit(route)`). Inertia's own request APIs accept any payload, so they are rejected when imported from
+ * `@inertiajs/react` or `@inertiajs/core` (by name, renamed or through a namespace import): `useForm()`,
+ * `router.get/post/put/patch/delete()`, `router.visit()` given `data` or `method`, and `<Link data>`. Other router
+ * methods (`reload`, `on`, `visit(route)` alone) stay allowed. Matching is syntactic: an alias such as
+ * `const r = router` escapes it (P-070).
+ *
+ * @type {Rule}
+ */
+const typedRequests = {
+    meta: {
+        type: 'problem',
+        docs: { description: "Send requests through the route-typed helpers instead of Inertia's untyped request APIs." },
+    },
+    create(context) {
+        /** Local name → imported name, for the names imported from an Inertia module. */
+        const imported = new Map();
+        /** Local names of namespace imports of an Inertia module. */
+        const namespaces = new Set();
+
+        /**
+         * The Inertia export a node refers to (`useForm`, `router`, `Link`), or null.
+         *
+         * @param {ESTree.Node} node
+         * @returns {string | null}
+         */
+        const inertiaExport = (node) => {
+            const name = nameOf(node);
+
+            if (name !== null) {
+                return imported.get(name) ?? null;
+            }
+
+            if (node.type === 'MemberExpression' && !node.computed && namespaces.has(nameOf(node.object) ?? '')) {
+                return nameOf(node.property);
+            }
+
+            if (node.type === 'JSXMemberExpression' && namespaces.has(nameOf(node.object) ?? '')) {
+                return nameOf(node.property);
+            }
+
+            return null;
+        };
+
+        return {
+            ImportDeclaration(node) {
+                if (!inertiaModules.has(String(node.source.value))) {
+                    return;
+                }
+
+                for (const specifier of node.specifiers) {
+                    if (specifier.type === 'ImportNamespaceSpecifier') {
+                        namespaces.add(specifier.local.name);
+                    } else if (specifier.type === 'ImportSpecifier') {
+                        const name = nameOf(specifier.imported) ?? (specifier.imported.type === 'Literal' ? String(specifier.imported.value) : null);
+
+                        if (name !== null) {
+                            imported.set(specifier.local.name, name);
+                        }
+                    }
+                }
+            },
+            CallExpression(node) {
+                const callee = node.callee;
+
+                if (inertiaExport(callee) === 'useForm') {
+                    context.report({
+                        node,
+                        message:
+                            "Inertia's `useForm()` is untyped: use `useRouteForm(route, defaults)` from `@mrsafalpiya/strictly-laravel/react`, which takes the payload and error keys from the route.",
+                    });
+
+                    return;
+                }
+
+                if (callee.type !== 'MemberExpression' || inertiaExport(callee.object) !== 'router') {
+                    return;
+                }
+
+                const method = nameOf(callee.property) ?? '';
+                const helper = untypedRouterMethods.get(method);
+
+                if (helper !== undefined) {
+                    context.report({
+                        node,
+                        message: `\`router.${method}()\` is untyped: use \`${helper}\` from \`@mrsafalpiya/strictly-laravel/react\`, which takes the payload and target from the route.`,
+                    });
+                } else if (method === 'visit') {
+                    const options = node.arguments[1];
+                    const sendsPayload =
+                        options?.type === 'ObjectExpression' &&
+                        options.properties.some(
+                            (property) => property.type === 'Property' && ['data', 'method'].includes(nameOf(property.key) ?? ''),
+                        );
+
+                    if (sendsPayload) {
+                        context.report({
+                            node,
+                            message:
+                                '`router.visit()` with `data` or `method` is untyped: use `submit(route, data)` or `visit(route)` from `@mrsafalpiya/strictly-laravel/react`, which take the payload and method from the route.',
+                        });
+                    }
+                }
+            },
+            JSXOpeningElement(node) {
+                if (inertiaExport(node.name) !== 'Link') {
+                    return;
+                }
+
+                for (const attribute of node.attributes) {
+                    if (attribute.type === 'JSXAttribute' && nameOf(attribute.name) === 'data') {
+                        context.report({
+                            node: attribute,
+                            message:
+                                '`<Link data>` is untyped: send a payload with `submit(route, data)` from `@mrsafalpiya/strictly-laravel/react`, which takes its type from the route.',
+                        });
+                    }
+                }
+            },
+        };
+    },
+};
+
 const lintDirective = /^(?:oxlint|eslint)-disable(?:-next-line|-line)?(?=\s|$)/;
 const tsDirective = /^@ts-(?:expect-error|ignore|nocheck)(?=[\s:]|$)/;
 
@@ -345,5 +482,6 @@ export default {
         'typed-inertia-components': typedInertiaComponents,
         'typed-optimistic-updates': typedOptimisticUpdates,
         'typed-prop-names': typedPropNames,
+        'typed-requests': typedRequests,
     },
 };

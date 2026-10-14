@@ -1,0 +1,8 @@
+{
+    "problem": "P-022",
+    "description": "Every item of a typed list input property (backed enum or scalar) is validated, so an invalid item gets a 422 instead of a 500, and valid items are cast to the list's type (P-021).",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}

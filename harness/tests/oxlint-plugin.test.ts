@@ -166,3 +166,47 @@ describe('oxlint plugin: strictly/typed-optimistic-updates', () => {
         ],
     });
 });
+
+describe('oxlint plugin: strictly/typed-requests', () => {
+    tester.run('typed-requests', rule('typed-requests'), {
+        valid: [
+            "import { useRouteForm } from '@mrsafalpiya/strictly-laravel/react'; useRouteForm(store(), defaults);",
+            "import { submit, visit } from '@mrsafalpiya/strictly-laravel/react'; submit(store(), data); visit(destroy(id));",
+            "import { router } from '@inertiajs/react'; router.reload(); router.flushAll(); router.on('flash', cb);",
+            "import { router } from '@inertiajs/react'; router.visit(dashboard());",
+            "import { router } from '@inertiajs/react'; router.visit(dashboard(), { preserveScroll: true });",
+            "import { Link } from '@inertiajs/react'; <Link href={dashboard()}>Home</Link>;",
+            "import { useForm } from 'react-hook-form'; useForm();",
+            "const router = makeRouter(); router.post('/x', {});",
+            "import Link from 'next/link'; <Link data={x} />;",
+        ],
+        invalid: [
+            {
+                code: "import { useForm } from '@inertiajs/react'; const form = useForm({ name: '' });",
+                errors: [{ message: /`useForm\(\)` is untyped: use `useRouteForm\(route, defaults\)`/ }],
+            },
+            { code: "import { useForm as useInertiaForm } from '@inertiajs/react'; useInertiaForm();", errors: 1 },
+            { code: "import * as Inertia from '@inertiajs/react'; Inertia.useForm();", errors: 1 },
+            {
+                code: "import { router } from '@inertiajs/react'; router.post(store.url(), { name });",
+                errors: [{ message: /`router.post\(\)` is untyped: use `submit\(route, data\)`/ }],
+            },
+            {
+                code: "import { router } from '@inertiajs/react'; router.get(index.url());",
+                errors: [{ message: /`router.get\(\)` is untyped: use `visit\(route\)`/ }],
+            },
+            { code: "import { router } from '@inertiajs/react'; router.delete(destroy.url(id), { onError });", errors: 1 },
+            { code: "import { router } from '@inertiajs/core'; router.put(url, data);", errors: 1 },
+            { code: "import { router } from '@inertiajs/react'; router.patch(url, data);", errors: 1 },
+            { code: "import * as Inertia from '@inertiajs/react'; Inertia.router.post(url, data);", errors: 1 },
+            {
+                code: "import { router } from '@inertiajs/react'; router.visit(url, { method: 'post', data });",
+                errors: [{ message: /`router.visit\(\)` with `data` or `method` is untyped/ }],
+            },
+            {
+                code: "import { Link } from '@inertiajs/react'; <Link href={store()} method=\"post\" data={{ name }}>Save</Link>;",
+                errors: [{ message: /`<Link data>` is untyped/ }],
+            },
+        ],
+    });
+});

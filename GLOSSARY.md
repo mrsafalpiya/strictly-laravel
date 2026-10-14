@@ -36,6 +36,10 @@ _Avoid_: DTO, resource
 The Data class that holds the props of exactly one Inertia page, under `App\Pages`; its constructor defines the props, its name gives the page component's (`App\Pages\Settings\ProfilePage` is `settings/profile`), and a controller renders the page by returning it.
 _Avoid_: page DTO, view model
 
+**Input class**:
+The Data class a controller action type-hints to receive a request's payload: it extends `InputData`, validates the request with rules inferred from its types, and brands the action's Wayfinder route, so the form's payload and error keys come from it. A route whose action takes one is a **form endpoint**.
+_Avoid_: form request, request DTO
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture

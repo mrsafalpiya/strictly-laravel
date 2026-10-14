@@ -51,6 +51,7 @@ export default defineConfig({
             'strictly/typed-inertia-components': 'error',
             'strictly/typed-optimistic-updates': 'error',
             'strictly/typed-prop-names': 'error',
+            'strictly/typed-requests': 'error',
         },
         ignorePatterns: [
             'vendor/**',

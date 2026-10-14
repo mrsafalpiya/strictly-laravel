@@ -52,24 +52,28 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | accepted gap |
 | [P-088](#p-088) | A prop shared beside the shared props type has no type | shared props | closed |
 | [P-089](#p-089) | A page rendered without the Inertia middleware lacks the shared props its type promises | shared props | accepted gap |
-| [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | open |
+| [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | closed |
+| [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | open |
+| [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | open |
 | [P-015](#p-015) | Form control names are plain strings | form payloads | open |
 | [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | open |
-| [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | open |
-| [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | open |
-| [P-019](#p-019) | `int` is validated as `numeric` | form payloads | open |
-| [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | open |
-| [P-021](#p-021) | Typed iterables are not cast by default | form payloads | open |
-| [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | open |
+| [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | closed |
+| [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | open |
+| [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | closed |
+| [P-019](#p-019) | `int` is validated as `numeric` | form payloads | closed |
+| [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | closed |
+| [P-098](#p-098) | A boolean literal input type is validated only as a boolean | form payloads | accepted gap |
+| [P-021](#p-021) | Typed iterables are not cast by default | form payloads | closed |
+| [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | closed |
 | [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
 | [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | open |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | open |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
 | [P-027](#p-027) | `FieldName` proves a name came from some `field()`, not this form's | form payloads | accepted gap |
-| [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | open |
-| [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | open |
-| [P-030](#p-030) | Validation runs before authorization | validation errors | open |
+| [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
+| [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
+| [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
@@ -363,11 +367,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; ecosystem A.3 and B.2; type-safety rules 11 and 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `<Form {...ProfileController.update.form()}>` has no generic, so its payload and `errors` are untied to the request's rules. `useForm<T>()` takes whatever `T` is named; `router.post(url, data)` and `<Link data>` accept any object.
 
 **Manual workaround:** input Data classes extending `InputData`, type-hinted on the action; Wayfinder's `.form()` is branded with the action's input class (template override, `RouteTypes::brands`), so `useRouteForm(route, defaults)`, `<TypedForm>`, `submit(route, data)` and `visit(route)` (`@/lib/requests`) take payload, error keys and target from the route. The `type-safety/typed-requests` lint rule rejects `useForm`, `useHttp`, `router.get/post/put/patch/delete`, `<Link data>` and untyped `<Form>`.
+
+**Closed by:** an action's input is a final Data class extending [`InputData`](../packages/laravel/src/Data/InputData.php), type-hinted on the action. The Wayfinder `method` template is overridden ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which renders Wayfinder's own template and brands its return types rather than copying it), so every route function of that action, `.form()` too, returns `RouteDefinition<…> & WithInput<StoreProjectData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteForm(route, defaults)`, `submit(route, data, options)` and `visit(route, options)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) take the payload from that brand: a wrong or missing field fails `tsc`, `submit()` refuses a route whose action takes no input and `visit()` one that does. The oxlint rule `strictly/typed-requests` rejects `useForm()`, `router.get/post/put/patch/delete()`, `router.visit()` with `data` or `method`, and `<Link data>` imported from Inertia; the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action taking a Data class that isn't an InputData. Kit Conversion sends the Base Kit's passkey deletion through `visit()`. Inertia's `<Form>` is still untyped: [P-096](#p-096). Scenarios: `route-typed-requests-pass`, `route-form-wrong-field-fails-tsc`, `submit-wrong-field-fails-tsc`, `visit-route-that-takes-input-fails-tsc`, `inertia-use-form-fails-lint`.
 
 ### P-015
 
@@ -402,11 +408,26 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2 and §4; type-safety rule 11
 - **Upstream:** by design; laravel-data offers the opt-in `#[MergeValidationRules]`. No upstream issue filed.
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a Data class with `public string $slug` and `rules()` returning `['slug' => ['unique:projects']]`: the inferred `required|string` for `slug` is dropped, so a missing or non-string slug passes validation while the TypeScript type says `slug: string`.
 
 **Manual workaround:** the `InputData` base class carries `#[MergeValidationRules]`.
+
+**Closed by:** [`InputData`](../packages/laravel/src/Data/InputData.php) carries `#[MergeValidationRules]`, so an input's `rules()` are merged with the rules inferred from its types, and the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action that takes a Data class not extending it. A nested Data class inside an input still has its `rules()` replace its inferred ones: [P-099](#p-099). Scenarios: `custom-input-rules-merged-passes`, `plain-data-action-input-fails-phpstan`.
+
+### P-099
+
+**A nested Data class's `rules()` replace its inferred rules**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-017](#p-017)
+- **Upstream:** by design; laravel-data reads `#[MergeValidationRules]` from each Data class. No upstream issue filed.
+- **Status:** open
+
+**Reproduction:** an input with `public TaskData $task` (or `list<TaskData>`), where the plain Data class `TaskData` has `public string $title` and `rules()` returning `['title' => ['max:50']]`: the inferred `required|string` for `task.title` is dropped. Only the action's own parameter must extend InputData (`strictly.inputData`).
+
+**Manual workaround:** make every Data class nested in an input that has `rules()` extend InputData too.
 
 ### P-018
 
@@ -415,11 +436,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; eval-02 §1, §5 and §9; type-safety rule 11
 - **Upstream:** discussed and declined in the comments of [spatie/laravel-data#681](https://github.com/spatie/laravel-data/issues/681) (Laravel's `required` treats `[]` as missing)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public array $tags` (non-nullable) is inferred `required|array`; the TypeScript type `string[]` allows `[]`, which the server rejects with a 422.
 
 **Manual workaround:** `StrictTypesRuleInferrer` replaces `required` with `present` for arrays, lists and Data collections; `#[Min(1)]` where a list must not be empty.
+
+**Closed by:** [`PresentArrayRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/PresentArrayRuleInferrer.php) replaces the inferred `required` of a non-null array, list or Data collection with `present`: `[]` is accepted, a missing key is not. Every laravel-data workaround is applied to the app's `data` config at boot, published or not ([`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php)). Scenarios: `empty-list-input-accepted-passes`, `missing-list-input-fails-test`.
 
 ### P-019
 
@@ -428,11 +451,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; eval-02 §1 and §5
 - **Upstream:** [spatie/laravel-data#814](https://github.com/spatie/laravel-data/pull/814) (PR adding an `integer` option, declined; its comments note the docs claim `integer`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public int $estimate` is inferred `numeric`; `1.5` passes validation and is silently truncated to `1`, while the TypeScript type is `number` either way.
 
 **Manual workaround:** `StrictTypesRuleInferrer` replaces `numeric` with `integer` for `int` properties.
+
+**Closed by:** [`IntegerRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/IntegerRuleInferrer.php) replaces the inferred `numeric` of an `int` property with `integer`, so `1.5` gets a 422 ("The estimate field must be an integer."). Scenarios: `integer-input-rejects-a-fraction-passes`, `fraction-for-integer-input-fails-test`.
 
 ### P-020
 
@@ -441,11 +466,28 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; type-safety rule 8; `reference/template/app/Support/Data/LiteralTypesRuleInferrer.php`
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var 'monday'|'sunday' */ public string $weekStartsOn` generates `'monday' | 'sunday'` (once [P-032](#p-032) is worked around), but the server accepts any string.
 
 **Manual workaround:** `LiteralTypesRuleInferrer` adds `in:monday,sunday` from the PHPDoc literal union.
+
+**Closed by:** [`LiteralRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/LiteralRuleInferrer.php) adds `in:` from the PHPDoc literal union the TypeScript is generated from, read where typescript-transformer reads it ([`PropertyAnnotation`](../packages/laravel/src/TypeScript/PropertyAnnotation.php)): string, int and float literals, class constants and enum cases, optionally `|null`; a list of literals has every item validated. A `true`/`false` literal adds no rule: [P-098](#p-098). Scenarios: `literal-union-input-validated-passes`, `value-outside-literal-union-fails-test`.
+
+### P-098
+
+**A boolean literal input type is validated only as a boolean**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-020](#p-020)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `/** @param true $termsAccepted */ public bool $termsAccepted` on an input is generated as `termsAccepted: true`, but only `boolean` is inferred, so `false` passes validation.
+
+**Manual workaround:** `#[Accepted]` (or `#[Declined]`) on the property.
+
+**Reasoning:** Laravel has no rule that means exactly "this boolean": `accepted` also takes `"yes"` and `"on"`, `in:1` rejects `true` sent as JSON. A `true`-only input is the terms-checkbox pattern, which `#[Accepted]` states directly; anything else is a union `LiteralRuleInferrer` handles.
 
 ### P-021
 
@@ -454,11 +496,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; `reference/showcase/config/data.php`; `reference/showcase/tests/Feature/Collaboration/SavedViewTest.php`
 - **Upstream:** by design in laravel-data 4 (the `cast_and_transform_iterables` feature is off by default and announced as default in the next major). No upstream issue filed.
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var list<IssueStatus> */ public array $statuses` holds raw strings (`['todo']`) after `from()`, while PHPStan and TypeScript believe it holds enums.
 
 **Manual workaround:** `'features' => ['cast_and_transform_iterables' => true]` in `config/data.php`.
+
+**Closed by:** [`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php) turns `data.features.cast_and_transform_iterables` on at boot, whether or not the app published config/data.php, so a `list<IssueStatus>` holds enum cases. Scenarios: `typed-list-items-validated-passes`, `list-items-read-as-raw-values-fails-test`.
 
 ### P-022
 
@@ -467,11 +511,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2 and §4; `reference/template/app/Support/Data/ListItemsRule.php`
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** posting `statuses: ['bogus']` to an action taking `/** @var list<IssueStatus> */ public array $statuses` passes validation (no per-item rule is inferred) and fails while casting: a 500 instead of a 422.
 
 **Manual workaround:** `StrictTypesRuleInferrer` adds `ListItemsRule` to lists of scalars and backed enums, validating every item.
+
+**Closed by:** [`ListItemsRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/ListItemsRuleInferrer.php) adds [`ListItemsRule`](../packages/laravel/src/Workarounds/LaravelData/ListItemsRule.php) to a typed list of scalars or backed enums, so an invalid item gets a 422 ("The statuses.1 value is invalid.") instead of failing while casting. Scenarios: `typed-list-items-validated-passes`, `invalid-list-item-for-input-fails-test`.
 
 ### P-023
 
@@ -557,6 +603,32 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Reasoning:** the narrowed JSX types (ADR-0004) can only say "this came from `field()`"; JSX types are global, so they can't know which form encloses a control. The input Contracts still catch a wrong field when a test submits the form.
 
+### P-096
+
+**Inertia's `<Form>` takes any payload and error keys**
+
+- **Type Boundary:** form payloads
+- **Source:** split from [P-014](#p-014) and [P-028](#p-028) while closing them
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** the Base Kit's `<Form {...ProfileController.update.form()}>` has no type argument, so the names of its controls and the `errors` its render prop gives (`string` per any key) are untied to the action's rules: `errors.nmae` compiles. The route-typed helpers (`useRouteForm`, `submit`, `visit`) and the `strictly/typed-requests` lint rule don't cover the component.
+
+**Manual workaround:** the Reference Implementation's headless `<TypedForm {...store.form()}>` with a `field()` render prop, and its lint rule rejecting an untyped `<Form>`.
+
+### P-097
+
+**A closure route's input isn't on its route type**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-014](#p-014)
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** open
+
+**Reproduction:** `Route::post('projects', fn (StoreProjectData $data) => …)->name('projects.store')`: the generated `@/routes/projects` `store()` has no `WithInput` brand, so `useRouteForm(store(), …)` is refused as taking no input and `visit(store())` compiles, sending no payload. The PHPStan rule `strictly.inputData` checks controller actions only, so a plain Data class in such a closure isn't rejected either. The validation-error Contracts and the form-endpoint coverage do see the closure.
+
+**Manual workaround:** take inputs in controller actions only.
+
 ## Validation errors
 
 ### P-028
@@ -566,11 +638,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** validation errors
 - **Source:** ecosystem A.3 and C; eval-02 §5
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit reads `errors.name` from an untyped `<Form>` render prop (`string` per any key), so `errors.nmae` and `errors['tasks.0.titel']` compile.
 
 **Manual workaround:** errors keyed by the input type's fields, including nested and array keys (`errors['settings.notifications.onAssign']`, `tasks.0.title`), through `useRouteForm`/`<TypedForm>`/`submit()` ([P-014](#p-014)).
+
+**Closed by:** `useRouteForm()`'s `errors` and the `onError` of `useRouteForm().submit()` and `submit()` are `ErrorsOf<Input>`, keyed by every field path of the route's input, nested and list ones included (`settings.notifyOnAssign`, `tasks.0.title`; [`InputKey`](../packages/npm/routes/index.d.ts)), so a misspelled error key fails `tsc`. The errors of Inertia's `<Form>` are still untyped: [P-096](#p-096). Scenarios: `route-typed-requests-pass`, `route-form-wrong-error-key-fails-tsc`.
 
 ### P-029
 
@@ -579,11 +653,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** validation errors
 - **Source:** overview §2 and §5; type-safety rule 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `throw ValidationException::withMessages(['project' => 'still has issues'])` from an action whose input has no `project` field: the client's typed `errors` never shows it.
 
 **Manual workaround:** the validation Contract `errors satisfies InputKey<StoreIssueData>[]` fails on any key that isn't a field; refusals that aren't about a field are error toasts (`Flash::error('…'); return back();`).
+
+**Closed by:** every request a feature test sends to a form endpoint (a route whose action takes an InputData) is recorded, and the validation errors it is refused with, flashed before a redirect or in a 422 JSON response, become a Contract, `export const errors = {…} satisfies ErrorsOf<StoreProjectData>`, which fails `tsc` on a key that isn't a field of the input ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). A refusal that isn't about a field is an error toast through the flash Data class (`FlashData::toast(ToastType::Error, …)`, [P-047](#p-047)). Contract Coverage fails on a form endpoint no feature test submits to ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), scenario `form-endpoint-no-test-submits-fails-coverage`). Scenarios: `validation-errors-are-input-fields-pass-contract`, `error-key-not-an-input-field-fails-contract`.
 
 ### P-030
 
@@ -592,13 +668,15 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** validation errors
 - **Source:** overview §2 and §4; eval-02 §5; type-safety rule 11
 - **Upstream:** no upstream issue filed (laravel-data's `authorize()` hook is opt-in)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an action type-hinting an input Data class and calling `Gate::authorize()` in its body: a user without the ability submits invalid data and gets a 422 listing the fields instead of a 403.
 
 **Manual workaround:** `public static function authorize(): bool` on the input class, which laravel-data runs before validation (`AuthorizedDataPipe`).
 
 ## Enums
+
+**Closed by:** laravel-data runs an input's `authorize()` before validation; the PHPStan rule `strictly.authorizeInInput` ([`AuthorizeInInputRule`](../packages/laravel/src/PHPStan/AuthorizeInInputRule.php)) rejects a controller action that takes an InputData and authorizes in its body instead (`Gate::authorize()`, `allowIf()`, `denyIf()`, `$this->authorize()`, `abort(403)`, `abort_if(…, 403)`, `abort_unless(…, 403)`). Matching is syntactic ([P-070](#p-070)). Scenarios: `unauthorized-input-gets-403-passes`, `authorize-in-action-body-fails-phpstan`.
 
 ### P-031
 

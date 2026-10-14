@@ -1,0 +1,8 @@
+{
+    "problem": "P-018",
+    "description": "A non-null list property of an input Data class accepts an empty list, which its TypeScript type allows, and still requires the key.",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}
