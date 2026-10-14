@@ -1,0 +1,6 @@
+{
+    "problem": "P-047",
+    "description": "A controller that flashes an untyped array with Inertia::flash() instead of through the flash Data class fails PHPStan.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Inertia::flash() flashes data that has no generated type." }
+}
