@@ -1,0 +1,3 @@
+# The app compiles JSX against Strictly Laravel's narrowed JSX types
+
+The Overlay sets `jsxImportSource` to its own JSX type module (React's JSX namespace with `name` on `<input>`, `<select>`, `<textarea>` and `<button>` narrowed to the branded `FieldName`) and pins the Vite React plugin back to React's runtime, so only the types differ. This is the one place the Overlay overrides a Base Kit toolchain setting (see the "leave the Base Kit's toolchain alone" rule): without it a plain string can name a form control and form field names escape the type checker; lint rules alone are syntactic and miss names passed through variables and wrapper components.

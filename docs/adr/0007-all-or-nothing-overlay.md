@@ -1,0 +1,3 @@
+# The Overlay is all-or-nothing: no feature toggles, only reasoned suppressions
+
+There are no config switches to turn individual Strictly Laravel features off. A single exception is a suppression that must carry a written reason (`@phpstan-ignore strictly.<rule> (reason)`, `// oxlint-disable-next-line strictly/<rule> -- reason`), and suppressions without a reason are themselves rejected; code the app doesn't own is handled through declarations in `config/strictly.php`. Toggles would let a project silently fall out of the guarantee that "Strictly" promises and would multiply the combinations every release has to test.

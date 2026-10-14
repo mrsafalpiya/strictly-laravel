@@ -1,0 +1,3 @@
+# Kit Conversion replaces Base Kit files only when their content is known
+
+The Base Kit ships its own pages, controllers, shared props and hand-written TS types that break Strictly Laravel's conventions. The installer converts them by replacing each file with a typed version only if the file's content hash matches a known upstream version; an unknown file is left untouched and reported, and the nightly fresh-install CI fails so a new conversion is added before users hit it. Chosen over AST codemods (too much machinery for about a dozen files) and over baselining the kit's code (it would leave wrong hand-written types in every new project).
