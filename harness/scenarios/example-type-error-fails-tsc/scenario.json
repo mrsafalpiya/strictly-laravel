@@ -1,0 +1,9 @@
+{
+    "problem": "none",
+    "description": "Example: a TS type error fails the tsc step of ci:check with TS2322.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'string' is not assignable to type 'number'."
+    }
+}

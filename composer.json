@@ -1,0 +1,13 @@
+{
+    "name": "mrsafalpiya/strictly-laravel-monorepo",
+    "description": "Development tooling for the Strictly Laravel monorepo (not published).",
+    "type": "project",
+    "license": "MIT",
+    "require-dev": {
+        "laravel/installer": "^5.32",
+        "laravel/pint": "^1.32"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "problem": "none",
+    "description": "Example: correctly typed TS that imports the npm package, plus a passing Pest test that reads the strictly config, pass the full ci:check.",
+    "expect": { "outcome": "pass" }
+}
