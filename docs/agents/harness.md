@@ -8,7 +8,7 @@ Run these from the repo root. First-time setup: `composer install && pnpm instal
 
 | Command | What it does |
 |---|---|
-| `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, Kit Conversion leaves unknown content alone, every scenario. |
+| `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, Kit Conversion leaves unknown content alone, its manifest records every earlier converted version, every scenario. |
 | `pnpm test <pattern>...` | Only the tests whose names match, e.g. `pnpm test example-type-error-fails-tsc`. |
 | `pnpm harness` | Fresh install only: `strictly:install` and every `ci:check` step must pass on the latest Base Kit + Overlay (the nightly check). Each step runs on its own, and a failure names the stage and the files that broke. |
 | `pnpm harness <scenario>... [--step <step>]` | Run the named scenarios and report each one. `--step` overrides the scenario's step. |
