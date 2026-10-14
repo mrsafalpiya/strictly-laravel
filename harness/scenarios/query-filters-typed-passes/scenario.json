@@ -1,0 +1,5 @@
+{
+    "problem": "P-006",
+    "description": "A GET action takes a query Data class: its route function's query option is typed by the class, the page sends the parsed filters back as a prop that types the filter UI, an invalid filter falls back to its default, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

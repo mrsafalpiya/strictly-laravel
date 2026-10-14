@@ -44,6 +44,10 @@ _Avoid_: form request, request DTO
 A non-Inertia route whose action declares a Data class (not a Page class) as its return type, which laravel-data sends as JSON; the class is its response, and it brands the action's Wayfinder route, so `useRouteHttp(route, init)` types the result from it.
 _Avoid_: API route, resource endpoint
 
+**Query class**:
+The Data class a GET action type-hints to receive its query string (list filters): it extends `QueryData`, is parsed leniently (an invalid value falls back to its default, never a 422), and types the `query` option of the action's Wayfinder route. A Page class can send it back as a prop, so the filter UI is typed by it too.
+_Avoid_: filter request, search DTO
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture
