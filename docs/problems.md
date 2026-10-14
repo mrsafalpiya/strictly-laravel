@@ -650,7 +650,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `Model::shouldBeStrict()` in `AppServiceProvider`, so both throw in tests; factories set every column the app reads.
 
-**Closed by:** `Model::shouldBeStrict()` in the Composer package's service provider ([`packages/laravel/src/StrictlyServiceProvider.php`](../packages/laravel/src/StrictlyServiceProvider.php)), on in every environment. Scenarios: `eager-loading-in-a-test-passes`, `lazy-loading-in-a-test-fails`, `unloaded-attribute-in-a-test-fails`.
+**Closed by:** `Model::shouldBeStrict()` in the Composer package's service provider ([`packages/laravel/src/StrictlyServiceProvider.php`](../packages/laravel/src/StrictlyServiceProvider.php)), on everywhere except production, so it throws in tests and local development. Scenarios: `eager-loading-in-a-test-passes`, `lazy-loading-in-a-test-fails`, `unloaded-attribute-in-a-test-fails`.
 
 ## Pagination and deferred props
 
