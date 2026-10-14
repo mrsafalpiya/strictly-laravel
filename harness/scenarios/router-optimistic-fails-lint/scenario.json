@@ -1,0 +1,9 @@
+{
+    "problem": "P-045",
+    "description": "router.optimistic<TProps>(), which trusts any props type the caller names, fails the lint step with strictly/typed-optimistic-updates.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly(typed-optimistic-updates): `router.optimistic()` trusts any props type"
+    }
+}
