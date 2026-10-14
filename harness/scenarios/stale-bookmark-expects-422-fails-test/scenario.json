@@ -1,0 +1,9 @@
+{
+    "problem": "P-006",
+    "description": "A test that opens an old bookmark with an invalid query value and expects a 422 fails: a query Data class parses leniently, so the request succeeds with the default.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Expected response status code [422] but received 200."
+    }
+}

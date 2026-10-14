@@ -1,0 +1,9 @@
+{
+    "problem": "P-006",
+    "description": "A route function whose GET action takes a query Data class rejects a misspelled query key: index({ query: { statuse: [...] } }) fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2561: Object literal may only specify known properties, but 'statuse' does not exist in type 'Partial<ProjectFiltersData>'."
+    }
+}
