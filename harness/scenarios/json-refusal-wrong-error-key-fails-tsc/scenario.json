@@ -1,0 +1,6 @@
+{
+    "problem": "P-049",
+    "description": "A refused JSON request resolves with validation errors keyed by the route's input, so reading an error under a key the input doesn't have fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'query' does not exist on type 'Partial<Record<\"q\", string>>'." }
+}

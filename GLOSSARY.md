@@ -40,6 +40,10 @@ _Avoid_: page DTO, view model
 The Data class a controller action type-hints to receive a request's payload: it extends `InputData`, validates the request with rules inferred from its types, and brands the action's Wayfinder route, so the form's payload and error keys come from it. A route whose action takes one is a **form endpoint**.
 _Avoid_: form request, request DTO
 
+**JSON endpoint**:
+A non-Inertia route whose action declares a Data class (not a Page class) as its return type, which laravel-data sends as JSON; the class is its response, and it brands the action's Wayfinder route, so `useRouteHttp(route, init)` types the result from it.
+_Avoid_: API route, resource endpoint
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture

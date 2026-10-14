@@ -4,6 +4,7 @@
  * intersect each route function's return type with its controller action's brands:
  *
  *     public function store(StoreProjectData $data)   →   store(): RouteDefinition<'post'> & WithInput<StoreProjectData>
+ *     public function stats(): SearchStatsData         →   stats(): RouteDefinition<'get'> & WithResponse<SearchStatsData>
  *
  * Types only: nothing here exists at runtime.
  */
@@ -28,6 +29,22 @@ export type InputOf<TRoute> = TRoute extends (...args: never[]) => infer TDefini
           ? never
           : TInput
       : never;
+
+/**
+ * Phantom brand on the route functions of a JSON endpoint, a controller action that returns a Data class: the response
+ * type. Never present at runtime; read it with `ResponseOf<typeof route>`.
+ */
+export type WithResponse<TResponse> = { readonly __response?: TResponse };
+
+/**
+ * The response Data type a route (or route function) is branded with, `unknown` when its action declares none: such a
+ * response can't be used before it is checked.
+ */
+export type ResponseOf<TRoute> = TRoute extends (...args: never[]) => infer TDefinition
+    ? ResponseOf<TDefinition>
+    : TRoute extends WithResponse<infer TResponse>
+      ? TResponse
+      : unknown;
 
 /**
  * Every field name of an input type, including nested and array paths (`settings.notifyOnAssign`, `tags.0`,

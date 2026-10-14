@@ -1,9 +1,9 @@
-import type { VisitOptions } from '@inertiajs/core';
+import type { UseHttpSubmitOptions, VisitOptions } from '@inertiajs/core';
 import type { Deferred, InertiaFormProps, InfiniteScroll, WhenVisible } from '@inertiajs/react';
 import type { ComponentProps, ForwardRefExoticComponent, ReactElement, ReactNode } from 'react';
 
 import type { PropPath } from '../contracts/index.js';
-import type { ErrorsOf, FormState, InputOf, RouteTarget } from '../routes/index.js';
+import type { ErrorsOf, FormState, InputOf, ResponseOf, RouteTarget } from '../routes/index.js';
 
 /**
  * The app's pages and shared props, which the generated types register (`@/generated`, written by
@@ -153,6 +153,74 @@ export declare function useRouteForm<TRoute extends RouteTarget>(
     route: TRoute & TakesInput<TRoute>,
     defaults: FormState<InputOf<TRoute>>,
 ): RouteForm<InputOf<TRoute>>;
+
+/*
+ * JSON endpoints: a controller action returning a Data class brands its route with that response type, so
+ * `useRouteHttp(route, init)` types the request from the route's input and the result from its response, with no type
+ * argument. The `strictly/typed-requests` lint rule rejects Inertia's untyped `useHttp()`.
+ *
+ *     const http = useRouteHttp(search(), { q: '' });
+ *     const result = await http.submit();
+ *     if (result.ok) result.response.hits;   // SearchResultsData
+ *     else result.errors.q;                  // a 422: the input's validation errors
+ */
+
+/** The request data of a route: its input's form state, nothing when its action takes no input. */
+type HttpData<TInput> = [TInput] extends [never] ? {} : FormState<TInput>;
+
+/**
+ * What a JSON request resolves to: the response, or the validation errors of a 422, keyed by the route's input.
+ * Inertia's own `useHttp().submit()` resolves `undefined` on a 422 while typed as the response (Problem P-049).
+ */
+export type HttpResult<TInput, TResponse> =
+    | { ok: true; response: TResponse }
+    | { ok: false; errors: ErrorsOf<TInput> };
+
+/** The options of a JSON request: Inertia's, with the validation errors keyed by the route's input. */
+export type HttpRequestOptions<TInput, TResponse> = Omit<UseHttpSubmitOptions<TResponse, HttpData<TInput>>, 'onError'> & {
+    onError?: (errors: ErrorsOf<TInput>) => void;
+};
+
+/**
+ * Inertia's `useHttp()` for one route: its data and errors are the route's input, `response` and the result of
+ * `submit()` its response (`unknown` when the action declares none).
+ */
+export type RouteHttp<TInput, TResponse> = Pick<
+    // The state useHttp() shares with useForm(); InertiaFormProps is the one Inertia exports.
+    InertiaFormProps<HttpData<TInput> extends Record<string, any> ? HttpData<TInput> : never>,
+    | 'data'
+    | 'isDirty'
+    | 'hasErrors'
+    | 'processing'
+    | 'progress'
+    | 'wasSuccessful'
+    | 'recentlySuccessful'
+    | 'setData'
+    | 'transform'
+    | 'setDefaults'
+    | 'reset'
+    | 'clearErrors'
+    | 'resetAndClearErrors'
+    | 'cancel'
+> & {
+    errors: ErrorsOf<TInput>;
+    /** The response of the last successful request, `null` before one. */
+    response: TResponse | null;
+    /**
+     * Sends the data to the route the request was made for. Resolves with the response, or with the validation errors
+     * of a 422; rejects as Inertia's `useHttp()` does on any other failure (`HttpResponseError`, `HttpCancelledError`).
+     */
+    submit: (options?: HttpRequestOptions<TInput, TResponse>) => Promise<HttpResult<TInput, TResponse>>;
+};
+
+/**
+ * `useHttp()` for one JSON endpoint: `useRouteHttp(search(), { q: '' })`, or `useRouteHttp(stats())` for an action
+ * that takes no input. The initial data is the route's input, with a file field `null` until a file is picked.
+ */
+export declare function useRouteHttp<TRoute extends RouteTarget>(
+    route: TRoute,
+    ...init: [InputOf<TRoute>] extends [never] ? [] : [init: FormState<InputOf<TRoute>>]
+): RouteHttp<InputOf<TRoute>, ResponseOf<TRoute>>;
 
 /** One link of a page paginator, as Laravel sends it (`page` since Laravel 11). */
 export type PaginatorLink = {
