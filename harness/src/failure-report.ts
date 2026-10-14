@@ -74,6 +74,9 @@ export function failureReport(stage: string, output: string): FailureReport {
         } else if (oxlintMessage !== undefined && (match = /^\s*,-\[(.+):(\d+):\d+\]$/.exec(line)) !== null) {
             diagnostics.push({ file: group(match, 1), line: Number(match[2]), message: oxlintMessage });
             oxlintMessage = undefined;
+        } else if (stage === 'ci:check:coverage' && (match = /^\s*✗ (.+?)\s*$/.exec(line)) !== null) {
+            // strictly:coverage: one ` ✗ <gap> (at <where>): <the test to add>.` line per failing gap
+            diagnostics.push({ message: `Contract Coverage: ${group(match, 1)}` });
         } else if ((match = /^(\S+\.\w+) \(\d+ms\)$/.exec(line)) !== null) {
             // oxfmt: one `<file> (<n>ms)` line per unformatted file
             diagnostics.push({ file: group(match, 1), message: 'formatting issues (oxfmt)' });

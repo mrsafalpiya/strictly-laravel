@@ -104,7 +104,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
 | [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
-| [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | open |
+| [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | closed |
+| [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | open |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
@@ -1089,11 +1090,26 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §2; type-safety "What checks what"
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a nullable field only ever `null` in tests, a list only ever empty, a union variant never produced, or a page, deferred prop or endpoint no test hits: its Contracts pass while `tsc` never saw the other shape.
 
 **Manual workaround:** Contract Coverage, `php artisan types:coverage --strict`, fails CI on each unverified shape; close it with a test that produces it (`tests/Feature/ShapeCoverageTest.php`).
+
+**Closed by:** Contract Coverage, `php artisan strictly:coverage --strict` ([`CoverageCommand`](../packages/laravel/src/Console/CoverageCommand.php)), which `ci:check` runs as `ci:check:coverage`, after the tests and before `tsc`. It reads the sidecars of the Contracts the tests recorded ([P-065](#p-065)) and compares them with the Page classes and the Data classes they hold ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php)). It fails on a page no test renders, and, at any depth and per Data class property, on a nullable field only ever `null`, an Optional field never sent, a list or map only ever empty, a union of Data classes never sent as one of its variants and a scalar union (`int|string`) never sent as one of its members. Each gap is one line that names the page or field, where it was looked for and the test to add: `✗ ProjectData.lead is only ever null (at projects/show › project.lead): add a feature test that renders projects/show with project.lead not null.` Run without `--strict`, only unrendered pages fail. A fresh install has no gaps: Kit Conversion adds `tests/Feature/ContractCoverageTest.php` with `tests/Pest.php`, which renders the Base Kit's pages with a status message, with passkeys and the appearance page. The other dimensions report into the same Contract Coverage with the Problems that record their Contracts: deferred props ([P-043](#p-043), [P-044](#p-044)), JSON endpoints ([P-048](#p-048), [P-050](#p-050)), form endpoints and declared vendor fields ([P-024](#p-024), [P-025](#p-025)) and broadcasts ([P-052](#p-052)). Shapes laravel-data doesn't describe stay unchecked ([P-084](#p-084)). Scenarios: `every-shape-exercised-passes-coverage`, `page-no-test-renders-fails-coverage`, `nullable-prop-only-null-fails-coverage`, `optional-prop-only-absent-fails-coverage`, `list-prop-only-empty-fails-coverage`, `union-variant-never-seen-fails-coverage`, `scalar-union-member-never-seen-fails-coverage`, `coverage-without-recorded-contracts-fails`; harness test: "make:page creates a Page class and its page component, already in sync".
+
+### P-084
+
+**Contract Coverage can't see shapes laravel-data doesn't describe**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-066](#p-066)
+- **Upstream:** none (laravel-data's `DataConfig` describes one item class per collection, by design)
+- **Status:** open
+
+**Reproduction:** Contract Coverage reads a property's shapes from laravel-data's description of its Data class, which knows one item type per collection and nothing inside a PHPDoc array shape. So these pass `strictly:coverage --strict` although `tsc` never saw the other shape: a page prop `/** @param list<array{lead: ?string}> $projects */` whose `lead` every test sends as `null`; `/** @param list<int|string> $estimates */` only ever sent strings; `/** @param list<IssueData|MilestoneData> $focus */` only ever sent issues (laravel-data reads every item as an `IssueData`); and a nested list `list<list<MemberData>>`.
+
+**Manual workaround:** model the item as a Data class (a `ProjectSummaryData` with `public ?string $lead`, or a Data class wrapping the union), whose shapes Contract Coverage does check.
 
 ### P-067
 
