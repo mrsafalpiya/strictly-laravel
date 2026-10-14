@@ -13,13 +13,20 @@
  * Builds, typecheck and `ci:check` don't need it: their scripts run `php artisan strictly:generate` first. Wayfinder's
  * own Vite plugin regenerates the routes, so this one generates only the types.
  *
+ * In dev and in builds it also warns when the installed Composer package's version differs from this npm package's
+ * (Problem P-081).
+ *
  * @import { Logger, Plugin } from 'vite'
  */
 import { execFile } from 'node:child_process';
-import { relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 
 /** How long to wait after a save for more saves before regenerating. */
 const debounceMs = 150;
+
+const composerPackage = 'mrsafalpiya/strictly-laravel';
+const npmPackage = '@mrsafalpiya/strictly-laravel';
 
 /**
  * @typedef {object} StrictlyLaravelOptions
@@ -37,7 +44,13 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
 
     return {
         name: '@mrsafalpiya/strictly-laravel',
-        apply: 'serve',
+        configResolved(config) {
+            const mismatch = versionMismatch(config.root);
+
+            if (mismatch !== null) {
+                config.logger.warn(`[strictly] ${mismatch}`, { timestamp: config.command === 'serve' });
+            }
+        },
         configureServer(server) {
             const root = server.config.root;
             const regenerate = serialised(() => generate(command, root, server.config.logger));
@@ -65,6 +78,47 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
             clearTimeout(timer);
         },
     };
+}
+
+/**
+ * Problem P-081: the Composer and npm packages are released together under one version, and a project where only one
+ * was updated generates types with one release and checks them with the other's helpers, rules and JSX types. Returns
+ * the warning when the Composer package installed in the project (vendor/composer/installed.json) has a different
+ * version than this npm package, or null when they match or either is unknown (no vendor/ yet, or a Composer dev
+ * version such as `dev-main`, which carries no release number).
+ *
+ * @param {string} root the project root
+ * @returns {string | null}
+ */
+function versionMismatch(root) {
+    const npmVersion = /** @type {{ version: string }} */ (readJson(new URL('../package.json', import.meta.url))).version;
+    const installed = readJson(join(root, 'vendor', 'composer', 'installed.json'));
+    // Composer 2 writes { packages: [...] }; Composer 1 wrote the list itself.
+    const packages = Array.isArray(installed) ? installed : installed?.packages;
+    const entry = Array.isArray(packages) ? packages.find((candidate) => candidate?.name === composerPackage) : undefined;
+    const composerVersion = typeof entry?.version === 'string' ? entry.version.replace(/^v/, '') : null;
+
+    if (composerVersion === null || composerVersion.startsWith('dev-') || composerVersion.endsWith('-dev') || composerVersion === npmVersion) {
+        return null;
+    }
+
+    return (
+        `the Composer package ${composerPackage} is ${composerVersion} but the npm package ${npmPackage} is ${npmVersion}. ` +
+        'They are released together: update both to the same version, then run `php artisan strictly:install` ' +
+        `(vendor/${composerPackage}/UPGRADE.md lists what each release needs).`
+    );
+}
+
+/**
+ * @param {string | URL} file
+ * @returns {any} the parsed JSON, or undefined when the file doesn't exist or isn't JSON
+ */
+function readJson(file) {
+    try {
+        return JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+        return undefined;
+    }
 }
 
 /**

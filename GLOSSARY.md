@@ -56,6 +56,14 @@ _Avoid_: showcase, demo
 The installer step that replaces the Base Kit's own code (its pages, controllers, shared props and hand-written types) with versions that follow Strictly Laravel's conventions.
 _Avoid_: migration, patching
 
+**Hook**:
+One edit the installer (`strictly:install`) makes to an app's tooling, such as a tsconfig flag, a Vite plugin entry or a `ci:check` step. Re-running the installer applies any hook that is missing, and `ci:check` fails while one is.
+_Avoid_: patch, setup step
+
+**Release check**:
+The check that fails in an existing app's `ci:check` until the app makes a change a release needs. It is listed with that change in the upgrade guide.
+_Avoid_: migration (that means a database migration)
+
 **Problem**:
 A recorded way in which a type can be wrong, or a type has to be maintained by hand, at a Type Boundary; each one is eventually closed by the Overlay or accepted as a documented gap.
 _Avoid_: issue, bug (those mean defects in a tool)

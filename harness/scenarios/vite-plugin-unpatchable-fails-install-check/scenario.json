@@ -1,0 +1,8 @@
+{
+    "problem": "P-082",
+    "description": "An app whose vite.config.ts builds its plugin list in a way the installer can't patch, and that lacks the Strictly Laravel Vite plugin, fails ci:check until the plugin is added by hand.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Strictly Laravel is not fully applied to this app: vite.config.ts: Strictly Laravel Vite plugin (not applied)."
+    }
+}

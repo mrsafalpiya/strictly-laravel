@@ -55,7 +55,7 @@ afterEach(async () => {
     }
 });
 
-async function startDevServer(behaviour: { ms: number; fail?: string } = { ms: 0 }): Promise<Harness> {
+async function startDevServer(behaviour: { ms: number; fail?: string } = { ms: 0 }, composerVersion?: string): Promise<Harness> {
     scratch = mkdtempSync(join(tmpdir(), 'strictly-vite-plugin-'));
     const root = join(scratch, 'app-root');
     const log = join(scratch, 'run.log');
@@ -70,6 +70,15 @@ async function startDevServer(behaviour: { ms: number; fail?: string } = { ms: 0
     logger.error = (message) => void logged.error.push(message);
 
     mkdirSync(root);
+
+    if (composerVersion !== undefined) {
+        // What Composer 2 writes for the installed Composer package.
+        mkdirSync(join(root, 'vendor', 'composer'), { recursive: true });
+        writeFileSync(
+            join(root, 'vendor', 'composer', 'installed.json'),
+            JSON.stringify({ packages: [{ name: 'mrsafalpiya/strictly-laravel', version: composerVersion }], dev: true }),
+        );
+    }
 
     server = await createServer({
         root,
@@ -199,5 +208,32 @@ describe('Vite plugin: live regeneration', () => {
         dev.save('app/Data/ProjectData.php');
         await until('a run after the fix finished', () => finishedRuns(dev) === 3);
         await until('the success was reported', () => dev.logged.info.slice(generatedBefore).some((message) => message.includes('types generated')));
+    });
+});
+
+// The fixture-app harness proves the warning in a real app's dev server and build (overlay.test.ts); these are the
+// version forms Composer writes that an app installed from the monorepo's path repositories never has.
+describe('Vite plugin: Composer and npm package versions', () => {
+    const npmVersion = (JSON.parse(readFileSync(new URL('../../packages/npm/package.json', import.meta.url), 'utf8')) as { version: string }).version;
+    const versionWarnings = (dev: Harness) => dev.logged.warn.filter((message) => message.includes('[strictly]'));
+
+    test('a tagged Composer release with a leading "v" that matches is not warned about', async () => {
+        const dev = await startDevServer({ ms: 0 }, `v${npmVersion}`);
+
+        assert.deepEqual(versionWarnings(dev), []);
+    });
+
+    test('a tagged Composer release that differs is warned about', async () => {
+        const dev = await startDevServer({ ms: 0 }, 'v0.0.1');
+
+        assert.match(versionWarnings(dev).join('\n'), /the Composer package mrsafalpiya\/strictly-laravel is 0\.0\.1 but the npm package/);
+    });
+
+    test('a Composer dev version, which has no release number, is not warned about', async () => {
+        assert.deepEqual(versionWarnings(await startDevServer({ ms: 0 }, 'dev-main')), []);
+    });
+
+    test('an app with no vendor/ yet is not warned about', async () => {
+        assert.deepEqual(versionWarnings(await startDevServer()), []);
     });
 });

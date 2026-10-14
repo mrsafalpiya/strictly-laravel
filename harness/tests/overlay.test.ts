@@ -37,13 +37,53 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
         assert.deepEqual(toolchain(app.dir), toolchain(join(fixturesDir, 'base-kit')));
     });
 
-    test('strictly:install is idempotent', async () => {
+    test('strictly:install is idempotent: running it again on a fully installed app is a no-op', async () => {
         const app = await createApp('idempotent-install');
         await app.commitAll('after the first strictly:install');
 
-        await app.install();
+        const again = await app.install();
 
         assert.deepEqual(app.changedFiles(), [], 'a second strictly:install changed files');
+        const changedRows = installerRows(again.output).filter(({ status }) => status !== 'unchanged');
+        assert.deepEqual(changedRows, [], 'a second strictly:install reported rows other than unchanged');
+        assertOutcome(await app.check('install'), { outcome: 'pass' });
+    });
+
+    test("re-running strictly:install restores a missing hook and reports one it can't apply, leaving that file alone", async () => {
+        const app = await createApp('reinstall-unpatchable-hook');
+        const viteConfig = join(app.dir, 'vite.config.ts');
+        const gitignore = join(app.dir, '.gitignore');
+        // The Vite plugin removed, and a comment where the installer expects the plugin list to start a line.
+        writeFileSync(
+            viteConfig,
+            readFileSync(viteConfig, 'utf8')
+                .replace(/^import \{ strictlyLaravel \}.*\n/m, '')
+                .replace(/^ {8}strictlyLaravel\(\),\n/m, '')
+                .replace('plugins: lazyPlugins(() => [\n', "plugins: lazyPlugins(() => [ // the app's plugins\n"),
+        );
+        const edited = readFileSync(viteConfig, 'utf8');
+        writeFileSync(gitignore, readFileSync(gitignore, 'utf8').replace(/^\/resources\/js\/generated\n/m, ''));
+
+        const reinstall = await app.run('php', ['artisan', 'strictly:install', '--no-interaction']);
+
+        assert.notEqual(reinstall.exitCode, 0, 'strictly:install succeeded although it could not apply a hook');
+        assert.equal(readFileSync(viteConfig, 'utf8'), edited, 'strictly:install changed the vite.config.ts it could not patch');
+        assert.deepEqual(
+            installerRows(reinstall.output).filter(({ status }) => status !== 'unchanged'),
+            [
+                { label: 'vite.config.ts: Strictly Laravel Vite plugin', status: 'not applied' },
+                { label: 'Generated TypeScript gitignored', status: 'applied' },
+            ],
+        );
+        assert.match(reinstall.output, /ERROR\s+vite\.config\.ts has no `plugins: \[` array written over several lines; add `import \{ strictlyLaravel \}/);
+        assert.match(readFileSync(gitignore, 'utf8'), /^\/resources\/js\/generated$/m, 'the missing .gitignore entry was not restored');
+        const check = await app.check('install');
+        assertOutcome(check, {
+            outcome: 'fail',
+            errorContains: 'Strictly Laravel is not fully applied to this app: vite.config.ts: Strictly Laravel Vite plugin (not applied).',
+        });
+        const guide = /(vendor\/mrsafalpiya\/strictly-laravel\/UPGRADE\.md) lists what each release needs/.exec(check.output)?.[1];
+        assert.ok(guide !== undefined && existsSync(join(app.dir, guide)), 'the check does not point to an upgrade guide the app has');
     });
 
     test('Kit Conversion leaves a Base Kit file with unknown content untouched and reports it', async () => {
@@ -273,12 +313,50 @@ export default function ProjectStatuses() {
         }
     });
 
+    test('the dev server and the build warn when the Composer and npm package versions differ', async () => {
+        const app = await createApp('package-versions-differ');
+        const warning = 'the Composer package mrsafalpiya/strictly-laravel is 0.0.1 but the npm package @mrsafalpiya/strictly-laravel is';
+        const build = async () => {
+            const result = await app.run('pnpm', ['exec', 'vite', 'build']);
+            assertOutcome(result, { outcome: 'pass' });
+
+            return result.output;
+        };
+
+        assert.ok(!(await build()).includes('[strictly] '), 'the build warned although both packages have the same version');
+
+        // A half-updated app: `composer update` ran, the npm package wasn't updated (or the other way round).
+        const installedJson = join(app.dir, 'vendor', 'composer', 'installed.json');
+        const installed = JSON.parse(readFileSync(installedJson, 'utf8')) as { packages: { name: string; version: string }[] };
+        for (const entry of installed.packages) {
+            if (entry.name === 'mrsafalpiya/strictly-laravel') {
+                entry.version = '0.0.1';
+            }
+        }
+        rmSync(installedJson); // a hard link shared with every app; replace it rather than writing through it
+        writeFileSync(installedJson, JSON.stringify(installed));
+
+        assert.ok((await build()).includes(warning), 'the build did not warn about the differing versions');
+
+        const dev = app.start('pnpm', ['run', 'dev']);
+        try {
+            await until('the dev server warned about the differing versions', () => dev.output().includes(warning), dev);
+        } finally {
+            await dev.stop();
+        }
+    });
+
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
             assertOutcome(await runScenario(scenario), scenario.expect);
         });
     }
 });
+
+/** The `<label> .... <status>` rows strictly:install printed, one per hook and per Kit Conversion file. */
+function installerRows(output: string): { label: string; status: string }[] {
+    return [...output.matchAll(/^\s*(.+?) \.{2,} (.+?)\s*$/gm)].map((match) => ({ label: match[1] ?? '', status: match[2] ?? '' }));
+}
 
 /** Wait until `condition` holds while a background command runs; fail with its output after `timeoutMs`. */
 async function until(what: string, condition: () => boolean, command: BackgroundCommand, timeoutMs = 30_000): Promise<void> {
