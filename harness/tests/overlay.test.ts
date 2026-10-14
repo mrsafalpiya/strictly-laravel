@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { before, describe, test } from 'node:test';
 
@@ -41,6 +41,39 @@ describe('Overlay on the latest Base Kit', () => {
         assert.deepEqual(failureReport('strictly:install', install.output).diagnostics, [
             { file: 'routes/web.php', message: 'skipped (unknown content)' },
         ]);
+    });
+
+    test('an unconverted phpstan.neon still includes the PHPStan extension', async () => {
+        const app = await createApp('phpstan-include-unconverted', { install: false });
+        const phpstanNeon = join(app.dir, 'phpstan.neon');
+        writeFileSync(phpstanNeon, `# The app's own note\n${readFileSync(phpstanNeon, 'utf8')}`);
+
+        await app.install();
+        await app.commitAll('after strictly:install');
+        await app.install();
+
+        assert.deepEqual(app.changedFiles(), [], 'a second strictly:install changed files');
+        assert.match(readFileSync(phpstanNeon, 'utf8'), /^# The app's own note\n/, 'the app\'s edit to phpstan.neon was lost');
+
+        mkdirSync(join(app.dir, 'app', 'Support'), { recursive: true });
+        writeFileSync(
+            join(app.dir, 'app', 'Support', 'AppName.php'),
+            `<?php
+
+namespace App\\Support;
+
+final class AppName
+{
+    public static function shouted(): string
+    {
+        // @phpstan-ignore argument.type
+        return strtoupper(config('app.name'));
+    }
+}
+`,
+        );
+
+        assertOutcome(await app.check('test'), { outcome: 'fail', errorContains: 'Ignore with identifier argument.type has no comment.' });
     });
 
     for (const scenario of loadScenarios()) {

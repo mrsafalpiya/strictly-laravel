@@ -622,7 +622,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `parseModelCastsMethod: true` in `phpstan.neon`.
 
-**Closed by:** `parseModelCastsMethod: true` in the Composer package's PHPStan extension ([`packages/laravel/extension.neon`](../packages/laravel/extension.neon)), which Kit Conversion includes from the app's `phpstan.neon`. Scenarios: `model-cast-enum-used-passes`, `model-cast-enum-misused-fails`.
+**Closed by:** `parseModelCastsMethod: true` in the Composer package's PHPStan extension ([`packages/laravel/extension.neon`](../packages/laravel/extension.neon)), which the installer includes from the app's `phpstan.neon` (by converting it, or by adding the include to one the app edited). Scenarios: `model-cast-enum-used-passes`, `model-cast-enum-misused-fails`.
 
 ### P-038
 
