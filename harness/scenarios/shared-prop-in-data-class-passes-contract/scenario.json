@@ -1,0 +1,5 @@
+{
+    "problem": "P-088",
+    "description": "A value shared through a new property of the shared props Data class matches its generated type, so the shared props Contracts the feature tests record pass and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
