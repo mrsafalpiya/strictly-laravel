@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { before, describe, test } from 'node:test';
 
@@ -93,11 +93,23 @@ enum ProjectStatus: string
 }
 `,
         );
+        // A page, so the build bundles it and fails if `@/generated` doesn't resolve.
         writeFileSync(
-            join(app.dir, 'resources', 'js', 'lib', 'project-status.ts'),
-            `import { enumValues } from '@/generated';\n\nexport const statuses = enumValues.ProjectStatus;\n`,
+            join(app.dir, 'resources', 'js', 'pages', 'project-statuses.tsx'),
+            `import { enumValues } from '@/generated';
+
+export default function ProjectStatuses() {
+    return (
+        <ul>
+            {enumValues.ProjectStatus.map((status) => (
+                <li key={status}>{status}</li>
+            ))}
+        </ul>
+    );
+}
+`,
         );
-        await app.commitAll('an enum and React code that imports its generated values');
+        await app.commitAll('an enum and a page that imports its generated values');
 
         // What a fresh clone lacks: every generated directory, ours and Wayfinder's.
         const generated = ['generated', 'wayfinder', 'routes', 'actions'].map((dir) => join(app.dir, 'resources', 'js', dir));
@@ -113,7 +125,6 @@ enum ProjectStatus: string
 
         freshClone();
         assertOutcome(await run('pnpm', ['run', 'build'], inApp), { outcome: 'pass' });
-        assert.ok(existsSync(join(app.dir, 'resources', 'js', 'generated', 'index.ts')), 'build did not generate the types');
     });
 
     for (const scenario of loadScenarios()) {

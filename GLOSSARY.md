@@ -28,6 +28,10 @@ _Avoid_: interface, API surface
 The side of a Type Boundary whose definition is authoritative; in Strictly Laravel this is always PHP.
 _Avoid_: schema, master definition
 
+**Data class**:
+A spatie/laravel-data class: the PHP definition of a shape that crosses a Type Boundary, from which its TypeScript type is generated. Final, and the only kind of class in the app's Data namespace (`App\Data`).
+_Avoid_: DTO, resource
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture
