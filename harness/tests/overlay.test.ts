@@ -142,7 +142,19 @@ enum ProjectStatus: string
 }
 `,
         );
-        // A page, so the build bundles it and fails if `@/generated` doesn't resolve.
+        // A page and its Page class, so the build bundles it and fails if `@/generated` doesn't resolve.
+        mkdirSync(join(app.dir, 'app', 'Pages'), { recursive: true });
+        writeFileSync(
+            join(app.dir, 'app', 'Pages', 'ProjectStatusesPage.php'),
+            `<?php
+
+namespace App\\Pages;
+
+use StrictlyLaravel\\Inertia\\Page;
+
+final class ProjectStatusesPage extends Page {}
+`,
+        );
         writeFileSync(
             join(app.dir, 'resources', 'js', 'pages', 'project-statuses.tsx'),
             `import { enumValues } from '@/generated';
