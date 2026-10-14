@@ -1,0 +1,5 @@
+{
+    "problem": "P-066",
+    "description": "A form endpoint (an action taking an input Data class) that no feature test submits to is a Contract Coverage gap, since its validation errors were never checked against its input type.",
+    "expect": { "outcome": "fail", "errorContains": "✗ POST /projects: no feature test submits to this form endpoint: add a feature test that sends App\\Data\\StoreProjectData to POST /projects." }
+}
