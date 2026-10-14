@@ -1,0 +1,6 @@
+{
+    "problem": "P-039",
+    "description": "A test that eager-loads the relation and selects the attributes it reads passes under Eloquent strict mode.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

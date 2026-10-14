@@ -1,0 +1,9 @@
+{
+    "problem": "P-037",
+    "description": "PHPStan reads a model's casts() method, so passing an enum-cast attribute where a string is expected fails.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "App\\Enums\\ProjectStatus given."
+    }
+}

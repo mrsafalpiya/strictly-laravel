@@ -1,0 +1,9 @@
+{
+    "problem": "P-039",
+    "description": "A test that lazy-loads a relation on a collection of models fails, because Eloquent strict mode is on.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Attempted to lazy load [passkeys] on model [App\\Models\\User] but lazy loading is disabled."
+    }
+}

@@ -101,14 +101,21 @@ error: Formatting issues found
         ]);
     });
 
-    test('strictly:install: a file the installer left alone (a Kit Conversion skip)', () => {
-        const output = ` config/strictly.php .. unchanged
- resources/js/types/index.d.ts .. skipped (unknown content)
- resources/js/pages/dashboard.tsx .. applied
+    test('strictly:install: files Kit Conversion left alone', () => {
+        const output = `  config/strictly.php .............................................. unchanged
+  Composer scripts: ci:check and its steps (using pnpm) .............. applied
+  Wayfinder QUERY verb workaround .................................. unchanged
+  phpstan.neon ..................................... skipped (unknown content)
+  app/Actions/Fortify/CreateNewUser.php .............................. applied
+  routes/web.php ................................... skipped (unknown content)
+  tests/Unit/ExampleTest.php ......................................... applied
+
+   WARN  Kit Conversion left these files untouched because their content is not a known Base Kit version: phpstan.neon (sha256 57266ec8a9eb608da3e0536471941228ef9ccfbc9c021df5fa04951cd08fecbb), routes/web.php (sha256 0b2305903b6f54e9656c0fccff2c175582b155dcbf4c2484a7907d2237efe627). Compare each with its converted version in vendor/mrsafalpiya/strictly-laravel/kit/ and apply the changes by hand.
 `;
 
         assert.deepEqual(failureReport('strictly:install', output).diagnostics, [
-            { file: 'resources/js/types/index.d.ts', message: 'skipped (unknown content)' },
+            { file: 'phpstan.neon', message: 'skipped (unknown content)' },
+            { file: 'routes/web.php', message: 'skipped (unknown content)' },
         ]);
     });
 

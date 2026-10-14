@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { describeDiagnostic, failureReport } from './failure-report.ts';
 import { composerPackageDir, fixturesDir, npmPackageDir, repoRoot } from './paths.ts';
 import { type CommandResult, ensureRootTooling, progress, run, runOrThrow } from './run.ts';
 
@@ -121,7 +122,7 @@ export async function prepareInstalledFixture(options: { fresh?: boolean } = {})
 export interface App {
     readonly name: string;
     readonly dir: string;
-    /** Run `php artisan strictly:install --no-interaction`; throws if it fails. */
+    /** Run `php artisan strictly:install --no-interaction`; throws if it exits non-zero, not on a reported row. */
     install(): Promise<CommandResult>;
     /** Run `composer ci:check`, or only its named step (`composer ci:check:<step>`). */
     check(step?: string): Promise<CommandResult>;
@@ -135,6 +136,7 @@ export interface App {
 /**
  * A fresh app: a copy of the installed fixture (call prepareInstalledFixture() first) on which
  * `strictly:install` has run, unless `install: false`. Any previous app of the same name is replaced.
+ * Throws when the install reports a row that isn't applied or unchanged, such as a Kit Conversion skip.
  */
 export async function createApp(name: string, options: { install?: boolean } = {}): Promise<App> {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(name) || ['base-kit', 'installed'].includes(name)) {
@@ -182,7 +184,11 @@ export async function createApp(name: string, options: { install?: boolean } = {
     };
 
     if (options.install ?? true) {
-        await app.install();
+        const { diagnostics } = failureReport('strictly:install', (await app.install()).output);
+
+        if (diagnostics.length > 0) {
+            throw new Error(`strictly:install reported (log: ${relative(repoRoot, logFile)}):\n${diagnostics.map(describeDiagnostic).join('\n')}`);
+        }
     }
 
     return app;

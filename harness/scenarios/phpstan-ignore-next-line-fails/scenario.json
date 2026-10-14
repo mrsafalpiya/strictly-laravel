@@ -1,0 +1,6 @@
+{
+    "problem": "none",
+    "description": "ADR-0007: a @phpstan-ignore-next-line, which names no identifier and gives no reason, fails PHPStan.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Ignoring all errors on a line is not allowed." }
+}

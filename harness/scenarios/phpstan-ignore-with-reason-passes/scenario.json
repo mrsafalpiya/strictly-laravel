@@ -1,0 +1,6 @@
+{
+    "problem": "none",
+    "description": "ADR-0007: a @phpstan-ignore that names the identifier and gives a reason in parentheses passes.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

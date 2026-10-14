@@ -1,0 +1,6 @@
+{
+    "problem": "none",
+    "description": "PHPStan requires full type coverage, so a property typed only in PHPDoc fails it.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "typeCoverage.propertyTypeCoverage" }
+}

@@ -8,7 +8,7 @@ Run these from the repo root. First-time setup: `composer install && pnpm instal
 
 | Command | What it does |
 |---|---|
-| `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, every scenario. |
+| `pnpm test` | Full suite: version sync, fresh install passes `ci:check`, `strictly:install` is idempotent, Kit Conversion leaves unknown content alone, every scenario. |
 | `pnpm test <pattern>...` | Only the tests whose names match, e.g. `pnpm test example-type-error-fails-tsc`. |
 | `pnpm harness` | Fresh install only: `strictly:install` and every `ci:check` step must pass on the latest Base Kit + Overlay (the nightly check). Each step runs on its own, and a failure names the stage and the files that broke. |
 | `pnpm harness <scenario>... [--step <step>]` | Run the named scenarios and report each one. `--step` overrides the scenario's step. |
@@ -28,7 +28,7 @@ Timings on a warm cache: about 8 s for a scenario that runs a single step and ab
 
 Both workflows share their setup through `.github/actions/setup` and upload `.fixtures/*.log` when they fail. Under GitHub Actions, `pnpm harness` also prints every fresh-install failure as an `::error` annotation titled `Fresh install failed at <stage>`. The stage is `strictly:install` or `ci:check:<step>`, and the annotation lists the files the tool named, so a red nightly run shows what broke on its summary page.
 
-The files come from `harness/src/failure-report.ts`, which knows the output formats of tsc, oxlint, oxfmt, Pint, PHPStan and Pest. When no format matches, the report falls back to the tail of the output. When you add a `ci:check` step that runs a new tool, teach that module its format and add a unit test in `harness/tests/failure-report.test.ts` that uses the tool's real output. For `strictly:install`, any installer row (`<label> .... <status>`) whose status isn't `applied` or `unchanged` counts as a failure. A label that is an app-relative path is reported as the file, so a Kit Conversion skip should be reported as a row of its own, labelled with the skipped file's path. Such a row fails the fresh install even when `strictly:install` exits 0, as ADR-0005 requires of the nightly run. When generating the Base Kit or requiring the packages fails, the report names the failed command.
+The files come from `harness/src/failure-report.ts`, which knows the output formats of tsc, oxlint, oxfmt, Pint, PHPStan and Pest. When no format matches, the report falls back to the tail of the output. When you add a `ci:check` step that runs a new tool, teach that module its format and add a unit test in `harness/tests/failure-report.test.ts` that uses the tool's real output. For `strictly:install`, any installer row (`<label> .... <status>`) whose status isn't `applied` or `unchanged` counts as a failure. A label without spaces is an app-relative path and is reported as the file: Kit Conversion reports each file as a row of its own, labelled with its path, a file it skipped reads `skipped (unknown content)`, and a Base Kit file it expected but didn't find reads `not found`. Such a row fails the fresh install even when `strictly:install` exits 0, as ADR-0005 requires of the nightly run, and every app `pnpm test` creates fails the same way. When generating the Base Kit or requiring the packages fails, the report names the failed command.
 
 ## Where the fixtures live
 
@@ -74,7 +74,7 @@ harness/scenarios/<name>/
 }
 ```
 
-- `problem` (required): the id of the Problem it guards (from `docs/problems.md`), or `"none"` for examples.
+- `problem` (required): the id of the Problem it guards (from `docs/problems.md`), or `"none"` for examples and for enforcement that guards no single Problem (the description says what it enforces, citing the ADR if there is one).
 - `description` (required): one sentence.
 - `step` (optional): a `ci:check` step. When it's omitted the full `ci:check` runs. Use a single step for speed whenever the Problem is caught by one tool.
 - `expect` (required): `{"outcome": "pass"}` or `{"outcome": "fail", "errorContains": "<substring>"}`. Failing means a non-zero exit code and the substring in the combined output, with ANSI codes stripped. Pick a specific diagnostic (an error code and message), not just a file name.

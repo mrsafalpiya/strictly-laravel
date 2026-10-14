@@ -1,0 +1,6 @@
+{
+    "problem": "none",
+    "description": "PHPStan analyses tests through the Pest plugin, so an expectation that can never hold fails it before the test runs.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Calling toBeInt() on Expectation<string>; assertion is impossible." }
+}

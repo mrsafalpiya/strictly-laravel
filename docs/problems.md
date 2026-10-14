@@ -73,9 +73,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-034](#p-034) | Iterating an enum's values needs a cast | enums | open |
 | [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | open |
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | open |
-| [P-037](#p-037) | Larastan ignores `casts()` without config | models | open |
+| [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | open |
-| [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | open |
+| [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | open |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | open |
 | [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
@@ -616,11 +616,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** models
 - **Source:** overview §4; eval-01 §7
 - **Upstream:** [larastan/larastan#2512](https://github.com/larastan/larastan/issues/2512)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a model declaring `protected function casts(): array { return ['status' => ProjectStatus::class, 'budget' => 'decimal:2']; }`. Larastan infers `status: string` and `budget: float|null`, so PHPStan doesn't catch a Data class built with the wrong type, and reports false errors such as `->label()` "on string".
 
 **Manual workaround:** `parseModelCastsMethod: true` in `phpstan.neon`.
+
+**Closed by:** `parseModelCastsMethod: true` in the Composer package's PHPStan extension ([`packages/laravel/extension.neon`](../packages/laravel/extension.neon)), which Kit Conversion includes from the app's `phpstan.neon`. Scenarios: `model-cast-enum-used-passes`, `model-cast-enum-misused-fails`.
 
 ### P-038
 
@@ -642,11 +644,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** models
 - **Source:** overview §2; type-safety rule 17
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a `fromModel()` reads `$project->lead` without the relation loaded, or an attribute not selected by the query; Eloquent lazy-loads or returns `null`, so a prop the type says is set arrives as `null` (or costs a query per row).
 
 **Manual workaround:** `Model::shouldBeStrict()` in `AppServiceProvider`, so both throw in tests; factories set every column the app reads.
+
+**Closed by:** `Model::shouldBeStrict()` in the Composer package's service provider ([`packages/laravel/src/StrictlyServiceProvider.php`](../packages/laravel/src/StrictlyServiceProvider.php)), on in every environment. Scenarios: `eager-loading-in-a-test-passes`, `lazy-loading-in-a-test-fails`, `unloaded-attribute-in-a-test-fails`.
 
 ## Pagination and deferred props
 

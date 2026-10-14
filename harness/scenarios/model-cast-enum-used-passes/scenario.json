@@ -1,0 +1,6 @@
+{
+    "problem": "P-037",
+    "description": "PHPStan reads a model's casts() method, so calling the enum's own method on an enum-cast attribute passes.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

@@ -38,7 +38,7 @@ export function failureReport(stage: string, output: string): FailureReport {
                 installerRow = undefined;
 
                 if (status !== 'applied' && status !== 'unchanged') {
-                    installerRow = /^\S+\/\S+$/.test(label) ? { file: label, message: status } : { message: `${label}: ${status}` };
+                    installerRow = /^\S+$/.test(label) ? { file: label, message: status } : { message: `${label}: ${status}` };
                     diagnostics.push(installerRow);
                 }
             } else if (installerRow !== undefined && (match = /^\s*ERROR\s+(.+?)\s*$/.exec(line)) !== null) {

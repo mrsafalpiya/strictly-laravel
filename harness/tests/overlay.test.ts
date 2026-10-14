@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { appendFileSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { before, describe, test } from 'node:test';
 
+import { failureReport } from '../src/failure-report.ts';
 import { createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
 
@@ -24,6 +27,20 @@ describe('Overlay on the latest Base Kit', () => {
         await app.install();
 
         assert.deepEqual(app.changedFiles(), [], 'a second strictly:install changed files');
+    });
+
+    test('Kit Conversion leaves a Base Kit file with unknown content untouched and reports it', async () => {
+        const app = await createApp('kit-conversion-unknown-content', { install: false });
+        const routes = join(app.dir, 'routes', 'web.php');
+        appendFileSync(routes, "\n// The app's own edit\n");
+        const edited = readFileSync(routes, 'utf8');
+
+        const install = await app.install();
+
+        assert.equal(readFileSync(routes, 'utf8'), edited, 'Kit Conversion overwrote a file with unknown content');
+        assert.deepEqual(failureReport('strictly:install', install.output).diagnostics, [
+            { file: 'routes/web.php', message: 'skipped (unknown content)' },
+        ]);
     });
 
     for (const scenario of loadScenarios()) {
