@@ -1,0 +1,53 @@
+# Developing the Overlay
+
+How to work on Strictly Laravel itself: the Composer and npm packages, the installer, Kit Conversion and the Testbed App. Every change is driven by a Problem in [`docs/problems.md`](../problems.md) and proven by harness scenarios.
+
+## The loop
+
+### 1. Start from a Problem
+
+Find the Problem your ticket closes in `docs/problems.md`. Read its reproduction, its manual workaround (usually what the Reference Implementation did by hand, under `reference/`) and any ADR that touches its Type Boundary.
+
+If the work has no Problem yet, record one first (see "Adding a Problem" in the register). A change that closes no Problem is either enforcement or infrastructure for one; name the Problem it serves.
+
+**Done when:** you can name the Problem IDs the change closes, and each has a reproduction concrete enough to turn into a scenario.
+
+### 2. Prove it with harness scenarios
+
+Each Problem gets at least two scenarios in the fixture-app harness ([`harness.md`](harness.md)):
+
+- a **passing** scenario: the typed way works, and the app's checks pass;
+- a **breaking** scenario: a known edit that reproduces the Problem, which must make the checks fail with a specific diagnostic (the `tsc`, PHPStan or oxlint message, or the failing Contract).
+
+Each scenario names the Problem ID it guards. A scenario is **green** when the app's checks end the way it expects (pass for a passing scenario, fail with the named diagnostic for a breaking one) and **red** otherwise. Write the breaking scenario first and watch it go red before the fix: the checks still pass on the broken edit, which is the Problem reproduced. Then build the fix until both scenarios are green.
+
+Assert on what an app developer sees: pass, or fail with the expected diagnostic. Generator internals, intermediate files and private classes stay out of assertions. A scenario may run only the relevant step of `ci:check` (for example `tsc` alone) for speed. Use the secondary seams only where the harness is too coarse: PHPStan's rule-test kit for a PHPStan rule, oxlint's rule tester for a lint rule.
+
+**Done when:** every Problem the change closes has a passing and a breaking scenario, the breaking one fails with the named diagnostic, and both are green against the change.
+
+### 3. Verify on the fresh fixture and the Testbed App
+
+- Run the harness with no scenario on a freshly generated latest Base Kit: `strictly:install` must succeed and the app's `ci:check` must pass. This catches upstream drift in the hooks and Kit Conversion.
+- Once the Testbed App exists, its `ci:check` must stay green: full feature tests, Contracts, Contract Coverage at zero unverified shapes, and PHPStan max. It is the long-lived app that receives package changes, so it also proves the update path.
+
+**Done when:** both are green on the final state of the change.
+
+### 4. Close the Problem
+
+In `docs/problems.md`, set the Problem's status to `closed`, add **Closed by** with the scenario names, and update its index row. When a closed Problem leaves a remaining limitation, record it as its own Problem with status `accepted gap` and its **Reasoning**, so it stays visible to app developers.
+
+**Done when:** the register matches the code: every Problem the change closes reads `closed`, and every limitation the change leaves is an `accepted gap` with reasoning.
+
+## Rules that apply throughout
+
+**Enforcement placement.** Put each rule in the earliest tool that can express it: PHPStan, then oxlint, then `tsc`, then tests and Contracts. A rule caught in the editor beats one caught in CI.
+
+**Upstream workarounds.** A fix for a third-party tool's defect (typescript-transformer, laravel-data, Wayfinder, Larastan, Inertia, Laravel, the Vite React plugin) lives in its own isolated unit whose doc comment cites the Problem ID and links the upstream issue, so it can be deleted when upstream ships a fix. When the register says "no upstream issue filed", tell the maintainer so one can be filed, then link it in both places.
+
+**Base Kit toolchain.** Leave the Base Kit's toolchain choices and versions alone; the narrowed JSX types are the single override (ADR-0004). Every tsconfig change and generated `.d.ts` must be valid under both the kit's `tsc` and the TS 7 compiler embedded in type-aware oxlint; `ci:check` runs both.
+
+**ADRs, sparingly.** Record an ADR in `docs/adr/` only for a decision that is hard to reverse, would surprise a reader without the context, and was a real trade-off between options. Everything else belongs in the Problem, the code or the commit message. Match the existing ADRs' format and take the next number. When a change contradicts an existing ADR, flag the conflict explicitly (`docs/agents/domain.md`) and let the maintainer decide whether to reopen it.
+
+**Vocabulary.** Name domain concepts with the terms in [`GLOSSARY.md`](../../GLOSSARY.md): Problem, Type Boundary, Contract, Contract Coverage, Base Kit, Overlay, Kit Conversion, Testbed App, Tracklane, Reference Implementation, Source of Truth. This applies to code, scenario names, comments, commits and tickets. A concept missing from the glossary is a signal to add it there first.
+
+**The Reference Implementation is read-only.** `reference/` is a spec to extract from. Copy what a Problem needs into the packages; leave `reference/` untouched and out of all tooling.
