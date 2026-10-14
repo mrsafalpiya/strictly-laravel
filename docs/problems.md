@@ -1020,7 +1020,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** `->replaceType(UploadedFile::class, new TypeScriptRaw('File'))` (with `File | null` in `useRouteForm` until a file is picked) and `->replaceType(DateTimeInterface::class, 'string')`.
 
-**Closed by:** [`UnmappedClassTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnmappedClassTypes.php) generates `UploadedFile` (and subclasses) as `File` and any `DateTimeInterface` as `string`; every other PHP class without a TypeScript type fails `strictly:generate` with the property and the class named, and the previous output stays ([`UnmappedClassCheck`](../packages/laravel/src/TypeScript/UnmappedClassCheck.php)). `File | null` until a file is picked belongs to the typed forms ([P-014](#p-014)). Scenarios: `uploaded-file-and-datetime-typed-passes`, `file-name-for-uploaded-file-fails-tsc`, `unmapped-class-fails-generation`.
+**Closed by:** [`UnmappedClassTypes`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnmappedClassTypes.php) generates `UploadedFile` (and subclasses) as `File` and any `DateTimeInterface` as `string`; every other PHP class without a TypeScript type fails `strictly:generate` with the property and the class named, and the previous output stays ([`UnmappedClassCheck`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnmappedClassCheck.php)). `File | null` until a file is picked belongs to the typed forms ([P-014](#p-014)). Scenarios: `uploaded-file-and-datetime-typed-passes`, `file-name-for-uploaded-file-fails-tsc`, `unmapped-class-fails-generation`.
 
 ### P-062
 
