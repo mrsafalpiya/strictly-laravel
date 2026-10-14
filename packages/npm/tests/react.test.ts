@@ -4,11 +4,21 @@ import { describe, test } from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { Pagination } from '../react/index.js';
+import { Deferred, InfiniteScroll, WhenVisible } from '@inertiajs/react';
+
+import { forPage, Pagination } from '../react/index.js';
 import type { PagePaginator, PaginatorLink } from '../react/index.js';
 
 // Lives next to the npm package so react and react-dom resolve to the package's own copies, the ones its helpers use.
 // The harness scenarios prove the helpers type-check in an app; these render them.
+
+// What an app's generated types register (InertiaPagesProvider).
+declare module '../react/index.js' {
+    interface Register {
+        pages: { reports: { title: string; stats?: { open: number } } };
+        sharedProps: { name: string; [key: string]: unknown };
+    }
+}
 
 const links: PaginatorLink[] = [
     { url: null, label: '&laquo; Previous', page: null, active: false },
@@ -50,5 +60,27 @@ describe('npm package: Pagination', () => {
 
     test('renders nothing for a single page', () => {
         assert.equal(renderToStaticMarkup(createElement(Pagination, { paginator: paginator(1) })), '');
+    });
+});
+
+describe('npm package: forPage', () => {
+    const page = forPage<'reports'>();
+
+    test('returns the prop names it is given, for only, except and reset', () => {
+        assert.deepEqual(page.only('stats', 'name'), ['stats', 'name']);
+        assert.deepEqual(page.except('title'), ['title']);
+        assert.deepEqual(page.reset('stats'), ['stats']);
+    });
+
+    test("returns Inertia's own components, typed by the page", () => {
+        assert.equal(page.Deferred, Deferred);
+        assert.equal(page.WhenVisible, WhenVisible);
+        assert.equal(page.InfiniteScroll, InfiniteScroll);
+    });
+
+    test('returns the optimistic update it is given', () => {
+        const update = (props: { title: string }) => ({ title: `${props.title}!` });
+
+        assert.equal(page.optimistic(update), update);
     });
 });

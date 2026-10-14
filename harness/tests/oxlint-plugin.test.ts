@@ -91,3 +91,78 @@ describe('oxlint plugin: strictly/require-suppression-reason', () => {
         ],
     });
 });
+
+describe('oxlint plugin: strictly/typed-prop-names', () => {
+    tester.run('typed-prop-names', rule('typed-prop-names'), {
+        valid: [
+            "router.reload({ only: page.only('stats') });",
+            "router.reload({ except: page.except('stats', 'members') });",
+            "router.visit(show(project), { reset: page.reset('comments') });",
+            "<Link href={show(project)} only={page.only('stats')}>Stats</Link>;",
+            "<page.WhenVisible data=\"stats\" params={{ only: reports.only('stats') }} fallback={null}>x</page.WhenVisible>;",
+            "form.reset('password');",
+            "const options = { onlyNext: true, resetOnSuccess: ['password'] };",
+        ],
+        invalid: [
+            {
+                code: "router.reload({ only: ['stats'] });",
+                errors: [{ message: /`only` must be `page\.only\(…\)` with `const page = forPage<'component'>\(\)`/ }],
+            },
+            { code: "router.reload({ except: ['stats'] });", errors: [{ message: /`except` must be `page\.except\(…\)`/ }] },
+            { code: "router.visit(show(project), { reset: ['comments'] });", errors: [{ message: /`reset` must be `page\.reset\(…\)`/ }] },
+            { code: "const names = ['stats']; router.reload({ only: names });", errors: 1 },
+            { code: "const only = ['stats']; router.reload({ only });", errors: 1 },
+            { code: "router.reload({ only: ['stats'] satisfies string[] });", errors: 1 },
+            { code: "router.reload({ only: page.except('stats') });", errors: 1 },
+            { code: "router.reload({ 'only': ['stats'] });", errors: 1 },
+            { code: "<Link href={show(project)} only={['stats']}>Stats</Link>;", errors: 1 },
+            { code: '<Link href={show(project)} except="stats">Stats</Link>;', errors: 1 },
+        ],
+    });
+});
+
+describe('oxlint plugin: strictly/typed-inertia-components', () => {
+    tester.run('typed-inertia-components', rule('typed-inertia-components'), {
+        valid: [
+            "import { Head, Link, router } from '@inertiajs/react';",
+            "import { forPage } from '@mrsafalpiya/strictly-laravel/react';",
+            "import { Deferred } from './deferred';",
+        ],
+        invalid: [
+            {
+                code: "import { Deferred } from '@inertiajs/react';",
+                errors: [
+                    {
+                        message:
+                            /Use `page\.Deferred` from `const page = forPage<'component'>\(\)` \('@mrsafalpiya\/strictly-laravel\/react'\) instead of Inertia's untyped `Deferred`/,
+                    },
+                ],
+            },
+            { code: "import { Head, WhenVisible } from '@inertiajs/react';", errors: [{ message: /`page\.WhenVisible`/ }] },
+            { code: "import { InfiniteScroll as Scroll } from '@inertiajs/react';", errors: [{ message: /`page\.InfiniteScroll`/ }] },
+            { code: "import { Deferred, WhenVisible } from '@inertiajs/react';", errors: 2 },
+            { code: "export { Deferred } from '@inertiajs/react';", errors: 1 },
+        ],
+    });
+});
+
+describe('oxlint plugin: strictly/typed-optimistic-updates', () => {
+    tester.run('typed-optimistic-updates', rule('typed-optimistic-updates'), {
+        valid: [
+            'router.reload({ optimistic: page.optimistic((props) => ({ count: props.count + 1 })) });',
+            '<Form optimistic={page.optimistic((props) => ({ count: props.count + 1 }))}>x</Form>;',
+            'const update = page.optimistic(() => ({}));',
+        ],
+        invalid: [
+            {
+                code: 'router.optimistic((props) => ({ count: 1 })).reload();',
+                errors: [{ message: /`router\.optimistic\(\)` trusts any props type/ }],
+            },
+            {
+                code: 'router.reload({ optimistic: (props) => ({ count: 1 }) });',
+                errors: [{ message: /`optimistic` must be `page\.optimistic\(…\)`/ }],
+            },
+            { code: '<Form optimistic={(props) => ({ count: 1 })}>x</Form>;', errors: 1 },
+        ],
+    });
+});

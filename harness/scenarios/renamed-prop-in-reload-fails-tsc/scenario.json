@@ -1,0 +1,9 @@
+{
+    "problem": "P-045",
+    "description": "A partial reload names its props through forPage<'reports'>().only(), so a prop name the page doesn't have (a renamed prop) fails tsc instead of silently reloading nothing.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2345: Argument of type '\"statistics\"' is not assignable to parameter of type"
+    }
+}
