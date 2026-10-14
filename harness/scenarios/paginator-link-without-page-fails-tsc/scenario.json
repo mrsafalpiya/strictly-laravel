@@ -1,0 +1,9 @@
+{
+    "problem": "P-040",
+    "description": "A paginator link without the page number Laravel sends fails tsc, because paginator links are generated with page: number | null.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2741: Property 'page' is missing in type"
+    }
+}

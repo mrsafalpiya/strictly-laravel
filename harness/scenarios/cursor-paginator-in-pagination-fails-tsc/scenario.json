@@ -1,0 +1,9 @@
+{
+    "problem": "P-040",
+    "description": "Passing a cursor paginator to the page-number Pagination component fails tsc, because a cursor paginator has no page numbers.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'CursorPaginatedDataCollection<string | number, ProjectData>' is not assignable to type 'PagePaginator'."
+    }
+}

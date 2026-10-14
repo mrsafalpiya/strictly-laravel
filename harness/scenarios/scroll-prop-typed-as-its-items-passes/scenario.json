@@ -1,0 +1,6 @@
+{
+    "problem": "P-041",
+    "description": "A ScrollProp<T> property is generated as T, the paginated items Inertia sends, so infinite-scroll props need no cast.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}
