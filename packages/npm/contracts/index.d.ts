@@ -1,3 +1,5 @@
+import type { AnyRouteKey } from '../routes/index.js';
+
 /**
  * The type a recorded Contract of a value of type T is checked against: what the server can send for T as JSON. The
  * Contracts that feature tests record (resources/js/__contracts__, written by the Composer package's ContractRecorder)
@@ -10,14 +12,21 @@
  * or `Record<string, number>`, or a Data object whose props are all optional) may arrive as `[]`, at any depth. Reading
  * such a value by key still gives `undefined`, as its type allows. Nothing else is relaxed: a non-empty list sent for a
  * map, or `[]` for an object with a required property, still fails.
+ *
+ * A route key (`RouteKey<'Project', number>`) is checked as its plain value: JSON can't carry the brand, which the
+ * types derive from the PHP code instead. The feature tests check the value is an existing key of its model.
  */
-export type Contract<T> = T extends readonly unknown[]
-    ? { [K in keyof T]: Contract<T[K]> }
-    : T extends object
-      ? {} extends T
-          ? { [K in keyof T]: Contract<T[K]> } | []
-          : { [K in keyof T]: Contract<T[K]> }
-      : T;
+export type Contract<T> = T extends AnyRouteKey
+    ? T extends string
+        ? string
+        : number
+    : T extends readonly unknown[]
+      ? { [K in keyof T]: Contract<T[K]> }
+      : T extends object
+        ? {} extends T
+            ? { [K in keyof T]: Contract<T[K]> } | []
+            : { [K in keyof T]: Contract<T[K]> }
+        : T;
 
 /**
  * What a partial reload of a page with props T sends (Problem P-046): every prop it asked for, present even when the

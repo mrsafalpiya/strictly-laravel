@@ -1,0 +1,9 @@
+{
+    "problem": "P-116",
+    "description": "A Data property declared #[RouteKeyOf(Project::class)] but filled with an issue's id fails the feature test that renders it, even though with one id sequence for all tables that id would also be a project's.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "App\\Data\\IssueData.project_id is not the id of any App\\Models\\Project: "
+    }
+}

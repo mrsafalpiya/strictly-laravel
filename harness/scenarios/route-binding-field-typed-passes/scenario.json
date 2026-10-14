@@ -1,0 +1,6 @@
+{
+    "problem": "P-002",
+    "description": "A route bound by a field ({project:slug}) whose action type-hints the model takes that model's key by that field: a ProjectData (its slug) or its slug, and tsc passes.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}
