@@ -1,0 +1,9 @@
+{
+    "problem": "P-064",
+    "description": "A Data class saved half-written fails generation with its parse error instead of silently dropping its type, so the Vite plugin keeps the last good types.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "app/Data/ProjectData.php:12: syntax error, unexpected token \"public\", expecting \")\""
+    }
+}

@@ -21,7 +21,7 @@ Each Problem gets at least two scenarios in the fixture-app harness ([`harness.m
 
 Each scenario names the Problem ID it guards. A scenario is **green** when the app's checks end the way it expects (pass for a passing scenario, fail with the named diagnostic for a breaking one) and **red** otherwise. Write the breaking scenario first and watch it go red before the fix: the checks still pass on the broken edit, which is the Problem reproduced. Then build the fix until both scenarios are green.
 
-Assert on what an app developer sees: pass, or fail with the expected diagnostic. Generator internals, intermediate files and private classes stay out of assertions. A scenario may run only the relevant step of `ci:check` (for example `tsc` alone) for speed. Use the secondary seams only where the harness is too coarse: PHPStan's rule-test kit for a PHPStan rule, oxlint's rule tester for a lint rule.
+Assert on what an app developer sees: pass, or fail with the expected diagnostic. Generator internals, intermediate files and private classes stay out of assertions. A scenario may run only the relevant step of `ci:check` (for example `tsc` alone) for speed. Use the secondary seams only where the harness is too coarse: PHPStan's rule-test kit for a PHPStan rule, oxlint's rule tester for a lint rule, a real Vite dev server with a stand-in generator for the Vite plugin's timing.
 
 **Done when:** every Problem the change closes has a passing and a breaking scenario, the breaking one fails with the named diagnostic, and both are green against the change.
 

@@ -9,12 +9,20 @@
             "types": "./index.d.ts",
             "default": "./index.js"
         },
-        "./oxlint": "./oxlint/index.js"
+        "./oxlint": "./oxlint/index.js",
+        "./vite": {
+            "types": "./vite/index.d.ts",
+            "default": "./vite/index.js"
+        }
     },
     "files": [
         "index.js",
         "index.d.ts",
-        "oxlint"
+        "oxlint",
+        "vite"
     ],
+    "peerDependencies": {
+        "vite": ">=8"
+    },
     "sideEffects": false
 }
