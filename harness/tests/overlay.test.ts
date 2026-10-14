@@ -5,14 +5,13 @@ import { before, describe, test } from 'node:test';
 
 import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
-import { createApp, prepareInstalledFixture } from '../src/fixture.ts';
+import { appConcurrency, createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { fixturesDir } from '../src/paths.ts';
-import { run } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
 
-// Every test here works on its own copy of one cached app (latest Base Kit + Overlay installed from local paths),
-// so they run one after another inside this single file.
-describe('Overlay on the latest Base Kit', () => {
+// Every test here works on its own copy of one cached app (latest Base Kit + Overlay installed from local paths), in its
+// own directory with its own TMPDIR, so they run concurrently (appConcurrency(), STRICTLY_HARNESS_CONCURRENCY).
+describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, () => {
     before(async () => {
         await prepareInstalledFixture();
     });
@@ -164,17 +163,16 @@ export default function ProjectStatuses() {
         // What a fresh clone lacks: every generated directory, ours and Wayfinder's.
         const generated = ['generated', 'wayfinder', 'routes', 'actions'].map((dir) => join(app.dir, 'resources', 'js', dir));
         const freshClone = (): void => generated.forEach((dir) => rmSync(dir, { recursive: true, force: true }));
-        const inApp = { cwd: app.dir, logFile: join(app.dir, '..', `${app.name}.log`) };
 
         freshClone();
         assertOutcome(await app.check(), { outcome: 'pass' });
         assert.deepEqual(app.changedFiles(), [], 'generated files are not gitignored');
 
         freshClone();
-        assertOutcome(await run('pnpm', ['run', 'types:check'], inApp), { outcome: 'pass' });
+        assertOutcome(await app.run('pnpm', ['run', 'types:check']), { outcome: 'pass' });
 
         freshClone();
-        assertOutcome(await run('pnpm', ['run', 'build'], inApp), { outcome: 'pass' });
+        assertOutcome(await app.run('pnpm', ['run', 'build']), { outcome: 'pass' });
     });
 
     for (const scenario of loadScenarios()) {

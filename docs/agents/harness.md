@@ -18,7 +18,7 @@ Run these from the repo root. First-time setup: `composer install && pnpm instal
 | `pnpm lint:php` | Run Pint on the Composer package (`--test` to check only, as CI does). |
 | `pnpm test:php` | The Composer package's PHPUnit tests: its PHPStan rules, through PHPStan's rule-test kit (`packages/laravel/tests/`). |
 
-Timings on a warm cache: about 8 s for a scenario that runs a single step and about 20 s for a full `ci:check`. A fresh Base Kit takes about 1.5 min to generate, plus about 20 s to install the packages.
+Timings on a warm cache: about 8 s for a scenario that runs a single step and about 20 s for a full `ci:check`. The full `pnpm test` takes about 2 min on 20 CPUs (8 apps at once) and about 5 min with 2 at once, using about 15 MB of disk and 0.6 GB of memory per app checked at once. A fresh Base Kit takes about 1.5 min to generate, plus about 20 s to install the packages.
 
 ## CI
 
@@ -38,8 +38,12 @@ The files come from `harness/src/failure-report.ts`, which knows the output form
 | Path | Contents | Rebuilt when |
 |---|---|---|
 | `base-kit/` (+ `base-kit.stamp.json`, `base-kit.log`) | The output of `vendor/bin/laravel new base-kit --react --pest --pnpm --no-boost --database=sqlite --git --no-interaction`, using the `laravel/installer` pinned in the root `composer.json`. | `--fresh`, or the stamp is missing |
-| `installed/` | `base-kit` with `mrsafalpiya/strictly-laravel` (a Composer path repo, symlinked) and `@mrsafalpiya/strictly-laravel` (`link:`) required, committed in the app's own git repo. | The Base Kit or either package manifest changes. Package code is symlinked, so code edits need no rebuild. |
-| `<app>/` (+ `<app>.log`) | A throwaway `cp -a` copy of `installed/` with `strictly:install` already run: `fresh-install`, `idempotent-install`, `scenario-<name>`. | Every run. It stays on disk afterwards for inspection. |
+| `installed/` | `base-kit` with `mrsafalpiya/strictly-laravel` (a Composer path repo, symlinked) and `@mrsafalpiya/strictly-laravel` (`link:`) required, committed in the app's own git repo. The files in its `vendor/` and `node_modules/` are read-only. | The Base Kit or either package manifest changes. Package code is symlinked, so code edits need no rebuild. |
+| `<app>/` (+ `<app>.log`, `<app>.tmp/`) | A throwaway copy of `installed/` with `strictly:install` already run: `fresh-install`, `idempotent-install`, `scenario-<name>`. `<app>.tmp/` is its `TMPDIR`. | Every run. It stays on disk afterwards for inspection. |
+
+An app copies its own files and hard-links `vendor/` and `node_modules/` to `installed/`'s, which are about 97% of its size. That way an app costs about 10 MB and a second to create, instead of about 1 GB and 9 s. Because the dependency files are shared, they are read-only: a tool that rewrites one in place fails with `EACCES` or `Permission denied` instead of changing it for every later app. If a tool legitimately rewrites such a file (pnpm rewrites its install state when `package.json` changes), add the file to `appOwnedDependencyFiles` in `harness/src/fixture.ts`, so every app gets its own copy. Hard links need GNU `cp -l` and `.fixtures/` on one filesystem.
+
+The test suite checks apps concurrently, and `pnpm harness <scenario>...` runs its scenarios concurrently too. Each app has its own directory and its own `TMPDIR`, so caches such as PHPStan's aren't shared. By default the number of apps checked at once is half the CPUs, capped at one per 2 GiB of memory; set `STRICTLY_HARNESS_CONCURRENCY` to override it, for example to `1` to debug a run one app at a time.
 
 Every app is its own git repo. Run `git diff` in an app to see what `strictly:install` and the scenario changed. All apps sit at the same depth, so the relative symlinks that Composer and pnpm create still work in copies. Each `<app>.log` holds every command the harness ran in that app and its full output.
 

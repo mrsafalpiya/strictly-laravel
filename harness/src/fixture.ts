@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { availableParallelism, totalmem } from 'node:os';
 import { join, relative } from 'node:path';
 
 import { describeDiagnostic, failureReport } from './failure-report.ts';
@@ -14,12 +15,23 @@ import { type CommandResult, ensureRootTooling, progress, run, runOrThrow } from
 //   installed/  base-kit + both Overlay packages required from local paths. Rebuilt when the Base Kit or a package
 //               manifest changes. Package code is symlinked, so code edits need no rebuild.
 //   <app>/      a throwaway copy of installed/ on which `strictly:install` has just run; one per test or scenario,
-//               left in place afterwards for inspection.
+//               left in place afterwards for inspection. Its vendor/ and node_modules/ are hard links to installed/'s
+//               (see createAppDir()), so an app costs about 30 MB and a second to create instead of about 1 GB and 9 s.
+//   <app>.tmp/  the app's TMPDIR, so apps checked at the same time don't share caches such as PHPStan's.
 
 const baseKitDir = join(fixturesDir, 'base-kit');
 const baseKitStamp = join(fixturesDir, 'base-kit.stamp.json');
 const installedDir = join(fixturesDir, 'installed');
 const installedStamp = join(fixturesDir, 'installed.stamp.json');
+
+/** The app directories every app shares with installed/ through hard links. */
+const sharedDependencyDirs = ['vendor', 'node_modules'];
+
+/**
+ * Files inside the shared directories that tools rewrite in place, so each app gets its own copy. pnpm rewrites its
+ * install state whenever `pnpm run` finds package.json changed, which `strictly:install` does.
+ */
+const appOwnedDependencyFiles = ['node_modules/.modules.yaml', 'node_modules/.pnpm-workspace-state-v1.json', 'node_modules/.pnpm/lock.yaml'];
 
 const composerPackageName = 'mrsafalpiya/strictly-laravel';
 const npmPackageName = '@mrsafalpiya/strictly-laravel';
@@ -96,6 +108,8 @@ export async function prepareInstalledFixture(options: { fresh?: boolean } = {})
         .digest('hex');
 
     if (existsSync(installedStamp) && existsSync(installedDir) && readJson(installedStamp).key === key) {
+        await sealDependencies();
+
         return;
     }
 
@@ -115,8 +129,29 @@ export async function prepareInstalledFixture(options: { fresh?: boolean } = {})
     await runOrThrow('pnpm', ['add', `${npmPackageName}@link:${relative(installedDir, npmPackageDir)}`], inInstalled);
     await runOrThrow('git', ['add', '--all'], inInstalled);
     await runOrThrow('git', ['commit', '--quiet', '--message', 'Require the Overlay packages from local paths'], inInstalled);
+    await sealDependencies();
 
     writeFileSync(installedStamp, `${JSON.stringify({ key }, null, 4)}\n`);
+}
+
+/**
+ * How many apps the test suite checks at once: STRICTLY_HARNESS_CONCURRENCY, or by default one per two CPUs and
+ * per 2 GiB of memory (each check runs multi-threaded tools: PHPStan, oxlint, tsc, Pest).
+ */
+export function appConcurrency(): number {
+    const configured = process.env['STRICTLY_HARNESS_CONCURRENCY'];
+
+    if (configured !== undefined && configured !== '') {
+        const value = Number(configured);
+
+        if (!Number.isInteger(value) || value < 1) {
+            throw new Error(`STRICTLY_HARNESS_CONCURRENCY must be a positive integer, got "${configured}"`);
+        }
+
+        return value;
+    }
+
+    return Math.max(1, Math.min(Math.floor(availableParallelism() / 2), Math.floor(totalmem() / 2 ** 31)));
 }
 
 export interface App {
@@ -131,6 +166,8 @@ export interface App {
     commitAll(message: string): Promise<void>;
     /** Files changed since the last commit (`git status --porcelain`), excluding gitignored ones. */
     changedFiles(): string[];
+    /** Run any command in the app, with the app's environment; never rejects on a non-zero exit code. */
+    run(command: string, args: string[]): Promise<CommandResult>;
 }
 
 /**
@@ -149,8 +186,12 @@ export async function createApp(name: string, options: { install?: boolean } = {
 
     const dir = join(fixturesDir, name);
     const logFile = join(fixturesDir, `${name}.log`);
-    await copyApp(installedDir, dir);
+    const tmpDir = join(fixturesDir, `${name}.tmp`);
+    await createAppDir(dir);
+    rmSync(tmpDir, { recursive: true, force: true });
+    mkdirSync(tmpDir);
     writeFileSync(logFile, '');
+    const inApp = { cwd: dir, logFile, env: { TMPDIR: tmpDir } };
 
     const steps = (): string[] => {
         const scripts = (readJson(join(dir, 'composer.json')).scripts ?? {}) as Record<string, unknown>;
@@ -163,24 +204,25 @@ export async function createApp(name: string, options: { install?: boolean } = {
     const app: App = {
         name,
         dir,
-        install: () => runOrThrow('php', ['artisan', 'strictly:install', '--no-interaction'], { cwd: dir, logFile }),
+        install: () => runOrThrow('php', ['artisan', 'strictly:install', '--no-interaction'], inApp),
         check: async (step) => {
             if (step !== undefined && !steps().includes(step)) {
                 throw new Error(`Unknown ci:check step "${step}"; this app defines: ${steps().join(', ') || '(none)'}`);
             }
 
-            return run('composer', ['--no-ansi', step === undefined ? 'ci:check' : `ci:check:${step}`], { cwd: dir, logFile });
+            return run('composer', ['--no-ansi', step === undefined ? 'ci:check' : `ci:check:${step}`], inApp);
         },
         steps,
         commitAll: async (message) => {
-            await runOrThrow('git', ['add', '--all'], { cwd: dir, logFile });
-            await runOrThrow('git', ['commit', '--quiet', '--allow-empty', '--message', message], { cwd: dir, logFile });
+            await runOrThrow('git', ['add', '--all'], inApp);
+            await runOrThrow('git', ['commit', '--quiet', '--allow-empty', '--message', message], inApp);
         },
         changedFiles: () => {
             const status = execFileSync('git', ['status', '--porcelain'], { cwd: dir, encoding: 'utf8' });
 
             return status.split('\n').filter((line) => line.trim() !== '');
         },
+        run: (command, args) => run(command, args, inApp),
     };
 
     if (options.install ?? true) {
@@ -205,6 +247,41 @@ async function ensureFixturesDir(): Promise<void> {
     if (!existsSync(join(fixturesDir, '.git'))) {
         await runOrThrow('git', ['init', '--quiet'], { cwd: fixturesDir });
     }
+}
+
+/**
+ * Create an app directory from installed/: its own files are copied, and vendor/ and node_modules/ are hard links to
+ * installed/'s files, which are about 97% of its size. The files they share are read-only (sealDependencies()), so a
+ * tool that writes into a dependency in place fails with "Permission denied" instead of changing it for every later
+ * app; such a file belongs in appOwnedDependencyFiles.
+ */
+async function createAppDir(dir: string): Promise<void> {
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir);
+    const entries = readdirSync(installedDir);
+    const own = entries.filter((entry) => !sharedDependencyDirs.includes(entry)).map((entry) => join(installedDir, entry));
+    const shared = entries.filter((entry) => sharedDependencyDirs.includes(entry)).map((entry) => join(installedDir, entry));
+
+    await runOrThrow('cp', ['-a', ...own, dir], { cwd: fixturesDir });
+    await runOrThrow('cp', ['-al', ...shared, dir], { cwd: fixturesDir });
+
+    for (const file of appOwnedDependencyFiles) {
+        const target = join(dir, file);
+
+        if (existsSync(target)) {
+            rmSync(target);
+            copyFileSync(join(installedDir, file), target);
+            chmodSync(target, 0o644);
+        }
+    }
+}
+
+/** Make every file in installed/'s shared directories read-only; apps hard-link them (createAppDir()). */
+async function sealDependencies(): Promise<void> {
+    const dirs = sharedDependencyDirs.map((entry) => join(installedDir, entry)).filter((dir) => existsSync(dir));
+
+    // Symlinks (the Overlay packages, pnpm's layout) are skipped: chmod would follow them into the monorepo.
+    await runOrThrow('find', [...dirs, '-type', 'f', '-perm', '/222', '-exec', 'chmod', 'a-w', '{}', '+'], { cwd: fixturesDir });
 }
 
 async function copyApp(from: string, to: string): Promise<void> {

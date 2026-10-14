@@ -3,7 +3,7 @@ import { relative } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import { describeDiagnostic, failureReport, githubAnnotations } from './failure-report.ts';
-import { type App, createApp, prepareInstalledFixture } from './fixture.ts';
+import { type App, appConcurrency, createApp, prepareInstalledFixture } from './fixture.ts';
 import { fixturesDir, repoRoot } from './paths.ts';
 import { CommandFailed, type CommandResult, tail } from './run.ts';
 import { assertOutcome, type Expectation, loadScenario, loadScenarios, runScenario } from './scenario.ts';
@@ -147,8 +147,15 @@ if (scenarios.length === 0) {
     await freshInstall(values.step);
 }
 
-for (const scenario of scenarios) {
-    await report(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, scenario.expect, () => runScenario(scenario, stepOption));
-}
+// Each scenario has its own app, so they run concurrently; results print as they finish.
+const queue = [...scenarios];
+await Promise.all(
+    Array.from({ length: Math.min(appConcurrency(), queue.length) }, async () => {
+        for (let scenario = queue.shift(); scenario !== undefined; scenario = queue.shift()) {
+            const { name, problem, expect } = scenario;
+            await report(`scenario ${name} [Problem: ${problem}]`, expect, () => runScenario(scenario, stepOption));
+        }
+    }),
+);
 
 process.exitCode = failures === 0 ? 0 : 1;
