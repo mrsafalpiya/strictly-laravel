@@ -1,0 +1,9 @@
+{
+    "problem": "none",
+    "description": "noFallthroughCasesInSwitch: a non-empty case that falls through fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/lib/greeting.ts(5,9): error TS7029: Fallthrough case in switch."
+    }
+}

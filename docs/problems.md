@@ -42,7 +42,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-004](#p-004) | Wayfinder's output formatter collapses function arguments | routes | open |
 | [P-005](#p-005) | `withoutScopedBindings()` inside `scopeBindings()` has no effect | routes | open |
 | [P-006](#p-006) | Query strings are untyped | routes | open |
-| [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | open |
+| [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
 | [P-009](#p-009) | Page props are hand-written per page | page props | open |
 | [P-010](#p-010) | Nothing ties a page name to a page component file | page props | open |
@@ -195,11 +195,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `<Link href="/dashboard">` or `router.visit('/projects/' + id)` compiles and keeps compiling after the route is renamed or removed.
 
 **Manual workaround:** the `type-safety/no-hardcoded-urls` lint rule (`lint/type-safety.js`); URLs come from Wayfinder.
+
+**Closed by:** the `strictly/no-hardcoded-urls` rule of the npm package's oxlint plugin ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)), which the installer registers in the app's Vite+ lint config. It rejects a string starting with a single `/` in `href` and `action` attributes, as the URL argument of `visit`, `submit`, `fetch`, `router.*` and `location.assign`/`replace`, and assigned to `location` or `.href`, including either branch of `??`, `||`, `? :` and the start of a `+` concatenation; Kit Conversion moves the Base Kit's one hard-coded URL (`passkey-verify.tsx`) to Wayfinder. A URL held in a variable first escapes the rule ([P-070](#p-070)). Scenarios: `wayfinder-route-url-passes`, `hardcoded-url-fails`.
 
 ### P-008
 

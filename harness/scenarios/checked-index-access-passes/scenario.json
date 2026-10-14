@@ -1,0 +1,5 @@
+{
+    "problem": "none",
+    "description": "noUncheckedIndexedAccess: an array element handled as possibly undefined passes tsc and type-aware lint.",
+    "expect": { "outcome": "pass" }
+}

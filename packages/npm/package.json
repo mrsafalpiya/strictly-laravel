@@ -8,11 +8,13 @@
         ".": {
             "types": "./index.d.ts",
             "default": "./index.js"
-        }
+        },
+        "./oxlint": "./oxlint/index.js"
     },
     "files": [
         "index.js",
-        "index.d.ts"
+        "index.d.ts",
+        "oxlint"
     ],
     "sideEffects": false
 }

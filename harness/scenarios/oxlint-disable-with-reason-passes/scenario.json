@@ -1,0 +1,6 @@
+{
+    "problem": "none",
+    "description": "ADR-0007: an oxlint-disable-next-line that names the rule and gives a reason after -- passes the lint step.",
+    "step": "lint",
+    "expect": { "outcome": "pass" }
+}
