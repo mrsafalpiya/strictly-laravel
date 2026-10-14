@@ -1,0 +1,6 @@
+{
+    "problem": "P-012",
+    "description": "A component on an authenticated page reads the user through useUser(), which is never null, and a component guests see handles a null auth.user; both pass tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

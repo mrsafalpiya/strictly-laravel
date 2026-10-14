@@ -1,0 +1,6 @@
+{
+    "problem": "P-036",
+    "description": "Reading the user's avatar, which the Base Kit's hand-written User type declares but the server never sends, fails tsc against the generated UserData.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'avatar' does not exist on type 'UserData'." }
+}

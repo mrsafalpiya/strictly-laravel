@@ -1,0 +1,6 @@
+{
+    "problem": "P-013",
+    "description": "A misspelt shared prop reads as unknown through Inertia's own PageProps index signature (the accepted gap), so using it where a typed value is expected fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2322: Type 'unknown' is not assignable to type 'boolean'." }
+}

@@ -1,0 +1,6 @@
+{
+    "problem": "P-012",
+    "description": "A component that guest pages render reads auth.user as if it were always there, which the generated shared props type rejects because auth.user is null for guests.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS18047: 'auth.user' is possibly 'null'." }
+}
