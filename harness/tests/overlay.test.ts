@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, sep } from 'node:path';
 import { before, describe, test } from 'node:test';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
 import { appConcurrency, createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { fixturesDir } from '../src/paths.ts';
+import { type BackgroundCommand, tail } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
 
 // Every test here works on its own copy of one cached app (latest Base Kit + Overlay installed from local paths), in its
@@ -175,9 +177,57 @@ export default function ProjectStatuses() {
         assertOutcome(await app.run('pnpm', ['run', 'build']), { outcome: 'pass' });
     });
 
+    test('while the dev server runs, a saved Data class regenerates its type and a half-written one keeps the last good types', async () => {
+        const app = await createApp('live-regeneration');
+        const dataClass = join(app.dir, 'app', 'Data', 'ProjectData.php');
+        const generated = join(app.dir, 'resources', 'js', 'generated', 'index.ts');
+        const generatedType = () => (existsSync(generated) ? /^export type ProjectData = \{\n[^}]*\};$/m.exec(readFileSync(generated, 'utf8'))?.[0] : undefined);
+        const projectData = (properties: string) =>
+            `<?php\n\nnamespace App\\Data;\n\nuse Spatie\\LaravelData\\Data;\n\nfinal class ProjectData extends Data\n{\n    public function __construct(\n${properties}\n}\n`;
+        if (app.dir.split(sep).includes('.claude')) {
+            // The Base Kit's dev server ignores `**/.claude/**` (agent folders). When the monorepo itself sits in a
+            // .claude/ directory (an agent's worktree), that matches every file of the app, so nothing is watched.
+            const viteConfig = join(app.dir, 'vite.config.ts');
+            writeFileSync(viteConfig, readFileSync(viteConfig, 'utf8').replace(/^\s*'\*\*\/\.claude\/\*\*',\n/m, ''));
+        }
+        const dev = app.start('pnpm', ['run', 'dev']);
+
+        try {
+            await until('the dev server generated the types on start', () => dev.output().includes('[strictly] types generated'), dev);
+
+            mkdirSync(dirname(dataClass), { recursive: true });
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n    ) {}'));
+            await until('ProjectData was generated', () => generatedType()?.includes('openIssues: number') === true, dev);
+            const lastGood = generatedType();
+
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues\n        public stri'));
+            await until('the parse error was reported', () => dev.output().includes('app/Data/ProjectData.php:12: syntax error'), dev);
+            assert.equal(generatedType(), lastGood, 'a half-written Data class changed the generated types');
+            assert.equal(dev.exited(), false, 'the dev server stopped');
+
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}'));
+            await until('the finished edit was generated', () => generatedType()?.includes('lead: string') === true, dev);
+        } finally {
+            await dev.stop();
+        }
+    });
+
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
             assertOutcome(await runScenario(scenario), scenario.expect);
         });
     }
 });
+
+/** Wait until `condition` holds while a background command runs; fail with its output after `timeoutMs`. */
+async function until(what: string, condition: () => boolean, command: BackgroundCommand, timeoutMs = 30_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (!condition()) {
+        if (Date.now() > deadline || command.exited()) {
+            assert.fail(`${command.exited() ? 'exited' : 'timed out'} before ${what}\n--- output ---\n${tail(command.output())}`);
+        }
+
+        await sleep(50);
+    }
+}

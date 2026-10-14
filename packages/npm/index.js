@@ -1,2 +1,2 @@
-// Placeholder entry point; more subpath exports (Vite plugin, React helpers, JSX types…) arrive later. The oxlint plugin is `./oxlint`.
+// Placeholder entry point; more subpath exports (React helpers, JSX types…) arrive later. The oxlint plugin is `./oxlint`, the Vite plugin `./vite`.
 export const name = '@mrsafalpiya/strictly-laravel';

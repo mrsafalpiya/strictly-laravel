@@ -100,7 +100,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | open |
 | [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
-| [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | open |
+| [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | open |
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | open |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
@@ -108,6 +108,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
+| [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
 
 ## Routes
 
@@ -1000,13 +1001,15 @@ Problems in generation or verification that affect every Type Boundary.
 **Generated types go stale or missing**
 
 - **Type Boundary:** every Type Boundary
-- **Source:** eval-02 §7 and §9; eval-01 §6; overview §2
-- **Upstream:** none
-- **Status:** open
+- **Source:** eval-02 §7 and §9; eval-01 §6; overview §2; spec user stories 8 and 9
+- **Upstream:** no upstream issue filed for spatie/php-structure-discoverer reading a PHP file that doesn't parse as if it were empty (`TokenCollection::fromCode()` swallows the `ParseError`)
+- **Status:** closed
 
-**Reproduction:** edit a Data class while `composer dev` runs: without a watcher, the editor and `tsc` check against the old types. typescript-transformer's `--watch` is slow and dies on a provider exception; Wayfinder's Vite plugin watches only routes and `Http`; generation fails in a fresh clone because the gitignored output directory doesn't exist.
+**Reproduction:** edit a Data class while `composer dev` runs: without a watcher, the editor and `tsc` check against the old types. typescript-transformer's `--watch` is slow and dies on a provider exception; Wayfinder's Vite plugin watches only routes and `Http`; generation fails in a fresh clone because the gitignored output directory doesn't exist. And a Data class saved half-written (`public int $openIssues` followed by `public stri`) makes `strictly:generate` exit 0 with the type missing from `@/generated`, so every component that uses it breaks while the developer types.
 
 **Manual workaround:** a Vite plugin (`vite-plugins/php-types.ts`) that regenerates on PHP changes under `app/`, plus `File::ensureDirectoryExists()` before generating; build, typecheck and CI regenerate first.
+
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`VitePluginEntry`](../packages/laravel/src/Install/VitePluginEntry.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted: saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, a saved Data class regenerates its type and a half-written one keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
 
 ### P-065
 
@@ -1106,6 +1109,19 @@ Problems in generation or verification that affect every Type Boundary.
 **Manual workaround:** the Reference Implementation's `TypeScriptTransformerServiceProvider` transforms every Data class in `app/`, its output is gitignored, and `composer types` runs before typecheck and tests.
 
 **Closed by:** `php artisan strictly:generate` ([`packages/laravel/src/Console/GenerateCommand.php`](../packages/laravel/src/Console/GenerateCommand.php)) generates every laravel-data class anywhere in `app/` into the gitignored `resources/js/generated/index.ts` (`@/generated`), with no registration, plus Wayfinder's routes. The installer gitignores the output and makes `build`, `build:ssr`, `types:check` and `ci:check` generate first. PHPStan rules `strictly.dataClassFinal` and `strictly.dataNamespace` keep Data classes final and alone in `App\Data`. Scenarios: `data-class-typed-passes`, `data-property-type-changed-fails-tsc`, `non-final-data-class-fails`, `non-data-class-in-data-namespace-fails`.
+
+### P-073
+
+**A Data class that parses but can't be loaded silently drops its type**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-064](#p-064)
+- **Upstream:** no upstream issue filed (typescript-transformer's `DiscoverTypesAction` catches the reflection error and skips the class)
+- **Status:** open
+
+**Reproduction:** save `final class ProjectData extends Dat` (a half-typed parent class) while `composer dev` runs. The file parses, so `strictly:generate` runs; loading the class throws, typescript-transformer skips it, and generation exits 0 with `ProjectData` missing from `@/generated`. Every component that uses the type breaks until the class loads again. `ci:check` still fails (PHPStan reports the unknown class), so only the dev loop is affected.
+
+**Manual workaround:** none; finish the edit and the next save regenerates the type.
 
 ## Findings not registered
 

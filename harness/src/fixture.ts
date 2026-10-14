@@ -6,7 +6,7 @@ import { join, relative } from 'node:path';
 
 import { describeDiagnostic, failureReport } from './failure-report.ts';
 import { composerPackageDir, fixturesDir, npmPackageDir, repoRoot } from './paths.ts';
-import { type CommandResult, ensureRootTooling, progress, run, runOrThrow } from './run.ts';
+import { type BackgroundCommand, type CommandResult, ensureRootTooling, progress, run, runOrThrow, start } from './run.ts';
 
 // Fixture apps are cached in layers, all directly under .fixtures/ (same depth, so the relative symlinks Composer
 // and pnpm create for the local packages keep working in copies):
@@ -168,6 +168,8 @@ export interface App {
     changedFiles(): string[];
     /** Run any command in the app, with the app's environment; never rejects on a non-zero exit code. */
     run(command: string, args: string[]): Promise<CommandResult>;
+    /** Start a long-running command in the app, such as its dev server; stop() it when done. */
+    start(command: string, args: string[]): BackgroundCommand;
 }
 
 /**
@@ -223,6 +225,7 @@ export async function createApp(name: string, options: { install?: boolean } = {
             return status.split('\n').filter((line) => line.trim() !== '');
         },
         run: (command, args) => run(command, args, inApp),
+        start: (command, args) => start(command, args, inApp),
     };
 
     if (options.install ?? true) {
