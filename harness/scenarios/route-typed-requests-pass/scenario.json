@@ -1,0 +1,6 @@
+{
+    "problem": "P-014",
+    "description": "useRouteForm, submit and visit take the payload, the error keys (nested and array ones too) and the target from Wayfinder routes branded with the action's input Data class, so typed requests pass tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

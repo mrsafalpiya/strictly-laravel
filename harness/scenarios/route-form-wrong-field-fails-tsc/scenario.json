@@ -1,0 +1,6 @@
+{
+    "problem": "P-014",
+    "description": "A useRouteForm default for a field the route's input Data class doesn't have fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2353: Object literal may only specify known properties, and 'archived' does not exist in type 'FormState<StoreProjectData>'." }
+}

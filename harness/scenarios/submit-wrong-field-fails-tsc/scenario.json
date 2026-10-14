@@ -1,0 +1,6 @@
+{
+    "problem": "P-014",
+    "description": "submit() with a payload whose nested list item has a field the route's input Data class doesn't declare fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'TaskInputData'." }
+}

@@ -30,6 +30,9 @@ importers:
         specifier: '>=8'
         version: 8.3.4(@types/node@26.6.5)
     devDependencies:
+      '@inertiajs/core':
+        specifier: ^3.9.1
+        version: 3.9.1
       '@inertiajs/react':
         specifier: ^3.9.1
         version: 3.9.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
