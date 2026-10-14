@@ -83,7 +83,9 @@ export async function prepareBaseKit(options: { fresh?: boolean } = {}): Promise
     const mainHead = await run('git', ['ls-remote', 'https://github.com/laravel/react-starter-kit.git', 'refs/heads/main'], {
         cwd: fixturesDir,
     });
-    await runOrThrow(laravel, laravelNewArgs, { cwd: fixturesDir, logFile });
+    // `-v`: at normal verbosity the installer shows only a spinner per step, so a failed step (exit 100 from a
+    // network blip, say) would leave nothing in the log to say which step or why.
+    await runOrThrow(laravel, [...laravelNewArgs, '-v'], { cwd: fixturesDir, logFile });
 
     const installer = (await runOrThrow(laravel, ['--version'], { cwd: fixturesDir })).output.trim();
     const info: BaseKitInfo = {
