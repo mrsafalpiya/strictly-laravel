@@ -1,0 +1,5 @@
+{
+    "problem": "P-065",
+    "description": "A page prop sent through a Data class matches its generated type, so the Contract its feature test records passes tsc and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

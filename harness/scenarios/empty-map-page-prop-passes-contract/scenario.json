@@ -1,0 +1,5 @@
+{
+    "problem": "P-076",
+    "description": "Empty map props (array<value-of<Enum>, V> and array<string, V>), which PHP can only send as [], pass their page's Contract, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

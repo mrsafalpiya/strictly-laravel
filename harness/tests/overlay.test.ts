@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { before, describe, test } from 'node:test';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -7,7 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
 import { appConcurrency, createApp, prepareInstalledFixture } from '../src/fixture.ts';
-import { fixturesDir } from '../src/paths.ts';
+import { fixturesDir, scenariosDir } from '../src/paths.ts';
 import { type BackgroundCommand, type CommandResult, tail } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
 
@@ -91,6 +91,33 @@ final class AppName
         );
 
         assertOutcome(await app.check('test'), { outcome: 'fail', errorContains: 'Ignore with identifier argument.type has no comment.' });
+    });
+
+    test('feature tests record Contracts when Kit Conversion skipped an edited tests/Pest.php', async () => {
+        const app = await createApp('pest-contracts-unconverted', { install: false });
+        const pestFile = join(app.dir, 'tests', 'Pest.php');
+        // The app's own edit, which also gives the Base Kit's example helper the return type PHPStan max asks for.
+        writeFileSync(
+            pestFile,
+            readFileSync(pestFile, 'utf8')
+                .replace('<?php\n', "<?php\n\n// The app's own note\n")
+                .replace('function something()\n', 'function something(): void\n'),
+        );
+
+        await app.install();
+        await app.commitAll('after strictly:install');
+        await app.install();
+
+        assert.deepEqual(app.changedFiles(), [], 'a second strictly:install changed files');
+        assert.match(readFileSync(pestFile, 'utf8'), /^<\?php\n\n\/\/ The app's own note\n/, "the app's edit to tests/Pest.php was lost");
+
+        cpSync(join(scenariosDir, 'hand-built-page-prop-fails-contract', 'files'), app.dir, { recursive: true });
+
+        assertOutcome(await app.check('test'), { outcome: 'pass' });
+        assertOutcome(await app.check('tsc'), {
+            outcome: 'fail',
+            errorContains: "error TS2353: Object literal may only specify known properties, and '\"id\"' does not exist in type",
+        });
     });
 
     test('the strictness flags and the oxlint plugin reach a tsconfig.json and lint config the app edited', async () => {

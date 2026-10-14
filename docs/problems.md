@@ -103,7 +103,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
 | [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
-| [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | open |
+| [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | open |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
@@ -111,6 +111,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
+| [P-076](#p-076) | An empty map is sent as `[]`, which its type doesn't allow | every Type Boundary | closed |
 
 ## Routes
 
@@ -601,7 +602,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `/** @var array<value-of<Status>, int> */` generates `Partial<Record<Status, number>>` (`LiteralTypesTranspiler`); prefer a list of objects with a `status` field.
 
-**Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; checking recorded payloads against it is the Contract recorder's job ([P-065](#p-065)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
+**Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; its recorded Contract accepts the `[]` ([P-076](#p-076)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
 
 ### P-034
 
@@ -1070,11 +1071,13 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §1 and §2; eval-02 §3; eval-01 §3
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a generator that lies gives types `tsc` trusts. eval-02's Contract test found 7 mismatches no other check caught, among them [P-040](#p-040), [P-043](#p-043) and [P-071](#p-071); the Base Kit's hand-written types were wrong the same way ([P-012](#p-012), [P-036](#p-036)).
 
 **Manual workaround:** the Contract recorder: every page, partial reload, flash and JSON response seen by any feature test is written as a `satisfies` file checked by `tsc` (`tests/Support/InertiaContracts.php`).
+
+**Closed by:** the Contract recorder ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). `strictly:install` applies [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) to the app's feature tests in `tests/Pest.php` (Kit Conversion writes it into the file it converts, [`PestContractsHook`](../packages/laravel/src/Install/PestContractsHook.php) adds it to one the app edited), so every page any feature test renders is written, with no per-test code, to the gitignored `resources/js/__contracts__/<page component>/<hash>.ts` as `export const props = {…} satisfies Contract<PageProps<'settings/profile'>>`: the page's own props exactly as the browser receives them, checked against the generated type (`Contract<T>` only lets an empty map arrive as `[]`, [P-076](#p-076)). `ci:check` runs `tsc` after the tests, so a wrong value, a missing prop or a key the generated type doesn't have fails it. Each Contract has a `.json` sidecar for Contract Coverage ([P-066](#p-066)). The other Type Boundaries' payloads are recorded with the Problems that type them: shared props ([P-012](#p-012), [P-013](#p-013); left out of the page Contract until they are generated), partial reloads ([P-046](#p-046)), flash ([P-047](#p-047)), JSON responses ([P-048](#p-048), [P-050](#p-050)), validation errors and input reads ([P-024](#p-024), [P-029](#p-029)) and broadcasts ([P-052](#p-052)). Scenarios: `page-props-sent-through-data-class-pass-contract`, `hand-built-page-prop-fails-contract`; harness test: "feature tests record Contracts when Kit Conversion skipped an edited tests/Pest.php".
 
 ### P-066
 
@@ -1174,6 +1177,21 @@ Problems in generation or verification that affect every Type Boundary.
 **Reproduction:** save `final class ProjectData extends Dat` (a half-typed parent class) while `composer dev` runs. The file parses, so `strictly:generate` runs; loading the class throws, typescript-transformer skips it, and generation exits 0 with `ProjectData` missing from `@/generated`. Every component that uses the type breaks until the class loads again. `ci:check` still fails (PHPStan reports the unknown class), so only the dev loop is affected.
 
 **Manual workaround:** none; finish the edit and the next save regenerates the type.
+
+### P-076
+
+**An empty map is sent as `[]`, which its type doesn't allow**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-065](#p-065)
+- **Upstream:** by design: PHP has one array type, and [`json_encode()`](https://www.php.net/manual/en/function.json-encode.php) encodes an empty array as `[]` whatever its keys would have been
+- **Status:** closed
+
+**Reproduction:** a page prop typed `array<value-of<ProjectStatus>, int>` (generated as `Partial<Record<ProjectStatus, number>>`, [P-033](#p-033)) or `array<string, int>` (`{ [x: string]: number }`) is sent as `[]` when it is empty, and so is a Data object whose props are all optional and absent. Its recorded Contract fails `tsc`: `error TS2559: Type 'never[]' has no properties in common with type 'Partial<Record<ProjectStatus, number>>'`. The payload is harmless (reading `[]` by key gives `undefined`, as the type allows), but every test that renders an empty map fails `ci:check`.
+
+**Manual workaround:** none in the Reference Implementation, whose Contracts compared against the plain generated type.
+
+**Closed by:** Contracts are checked against `Contract<T>` ([`@mrsafalpiya/strictly-laravel/contracts`](../packages/npm/contracts/index.d.ts)), which is T except that an object type with no required property may also be `[]`, at any depth. Nothing else is relaxed: a non-empty list sent for a map, or `[]` for an object with a required property, still fails. Scenarios: `empty-map-page-prop-passes-contract`, `list-sent-for-map-page-prop-fails-contract`.
 
 ## Findings not registered
 
