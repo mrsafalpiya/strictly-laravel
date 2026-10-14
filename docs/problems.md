@@ -48,8 +48,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-010](#p-010) | Nothing ties a page name to a page component file | page props | closed |
 | [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | closed |
 | [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | closed |
-| [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | open |
-| [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | open |
+| [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | closed |
+| [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | accepted gap |
+| [P-088](#p-088) | A prop shared beside the shared props type has no type | shared props | closed |
+| [P-089](#p-089) | A page rendered without the Inertia middleware lacks the shared props its type promises | shared props | accepted gap |
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | open |
 | [P-015](#p-015) | Form control names are plain strings | form payloads | open |
 | [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | open |
@@ -74,7 +76,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-034](#p-034) | Iterating an enum's values needs a cast | enums | closed |
 | [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | closed |
 | [P-074](#p-074) | A label map typed loosely isn't tied to the enum | enums | accepted gap |
-| [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | open |
+| [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | closed |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | open |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
@@ -85,7 +87,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | open |
 | [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | open |
 | [P-046](#p-046) | A nested partial reload returns only the subtree | pagination and deferred props | open |
-| [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | open |
+| [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
 | [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | open |
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | open |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | open |
@@ -297,11 +299,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** shared props
 - **Source:** overview §1; eval-02 §1; eval-03 §5; ecosystem A.3
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `types/global.d.ts` declares `sharedPageProps: { auth: Auth; … }` with `Auth = { user: User }`; `HandleInertiaRequests::share()` sends `$request->user()`, which is `null` for guests. `usePage().props.auth.user.name` compiles on a guest page.
 
 **Manual workaround:** `App\Data\SharedProps` built in `share()`, generated into `InertiaConfig['sharedPageProps']`, with `auth.user: UserData | null`; `useUser()` for authenticated pages.
+
+**Closed by:** the shared props are one Data class, the app's only subclass of [`Shared`](../packages/laravel/src/Inertia/Shared.php), built in the Inertia middleware's share step; `strictly:generate` writes its type into Inertia's global config typing, `InertiaConfig['sharedPageProps']` ([`InertiaConfigProvider`](../packages/laravel/src/TypeScript/InertiaConfigProvider.php)), so `usePage().props` is typed on every page with no hand-written global type. Kit Conversion converts the Base Kit's `HandleInertiaRequests` to build `App\Data\SharedProps` (with `AuthData`, whose `user` is `?UserData`, and `UserData`, [P-036](#p-036)), removes its hand-written `sharedPageProps` from `types/global.d.ts`, and gives authenticated pages `useUser()` (`resources/js/hooks/use-user.ts`, used by the profile settings page), which returns a non-null `UserData` and throws on a page guests can see. Every page a feature test renders records the shared props it received as a Contract ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php), `export const shared = {…} satisfies Contract<SharedPageProps>`), so a guest page's `auth.user: null` is checked against the type (the Base Kit's own welcome page test records one). Scenarios: `guest-page-reads-auth-user-fails-tsc`, `use-user-on-authenticated-page-passes`.
 
 ### P-013
 
@@ -309,12 +313,44 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 - **Type Boundary:** shared props
 - **Source:** ecosystem A.3; eval-03 §5
+- **Upstream:** by design: Inertia types every page's props as `PageProps & SharedPageProps & …`, and its own `PageProps` is `{ [key: string]: unknown }` ([`packages/core/src/types.ts`](https://github.com/inertiajs/inertia/blob/master/packages/core/src/types.ts))
+- **Status:** accepted gap
+
+**Reproduction:** the Base Kit's `sharedPageProps` ends with `[key: string]: unknown`, so `usePage().props.sidebarOpne` compiles. Removing it changes nothing: Inertia's own `PageProps`, which `usePage().props` always includes, has the same index signature, so a misspelt key still reads as `unknown`.
+
+**Manual workaround:** the hand-written declaration is deleted and replaced by the generated `SharedProps`, which has no index signature (Kit Conversion does this, [P-012](#p-012)).
+
+**Reasoning:** the index signature is Inertia's, and an app can't remove it: declaration merging only adds to `PageProps`, and the Base Kit's toolchain stays as it is (ADR-0004). A misspelt key reads as `unknown`, which `tsc` rejects wherever a typed value is needed (rendered, assigned, passed as a prop, or read further); only a truthiness test or a comparison compiles. Turning on `noPropertyAccessFromIndexSignature` would reject `props.sidebarOpne`, but also every dot access on a `Record`, starting with the Base Kit's `errors.name`. Scenario guarding the reasoning: `shared-prop-typo-used-as-value-fails-tsc`.
+
+### P-088
+
+**A prop shared beside the shared props type has no type**
+
+- **Type Boundary:** shared props
+- **Source:** found while closing [P-012](#p-012)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
-**Reproduction:** the Base Kit's `sharedPageProps` ends with `[key: string]: unknown`, so `usePage().props.sidebarOpne` compiles.
+**Reproduction:** with the shared props generated from a Data class, the share step returns `'features' => ['boards' => true]` next to the Data class's props, or a controller calls `Inertia::share('features', …)`. Every page receives the key, no type declares it, and it reads as `unknown` ([P-013](#p-013)), so the app casts it.
 
-**Manual workaround:** the hand-written declaration is deleted and replaced by the generated `SharedProps`, which has no index signature.
+**Manual workaround:** add the value as a typed property of the shared props Data class.
+
+**Closed by:** every page a feature test renders records the props the share step sent, except Inertia's own `errors`, as a Contract checked against `SharedPageProps` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), so a key the Data class doesn't declare fails `tsc` with `TS2353: Object literal may only specify known properties`. A prop the page's Page class declares is the page's own and is left out (the Contract is then checked against `Omit<SharedPageProps, 'key'>`). Scenarios: `shared-prop-beside-data-class-fails-contract`, `shared-prop-in-data-class-passes-contract`.
+
+### P-089
+
+**A page rendered without the Inertia middleware lacks the shared props its type promises**
+
+- **Type Boundary:** shared props
+- **Source:** found while closing [P-088](#p-088)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a route outside the `web` middleware group renders a Page class. The Inertia middleware doesn't run, so the page receives no shared props, yet `usePage().props.auth` is typed as present.
+
+**Manual workaround:** render Inertia pages only from routes in the `web` group.
+
+**Reasoning:** Inertia needs its middleware on every page route (asset versioning, the 303 after a `PUT`/`PATCH`/`DELETE`, flash and validation errors), and the Base Kit registers it on the `web` group, where all its routes live. The Contract recorder can't tell such a page from one whose app shares nothing, so it records no shared props Contract for a page that received no shared props at all.
 
 ## Form payloads
 
@@ -661,11 +697,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** models
 - **Source:** overview §1; ecosystem A.3; eval-02 §1; spec "Problem Statement"
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `resources/js/types/auth.ts` types `avatar` and `two_factor_enabled`, which nothing on the server sends, omits `two_factor_confirmed_at`, which is sent, and ends with `[key: string]: unknown`. The full Eloquent model is serialised as `auth.user`, so any column not `#[Hidden]` reaches the browser.
 
 **Manual workaround:** a `UserData` class is the whitelist of what is sent; models are never sent directly (type-safety rule 3).
+
+**Closed by:** Kit Conversion: the shared `auth.user` is `App\Data\UserData` (`id`, `name`, `email`, `email_verified_at`), built from the model in the share step, so only those fields reach the browser ([P-012](#p-012)). The hand-written `User` and `Auth` types are removed from `types/auth.ts`, and the components that took a `User` (`user-info`, `user-menu-content`) take the generated `UserData`; `user-info` and `app-header` no longer read the `avatar` nothing sends. Every page Contract checks `auth.user` against `UserData`. Scenarios: `user-avatar-read-fails-tsc`, `user-data-typed-passes`.
 
 ### P-037
 
@@ -816,11 +854,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** flash messages
 - **Source:** ecosystem A.3, B.2 and C; eval-01 S4
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit sends `Inertia::flash('toast', ['type' => 'success', 'message' => …])` and reads it in `use-flash-toast.ts` as `(event as CustomEvent).detail?.flash?.toast as FlashToast | undefined`; `flashDataType` is never set, so a changed toast shape compiles.
 
 **Manual workaround:** `App\Support\Inertia\Flash::success()` backed by `App\Data\FlashData`, generated into `InertiaConfig['flashDataType']`; flash is recorded as a Contract, including on redirects.
+
+**Closed by:** flash data is one Data class, the app's only subclass of [`Flash`](../packages/laravel/src/Inertia/Flash.php), whose `flash()` is the typed helper; `strictly:generate` writes its type into `InertiaConfig['flashDataType']` with every key optional, because a response carries only what was flashed for it ([`InertiaConfigProvider`](../packages/laravel/src/TypeScript/InertiaConfigProvider.php)), so `usePage().flash` and the router's `flash` event are typed without a cast. The PHPStan rule `strictly.inertiaFlash` ([`InertiaFlashRule`](../packages/laravel/src/PHPStan/InertiaFlashRule.php)) rejects `Inertia::flash()`, `ResponseFactory::flash()` and `Response::flash()`. Every feature test records what was flashed as a Contract checked against `FlashData` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)): with the page when a page renders it, and on its own (`__contracts__/_flash/`) when a redirect flashes it. Kit Conversion adds `App\Data\FlashData`, `ToastData` and the `App\Enums\ToastType` enum, flashes the Base Kit's toasts through `FlashData::toast()`, removes its hand-written `FlashToast` type and reads the toast in `use-flash-toast` without a cast. Scenarios: `inertia-flash-with-array-fails-phpstan`, `flash-toast-misread-fails-tsc`, `flash-around-the-data-class-fails-contract`, `flash-through-data-class-passes`.
 
 ## JSON endpoints
 
@@ -1080,7 +1120,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** the Contract recorder: every page, partial reload, flash and JSON response seen by any feature test is written as a `satisfies` file checked by `tsc` (`tests/Support/InertiaContracts.php`).
 
-**Closed by:** the Contract recorder ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). `strictly:install` applies [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) to the app's feature tests in `tests/Pest.php` (Kit Conversion writes it into the file it converts, [`PestContractsHook`](../packages/laravel/src/Install/PestContractsHook.php) adds it to one the app edited), so every page any feature test renders is written, with no per-test code, to the gitignored `resources/js/__contracts__/<page component>/<hash>.ts` as `export const props = {…} satisfies Contract<PageProps<'settings/profile'>>`: the page's own props exactly as the browser receives them, checked against the generated type (`Contract<T>` only lets an empty map arrive as `[]`, [P-076](#p-076)). `ci:check` runs `tsc` after the tests, so a wrong value, a missing prop or a key the generated type doesn't have fails it. Each Contract has a `.json` sidecar for Contract Coverage ([P-066](#p-066)). The other Type Boundaries' payloads are recorded with the Problems that type them: shared props ([P-012](#p-012), [P-013](#p-013); left out of the page Contract until they are generated), partial reloads ([P-046](#p-046)), flash ([P-047](#p-047)), JSON responses ([P-048](#p-048), [P-050](#p-050)), validation errors and input reads ([P-024](#p-024), [P-029](#p-029)) and broadcasts ([P-052](#p-052)). Scenarios: `page-props-sent-through-data-class-pass-contract`, `hand-built-page-prop-fails-contract`; harness test: "feature tests record Contracts when Kit Conversion skipped an edited tests/Pest.php".
+**Closed by:** the Contract recorder ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). `strictly:install` applies [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) to the app's feature tests in `tests/Pest.php` (Kit Conversion writes it into the file it converts, [`PestContractsHook`](../packages/laravel/src/Install/PestContractsHook.php) adds it to one the app edited), so every page any feature test renders is written, with no per-test code, to the gitignored `resources/js/__contracts__/<page component>/<hash>.ts` as `export const props = {…} satisfies Contract<PageProps<'settings/profile'>>`: the page's own props exactly as the browser receives them, checked against the generated type (`Contract<T>` only lets an empty map arrive as `[]`, [P-076](#p-076)). `ci:check` runs `tsc` after the tests, so a wrong value, a missing prop or a key the generated type doesn't have fails it. Each Contract has a `.json` sidecar for Contract Coverage ([P-066](#p-066)). The other Type Boundaries' payloads are recorded with the Problems that type them: shared props ([P-012](#p-012), [P-088](#p-088): recorded with the page as `shared`), partial reloads ([P-046](#p-046)), flash ([P-047](#p-047): recorded with the page as `flash`, and on its own for a redirect), JSON responses ([P-048](#p-048), [P-050](#p-050)), validation errors and input reads ([P-024](#p-024), [P-029](#p-029)) and broadcasts ([P-052](#p-052)). Scenarios: `page-props-sent-through-data-class-pass-contract`, `hand-built-page-prop-fails-contract`; harness test: "feature tests record Contracts when Kit Conversion skipped an edited tests/Pest.php".
 
 ### P-066
 

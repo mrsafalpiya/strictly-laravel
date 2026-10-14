@@ -58,7 +58,7 @@ Every fixture command runs without the AI-agent environment variables (`AI_AGENT
 | `install` | `php artisan strictly:install --check`: applies every hook and Kit Conversion to a scratch copy of the app and fails, naming each one, when the installer would still change something or can't apply a hook (P-080, P-082; the release checks in `packages/laravel/UPGRADE.md`) |
 | `generate` | `php artisan strictly:generate`: the gitignored TypeScript generated from PHP (`@/generated` and Wayfinder's routes) |
 | `lint` | `<pm> run check` (Vite+: type-aware oxlint with the Strictly Laravel oxlint plugin, + oxfmt) |
-| `test` | `@test` (Pint, PHPStan, Pest). Every feature test records the pages it renders as Contracts in the gitignored `resources/js/__contracts__` |
+| `test` | `@test` (Pint, PHPStan, Pest). Every feature test records the pages it renders (their own props, the shared props and what was flashed) and the flash data of the redirects it makes as Contracts in the gitignored `resources/js/__contracts__` |
 | `tsc` | `<pm> run types:check` (`tsc --noEmit`): the app, and the Contracts the `test` step recorded |
 
 `<pm>` is the package manager detected from the app's lockfile. `tsc` runs after `test` so that it checks the Contracts; run alone, it checks whatever Contracts the last test run left (none in a fresh clone). A scenario whose diagnostic is a failing Contract runs the full `ci:check` (omit `step`). Later tickets add steps such as Contract Coverage. The installer also makes the app's `build`, `build:ssr` and `types:check` scripts run `strictly:generate` first, so the `tsc` step works on its own from a fresh clone. Type errors only fail `tsc`: type-aware oxlint doesn't report them.
