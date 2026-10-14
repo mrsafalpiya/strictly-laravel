@@ -1,5 +1,5 @@
 {
     "problem": "P-023",
-    "description": "A #[DateOnly] property is read and sent as YYYY-MM-DD, rejects anything else with a validation error and is generated as DateOnly, apart from the ISO-8601 string of other dates; the full ci:check passes.",
+    "description": "A #[DateOnly] property, mutable Carbon or CarbonImmutable, is read and sent as YYYY-MM-DD, rejects anything else with a validation error and is generated as DateOnly, apart from the ISO-8601 string of other dates; the full ci:check passes.",
     "expect": { "outcome": "pass" }
 }
