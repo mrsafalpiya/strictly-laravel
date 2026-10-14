@@ -30,9 +30,10 @@ export function failureReport(stage: string, output: string): FailureReport {
     let match: RegExpExecArray | null;
 
     for (const line of output.split('\n')) {
-        if (stage === 'strictly:install') {
+        if (stage === 'strictly:install' || stage === 'ci:check:install') {
             // `<hook or file> .... <status>` per hook; anything but applied/unchanged broke, and a failed hook's
-            // exception follows as ` ERROR <message>`.
+            // exception follows as ` ERROR <message>`. `ci:check:install` runs `strictly:install --check`, whose rows
+            // read `missing` or `not converted` where the installer would still change something.
             if ((match = /^\s*(.+?) \.{2,} (.+?)\s*$/.exec(line)) !== null) {
                 const [label, status] = [group(match, 1), group(match, 2)];
                 installerRow = undefined;

@@ -37,13 +37,50 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
         assert.deepEqual(toolchain(app.dir), toolchain(join(fixturesDir, 'base-kit')));
     });
 
-    test('strictly:install is idempotent', async () => {
+    test('strictly:install is idempotent: running it again on a fully installed app is a no-op', async () => {
         const app = await createApp('idempotent-install');
         await app.commitAll('after the first strictly:install');
 
-        await app.install();
+        const again = await app.install();
 
         assert.deepEqual(app.changedFiles(), [], 'a second strictly:install changed files');
+        const changedRows = installerRows(again.output).filter(({ status }) => status !== 'unchanged');
+        assert.deepEqual(changedRows, [], 'a second strictly:install reported rows other than unchanged');
+        assertOutcome(await app.check('install'), { outcome: 'pass' });
+    });
+
+    test("re-running strictly:install restores a missing hook and reports one it can't apply, leaving that file alone", async () => {
+        const app = await createApp('reinstall-unpatchable-hook');
+        const viteConfig = join(app.dir, 'vite.config.ts');
+        const gitignore = join(app.dir, '.gitignore');
+        // The Vite plugin removed, and a comment where the installer expects the plugin list to start a line.
+        writeFileSync(
+            viteConfig,
+            readFileSync(viteConfig, 'utf8')
+                .replace(/^import \{ strictlyLaravel \}.*\n/m, '')
+                .replace(/^ {8}strictlyLaravel\(\),\n/m, '')
+                .replace('plugins: lazyPlugins(() => [\n', "plugins: lazyPlugins(() => [ // the app's plugins\n"),
+        );
+        const edited = readFileSync(viteConfig, 'utf8');
+        writeFileSync(gitignore, readFileSync(gitignore, 'utf8').replace(/^\/resources\/js\/generated\n/m, ''));
+
+        const reinstall = await app.run('php', ['artisan', 'strictly:install', '--no-interaction']);
+
+        assert.notEqual(reinstall.exitCode, 0, 'strictly:install succeeded although it could not apply a hook');
+        assert.equal(readFileSync(viteConfig, 'utf8'), edited, 'strictly:install changed the vite.config.ts it could not patch');
+        assert.deepEqual(
+            installerRows(reinstall.output).filter(({ status }) => status !== 'unchanged'),
+            [
+                { label: 'vite.config.ts: Strictly Laravel Vite plugin', status: 'not applied' },
+                { label: 'Generated TypeScript gitignored', status: 'applied' },
+            ],
+        );
+        assert.match(reinstall.output, /ERROR\s+vite\.config\.ts has no `plugins: \[` array written over several lines; add `import \{ strictlyLaravel \}/);
+        assert.match(readFileSync(gitignore, 'utf8'), /^\/resources\/js\/generated$/m, 'the missing .gitignore entry was not restored');
+        assertOutcome(await app.check('install'), {
+            outcome: 'fail',
+            errorContains: 'Strictly Laravel is not fully applied to this app: vite.config.ts: Strictly Laravel Vite plugin (not applied).',
+        });
     });
 
     test('Kit Conversion leaves a Base Kit file with unknown content untouched and reports it', async () => {
@@ -252,6 +289,11 @@ export default function ProjectStatuses() {
         });
     }
 });
+
+/** The `<label> .... <status>` rows strictly:install printed, one per hook and per Kit Conversion file. */
+function installerRows(output: string): { label: string; status: string }[] {
+    return [...output.matchAll(/^\s*(.+?) \.{2,} (.+?)\s*$/gm)].map((match) => ({ label: match[1] ?? '', status: match[2] ?? '' }));
+}
 
 /** Wait until `condition` holds while a background command runs; fail with its output after `timeoutMs`. */
 async function until(what: string, condition: () => boolean, command: BackgroundCommand, timeoutMs = 30_000): Promise<void> {

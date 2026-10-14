@@ -1,0 +1,10 @@
+{
+    "problem": "P-080",
+    "description": "Once strictly:install runs again, the noUncheckedIndexedAccess hook it restores to an app's tsconfig.json catches an unchecked index again.",
+    "reinstall": true,
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/lib/first-word.ts(2,12): error TS2532: Object is possibly 'undefined'."
+    }
+}

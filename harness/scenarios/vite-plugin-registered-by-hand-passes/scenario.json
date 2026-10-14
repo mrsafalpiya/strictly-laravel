@@ -1,0 +1,6 @@
+{
+    "problem": "P-082",
+    "description": "Once the Strictly Laravel Vite plugin is added by hand to a vite.config.ts the installer can't patch, strictly:install runs again cleanly and ci:check passes.",
+    "reinstall": true,
+    "expect": { "outcome": "pass" }
+}
