@@ -638,7 +638,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Reproduction:** the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` validates `current_password` and `password` through a FormRequest and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form's type is hand-written (the Base Kit's settings forms use Inertia's untyped `<Form>`, [P-096](#p-096)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing.
 
-**Manual workaround:** take an input class on every action that reads the request's input; a GET action's query string is [P-006](#p-006).
+**Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)). A GET action's reads aren't checked against its query class either: the input Contracts cover form endpoints only.
 
 ### P-025
 
