@@ -4,6 +4,6 @@
     "step": "tsc",
     "expect": {
         "outcome": "fail",
-        "errorContains": "Type 'number & { readonly [routeKeyOf]: \"Issue\"; }' is not assignable to type 'number & { readonly [routeKeyOf]: \"Project\"; }'."
+        "errorContains": "Type 'number & { readonly [keyOf]: \"Issue.id\"; }' is not assignable to type 'number & { readonly [keyOf]: \"Project.id\"; }'."
     }
 }

@@ -1,3 +1,4 @@
+import { selectedKey } from '@/lib/keys';
 import { Field } from '@/components/field';
 import { ColorPicker } from '@/components/projects/color-picker';
 import { Input } from '@/components/ui/input';
@@ -80,7 +81,10 @@ export function ProjectFields({
                     value={data.leadId === null ? NONE : String(data.leadId)}
                     onValueChange={(value) =>
                         setData({
-                            leadId: value === NONE ? null : Number(value),
+                            leadId: selectedKey(
+                                members.map((member) => member.id),
+                                value,
+                            ),
                         })
                     }
                 >

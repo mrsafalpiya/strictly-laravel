@@ -44,7 +44,8 @@ parameters:
 # the query string only through one (P-106). A broadcast event's payload is the Data class its broadcastData() declares
 # (P-052), and it declares the channels it is sent on with #[BroadcastsOn] (P-144). A translation call in PHP names a
 # key of the default locale (or Laravel's own) with exactly its message's params, and picks a pluralised message's form
-# with a choice call (P-137).
+# with a choice call (P-137). A Data property that holds a model's key declares the model with #[KeyOf]
+# (P-128).
 rules:
     - StrictlyLaravel\PHPStan\DataClassFinalRule
     - StrictlyLaravel\PHPStan\DataNamespaceRule
@@ -59,6 +60,7 @@ rules:
     - StrictlyLaravel\PHPStan\BroadcastDataRule
     - StrictlyLaravel\PHPStan\BroadcastsOnRule
     - StrictlyLaravel\PHPStan\TranslationRule
+    - StrictlyLaravel\PHPStan\KeyOfRule
 
 services:
     # The messages TranslationRule checks translation calls against, read once per run (P-137).

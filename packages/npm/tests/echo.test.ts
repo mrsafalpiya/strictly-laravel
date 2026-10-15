@@ -3,14 +3,14 @@ import { describe, test } from 'node:test';
 
 import { createBroadcasting, eventName } from '../echo/index.js';
 import type { ChannelEventListener, UseEcho } from '../echo/index.js';
-import type { RouteKey } from '../routes/index.js';
+import type { Key } from '../routes/index.js';
 
 // The Echo helpers at runtime, bound the way @/generated/broadcasting binds them: channel() names a channel from its
 // pattern (which the handle carries, for useChannelEvent()'s types), and useChannelEvent() calls Echo's useEcho() with
 // the channel and the event's full name. The harness
 // scenarios prove their types in an app (broadcast-*-fails-tsc).
 
-type IssueKey = RouteKey<'Issue', number>;
+type IssueKey = Key<'Issue', 'id', number>;
 
 type Events = {
     CommentPosted: { id: number; body: string };

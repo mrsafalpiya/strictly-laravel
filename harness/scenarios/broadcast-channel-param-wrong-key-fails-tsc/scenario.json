@@ -2,5 +2,5 @@
     "problem": "P-054",
     "description": "Filling a channel parameter bound to a model by its id with another value (the model's slug) fails tsc.",
     "step": "tsc",
-    "expect": { "outcome": "fail", "errorContains": "error TS2322: Type 'string' is not assignable to type '(number & { readonly [routeKeyOf]: \"Project\"; }) | { id: number & { readonly [routeKeyOf]: \"Project\"; }; }'." }
+    "expect": { "outcome": "fail", "errorContains": "error TS2322: Type 'string' is not assignable to type '(number & { readonly [keyOf]: \"Project.id\"; }) | { id: number & { readonly [keyOf]: \"Project.id\"; }; }'." }
 }

@@ -12,7 +12,7 @@ use StrictlyLaravel\Routes\WayfinderTemplates;
  * P-053, P-054, P-143, P-144):
  *
  *     export type BroadcastEvents = { CommentPosted: import('@/generated').CommentData };
- *     export type BroadcastChannels = { 'issues.{issue}': { visibility: 'private'; params: { issue: RouteKey<'Issue', number> | … } } };
+ *     export type BroadcastChannels = { 'issues.{issue}': { visibility: 'private'; params: { issue: Key<'Issue', 'number', number> | … } } };
  *     export type ChannelEvents = { 'issues.{issue}': 'CommentPosted' };
  *     export type EventChannels = { CommentPosted: 'issues.{issue}' };
  *     export const { channel, publicChannel, useChannelEvent } = createBroadcasting<BroadcastEvents, BroadcastChannels, ChannelEvents>({ … });
@@ -159,7 +159,7 @@ final class BroadcastingModule
             in_array($model->getKeyType(), ['int', 'integer'], true) => 'number',
             default => 'string',
         };
-        $type = sprintf("import('%s').RouteKey<'%s', %s>", WayfinderTemplates::TYPES_MODULE, $key->brand(), $value);
+        $type = $key->typeScript($value);
 
         return sprintf('%s | { %s: %s }', $type, self::literal($key->field), $type);
     }
