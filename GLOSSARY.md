@@ -73,7 +73,7 @@ The degree to which every shape a generated type permits (each page, deferred pr
 _Avoid_: test coverage (that means lines of code)
 
 **Reference Implementation**:
-The earlier hand-built template and its large test app (Tracklane) that proved the approach as a copied project, before it was turned into an Overlay.
+The earlier hand-built template and its large test app (Tracklane) that proved the approach as a copied project, before it was turned into an Overlay. Retired: its code was deleted once the Overlay had extracted the template and Tracklane was ported into the Testbed App; its findings are in `docs/research/` and the Problem register.
 _Avoid_: old template, prototype
 
 **Tracklane**:
