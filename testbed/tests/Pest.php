@@ -22,6 +22,14 @@ pest()->extend(TestCase::class)
     ->use(RecordsContracts::class) // every page a feature test renders is a Contract, checked by tsc
     ->in('Feature');
 
+// The smoke test (composer test:smoke): not in the default test suites, as it needs a build and a browser.
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Browser');
+
+// How long a browser assertion waits for its condition: a CI runner can be slower than the default 5 seconds.
+pest()->browser()->timeout(10_000);
+
 /*
 |--------------------------------------------------------------------------
 | Functions
