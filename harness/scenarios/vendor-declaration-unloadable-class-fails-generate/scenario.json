@@ -1,0 +1,9 @@
+{
+    "problem": "P-025",
+    "description": "A vendor declaration in config/strictly.php naming a class outside App\\Data that can't be loaded (saved mid-edit with a half-typed parent class) fails strictly:generate naming the declaration and the load error, instead of crashing with a stack trace.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly.vendor_inputs.Laravel\\Fortify\\Http\\Controllers\\AuthenticatedSessionController@store: the class App\\Http\\Inputs\\LoginInput can't be loaded: Class \"App\\Http\\Inputs\\InputDat\" not found"
+    }
+}
