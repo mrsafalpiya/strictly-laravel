@@ -76,6 +76,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
 | [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | closed |
 | [P-173](#p-173) | A datetime input's TypeScript type doesn't say which format the server reads | form payloads | accepted gap |
+| [P-189](#p-189) | A datetime input typed by an interface is a 500 for every value | form payloads | closed |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
@@ -712,7 +713,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `#[DateFormat(DATE_ATOM)]` on every datetime input property, or `#[DateOnly]` for a calendar date.
 
-**Closed by:** [`DateFormatRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRuleInferrer.php) validates a `DateTimeInterface` property of any Data class against the formats its `DateTimeInterfaceCast` reads ([`DateFormatRule`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRule.php)): a `#[WithCast(DateTimeInterfaceCast::class, format: …)]` format, otherwise `data.date_format` (DATE_ATOM by default). A value the cast can't read, or one naming an impossible date it would roll over (`2026-02-30T09:30:00+00:00`), gets a 422 on the field ("The starts at field must match the format Y-m-d\TH:i:sP."), alongside the other fields' errors; a timestamp ending in `Z`, which the cast reads, is accepted. Each item of a `list<CarbonImmutable>` is validated the same way, and a `#[DateOnly]` property gets `date_format:Y-m-d`, so its error comes with the others instead of after them. Null, a missing key and an `Optional` keep the inferred nullable and required rules, `rules()` still merge, an explicit `#[DateFormat]` replaces the inferred rule, and a property with another cast is left to that cast. The TypeScript type is still `string`: [P-173](#p-173). Scenarios: `datetime-input-validated-passes`, `non-iso-datetime-for-input-fails-test`.
+**Closed by:** [`DateFormatRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRuleInferrer.php) validates a `DateTimeInterface` property of any Data class against the formats its `DateTimeInterfaceCast` reads ([`DateFormatRule`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRule.php)): a `#[WithCast(DateTimeInterfaceCast::class, format: …)]` format, otherwise `data.date_format` (DATE_ATOM by default). A value the cast can't read, or one naming an impossible date it would roll over (`2026-02-30T09:30:00+00:00`), gets a 422 on the field ("The starts at field must match the format Y-m-d\TH:i:sP."), alongside the other fields' errors; a timestamp ending in `Z`, which the cast reads, is accepted. Each item of a `list<CarbonImmutable>` is validated the same way, and a `#[DateOnly]` property gets `date_format:Y-m-d`, so its error comes with the others instead of after them. Null, a missing key and an `Optional` keep the inferred nullable and required rules, `rules()` still merge, an explicit `#[DateFormat]` replaces the inferred rule, and a property with another cast is left to that cast. A property typed `CarbonInterface` or `DateTimeInterface` is read as a `CarbonImmutable` ([P-189](#p-189)). The TypeScript type is still `string`: [P-173](#p-173). Scenarios: `datetime-input-validated-passes` (through a controller action, its input and validation-error Contracts checked by the full `ci:check`), `non-iso-datetime-for-input-fails-test`.
 
 ### P-173
 
@@ -729,6 +730,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Reasoning:** the server now rejects such a value with a 422 on the field, which is what P-075 asked. A template literal can't tell the formats apart (`${number}-${number}-${number}T${string}` takes the milliseconds too), and the format is the app's choice in `data.date_format` or a `#[WithCast]`, so a type that encodes it would need a branded datetime type and a helper to build one: a design of its own, worth a ticket if apps keep sending the wrong format.
 
+
+### P-189
+
+**A datetime input typed by an interface is a 500 for every value**
+
+- **Type Boundary:** form payloads
+- **Source:** code review of [P-075](#p-075)'s fix, whose Boost guidance recommended `CarbonInterface`
+- **Upstream:** no upstream issue filed (laravel-data 4's `DateTimeInterfaceCast` calls `createFromFormat()` on the property's type)
+- **Status:** closed
+
+**Reproduction:** an input Data class with `public CarbonInterface $startsAt` (or `DateTimeInterface`, or `list<CarbonInterface>`); posting a valid `startsAt: '2026-10-14T09:30:00+00:00'` passes validation, then laravel-data throws `CannotCastDate` ("Could not cast date `2026-10-14T09:30:00+00:00` into a `Carbon\CarbonInterface` using formats: Y-m-d\TH:i:sP"), since an interface can't create an instance: a 500 for every value. Output Data classes are unaffected (a model's date is already an object, which isn't cast).
+
+**Manual workaround:** type the property `CarbonImmutable`.
+
+**Closed by:** [`InterfaceTypedDateCast`](../packages/laravel/src/Workarounds/LaravelData/InterfaceTypedDateCast.php), laravel-data's `DateTimeInterfaceCast` reading a property typed by an interface that `CarbonImmutable` implements as a `CarbonImmutable`. [`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php) makes it the global cast for `DateTimeInterface` while the app's `config/data.php` keeps laravel-data's; an app that casts dates with a class of its own keeps it. Its format rule is the one [P-075](#p-075) infers. A `#[WithCast(DateTimeInterfaceCast::class, …)]` on an interface-typed property still uses laravel-data's own cast. Scenario: `datetime-input-validated-passes` (a `CarbonInterface` and a `?DateTimeInterface` property round-trip through a controller action).
 ### P-024
 
 **Actions can read request keys their input type doesn't declare**
