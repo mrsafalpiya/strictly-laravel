@@ -15,6 +15,7 @@ final class ProjectData extends Data
         public int $id,
         public string $name,
         public ?string $description,
+        // @phpstan-ignore strictly.dataShape (a cached value asserted to the shape, for its Contract to catch)
         public array $issues,
     ) {}
 

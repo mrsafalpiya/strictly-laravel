@@ -1,5 +1,5 @@
 {
     "problem": "P-052",
-    "description": "A broadcast payload that doesn't match its Data class's type (a cached value behind a @var) fails its recorded Contract.",
+    "description": "A broadcast payload that doesn't match its Data class's type (a cached value behind a @var array shape, with strictly.dataShape suppressed on it, P-084) fails its recorded Contract.",
     "expect": { "outcome": "fail", "errorContains": "error TS2741: Property 'closed' is missing in type '{ open: number; }' but required in type '{ open: number; closed: number; }'." }
 }

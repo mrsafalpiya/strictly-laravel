@@ -50,7 +50,9 @@ parameters:
 # return type (P-145). A translation call in PHP names a key of the default locale (or Laravel's own) with exactly its
 # message's params, and picks a pluralised message's form with a choice call (P-137). A Data property that holds a
 # model's key declares the model with #[KeyOf] (P-128). A controller action that answers JSON declares one Data class
-# as its return type, never a list, a collection or a nullable or union type (P-108).
+# as its return type, never a list, a collection or a nullable or union type (P-108). A Data property holds no array
+# shape, list of a union or list of lists, which Contract Coverage can't see inside, but a Data class for the item
+# (P-084).
 rules:
     - StrictlyLaravel\PHPStan\DataClassFinalRule
     - StrictlyLaravel\PHPStan\DataNamespaceRule
@@ -71,6 +73,7 @@ rules:
     - StrictlyLaravel\PHPStan\PresenceDataRule
     - StrictlyLaravel\PHPStan\TranslationRule
     - StrictlyLaravel\PHPStan\KeyOfRule
+    - StrictlyLaravel\PHPStan\DataShapeRule
 
 services:
     # The messages TranslationRule checks translation calls against, read once per run (P-137).
