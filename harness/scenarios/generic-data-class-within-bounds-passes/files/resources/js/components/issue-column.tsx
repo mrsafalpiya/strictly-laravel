@@ -20,6 +20,13 @@ export function Board({ board }: { board: BoardData }) {
         <>
             <IssueColumn listing={board.backlog} />
             <p>{board.assignees.keys.length} assignees</p>
+            <select aria-label={board.status.label}>
+                {board.status.options.map((status) => (
+                    <option key={status} value={status}>
+                        {status}
+                    </option>
+                ))}
+            </select>
         </>
     );
 }
