@@ -1,0 +1,5 @@
+{
+    "problem": "P-125",
+    "description": "A create page sends its input class as the form's empty defaults (a nullable field always null), and a feature test submits that field filled in, which the server accepts: Contract Coverage counts the accepted submission, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
