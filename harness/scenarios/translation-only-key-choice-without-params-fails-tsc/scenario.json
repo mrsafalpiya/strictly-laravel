@@ -1,0 +1,9 @@
+{
+    "problem": "P-136",
+    "description": "In an app whose only translation is pluralised and takes :name besides :count, choice() without its params fails tsc: with one key, the key TypeScript infers and the one it falls back to for a key that isn't one are the same.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/components/assigned-count.tsx(4,16): error TS2554: Expected 3 arguments, but got 2."
+    }
+}

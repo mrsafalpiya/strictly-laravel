@@ -1,0 +1,9 @@
+{
+    "problem": "P-073",
+    "description": "An input class that config/strictly.php declares for a vendor action (the Kit's LoginData, for Fortify's login), saved mid-edit so that it parses but can't be loaded, fails generation naming the class, its file and the load error, instead of crashing with a stack trace while the vendor declarations are checked.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "app/Data/Auth/LoginData.php: App\\Data\\Auth\\LoginData can't be loaded: Class \"App\\Data\\Auth\\InputDat\" not found"
+    }
+}

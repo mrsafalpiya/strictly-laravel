@@ -3,6 +3,8 @@
 namespace App\Data;
 
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Spatie\LaravelData\Attributes\WithCast;
 use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
 use Spatie\LaravelData\Optional;
@@ -23,7 +25,13 @@ final class StoreMeetingData extends InputData
         public CarbonImmutable $heldOn,
         #[WithCast(DateTimeInterfaceCast::class, format: 'Y-m-d H:i:s')]
         public CarbonImmutable $bookedAt,
+        // PHP's own createFromFormat() has no `c`; Carbon's reads it as DATE_ATOM.
+        #[WithCast(DateTimeInterfaceCast::class, format: 'c')]
+        public CarbonImmutable $agreedAt,
         public array $reminders,
+        // Typed by an interface: read as a CarbonImmutable.
+        public CarbonInterface $confirmedAt,
+        public ?DateTimeInterface $cancelledAt,
     ) {}
 
     /**

@@ -3,6 +3,7 @@
 namespace StrictlyLaravel\Translations;
 
 use Illuminate\Support\Arr;
+use Illuminate\Translation\MessageSelector;
 use ParseError;
 use RuntimeException;
 use Symfony\Component\Finder\Finder;
@@ -103,6 +104,27 @@ final class Translations
     }
 
     /**
+     * Problem P-137: the keys of the locale that name a group of messages rather than one (`dates.months` for
+     * `'months' => ['Jan', …]` in lang/en/dates.php), which `__()` returns as an array.
+     *
+     * @return list<string>
+     */
+    public function groups(string $locale): array
+    {
+        $groups = [];
+        $directory = "{$this->langPath}/{$locale}";
+
+        if (is_dir($directory)) {
+            foreach (Finder::create()->in($directory)->files()->name('*.php')->sortByName() as $file) {
+                $group = str_replace('\\', '/', substr($file->getRelativePathname(), 0, -strlen('.php')));
+                array_push($groups, ...self::nestedGroups($this->requireLangFile($file), $group));
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
      * The `:param` names a message takes, as `__()` and `t()` name them: `:seconds`, `:Seconds` and `:SECONDS` are
      * all filled by the param `seconds`.
      *
@@ -139,8 +161,8 @@ final class Translations
     /**
      * Problem P-057: what each locale other than the default lacks or adds compared to it, one line per key. Empty
      * when every locale has exactly the default locale's keys, each with the same params and pluralised where the
-     * default locale's message is (Problem P-136). The number of forms may differ: each locale's plural rule has its
-     * own.
+     * default locale's message is (Problem P-136), unless the locale's plural rule has a single form. The number of
+     * forms may differ: each locale's plural rule has its own.
      *
      * @return list<string>
      */
@@ -159,7 +181,7 @@ final class Translations
                     continue;
                 }
 
-                if (self::isPlural($message) && ! self::isPlural($messages[$key])) {
+                if (self::isPlural($message) && ! self::isPlural($messages[$key]) && self::hasPluralForms($locale)) {
                     $problems[] = "{$locale}: {$key} isn't plural, but the {$this->defaultLocale} message is, so choice() can't pick its form";
                 } elseif (! self::isPlural($message) && self::isPlural($messages[$key])) {
                     $problems[] = "{$locale}: {$key} is plural, but the {$this->defaultLocale} message isn't, so t() renders every form";
@@ -183,6 +205,42 @@ final class Translations
         }
 
         return $problems;
+    }
+
+    /**
+     * Whether the locale's plural rule has more than one form. In one with a single form (Japanese, Chinese, Korean,
+     * Turkish…) Laravel's `trans_choice()` and the client's `choice()` always take the first form, so a message there
+     * needn't be pluralised where the default locale's is.
+     */
+    private static function hasPluralForms(string $locale): bool
+    {
+        $selector = new MessageSelector;
+
+        foreach ([0, 1, 2, 3, 5, 11, 21, 100, 101] as $count) {
+            if ($selector->getPluralIndex($locale, $count) !== 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $messages
+     * @return list<string>
+     */
+    private static function nestedGroups(array $messages, string $prefix): array
+    {
+        $groups = [];
+
+        foreach ($messages as $key => $message) {
+            if (is_array($message)) {
+                $groups[] = "{$prefix}.{$key}";
+                array_push($groups, ...self::nestedGroups($message, "{$prefix}.{$key}"));
+            }
+        }
+
+        return $groups;
     }
 
     /**

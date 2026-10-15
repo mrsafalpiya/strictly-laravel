@@ -1,12 +1,5 @@
 <?php
 
-use App\Data\StoreMeetingData;
-use Illuminate\Support\Facades\Route;
-
-beforeEach(function () {
-    Route::post('/meetings', fn (StoreMeetingData $meeting): StoreMeetingData => $meeting);
-});
-
 /**
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
@@ -19,7 +12,10 @@ function validMeeting(array $overrides = []): array
         'endsAt' => null,
         'heldOn' => '2026-10-14',
         'bookedAt' => '2026-10-01 12:00:00',
+        'agreedAt' => '2026-10-04T08:00:00+00:00',
         'reminders' => ['2026-10-13T09:30:00+00:00'],
+        'confirmedAt' => '2026-10-02T08:00:00+00:00',
+        'cancelledAt' => '2026-10-03T08:00:00+00:00',
         ...$overrides,
     ];
 }
@@ -33,13 +29,22 @@ test('an ISO-8601 timestamp (Z included), a date-only date, null and a missing o
             'endsAt' => null,
             'heldOn' => '2026-10-14',
             'bookedAt' => '2026-10-01T12:00:00+00:00',
+            'agreedAt' => '2026-10-04T08:00:00+00:00',
             'reminders' => ['2026-10-13T09:30:00+00:00'],
+            'confirmedAt' => '2026-10-02T08:00:00+00:00',
+            'cancelledAt' => '2026-10-03T08:00:00+00:00',
         ]);
 
-    $this->postJson('/meetings', validMeeting(['endsAt' => '2026-10-14T10:30:00Z', 'remindAt' => '2026-10-14T09:00:00+00:00']))
+    $this->postJson('/meetings', validMeeting([
+        'endsAt' => '2026-10-14T10:30:00Z',
+        'remindAt' => '2026-10-14T09:00:00+00:00',
+        'cancelledAt' => null,
+        'reminders' => [],
+    ]))
         ->assertCreated()
         ->assertJsonPath('endsAt', '2026-10-14T10:30:00+00:00')
-        ->assertJsonPath('remindAt', '2026-10-14T09:00:00+00:00');
+        ->assertJsonPath('remindAt', '2026-10-14T09:00:00+00:00')
+        ->assertJsonPath('cancelledAt', null);
 });
 
 test('a datetime that is not an ISO-8601 timestamp is a validation error on its field', function (string $field, mixed $value) {
@@ -55,7 +60,10 @@ test('a datetime that is not an ISO-8601 timestamp is a validation error on its 
     'an optional one' => ['remindAt', 'tomorrow'],
     'a date-only one' => ['heldOn', '2026-10-14T09:30:00+00:00'],
     'one in the format of another cast' => ['bookedAt', '2026-10-01T12:00:00+00:00'],
+    'one not in the format c' => ['agreedAt', '2026-10-04 08:00:00'],
     'a list item' => ['reminders', ['2026-10-13T09:30:00+00:00', 'tomorrow']],
+    'one typed CarbonInterface' => ['confirmedAt', '2026-10-02'],
+    'one typed DateTimeInterface' => ['cancelledAt', 'tomorrow'],
 ]);
 
 test('the date format error names the format', function () {
