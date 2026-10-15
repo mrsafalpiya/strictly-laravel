@@ -150,8 +150,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
 | [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
-| [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
+| [P-068](#p-068) | Type assertions override generated types | every Type Boundary | closed |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
+| [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
+| [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
@@ -1023,7 +1025,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `enumValues.IssueStatus` generated from PHP in case order (`EnumValuesProvider`); for a literal union, `allOf<WeekStart>()('monday', 'sunday')`.
 
-**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and rejecting type assertions is [P-068](#p-068). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
+**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
 
 ### P-035
 
@@ -1908,11 +1910,13 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `props.project as ProjectData`, `<T>x` or `user!.name` in app code compiles whatever the generated type says.
 
 **Manual workaround:** the `type-safety/no-type-assertions` lint rule rejects `as`, `<T>x` and `!` (not `as const`) outside the boundary modules ([P-069](#p-069)).
+
+**Closed by:** the installer hook `vite.config.ts: oxlint rejects type and non-null assertions` ([`ViteLintPlugin::rejectAssertions()`](../packages/laravel/src/Install/ViteLintPlugin.php)) turns on oxlint's own `typescript/consistent-type-assertions` (with `assertionStyle: 'never'`, which still allows `as const`) and `typescript/no-non-null-assertion` in the app's Vite+ lint config. `props.project as ProjectData` and `<UserData>meta` fail `ci:check:lint` with `typescript(consistent-type-assertions): Do not use any type assertions.`, and `auth.user!.name` with `typescript(no-non-null-assertion): Forbidden non-null assertion.` App code narrows with a check instead (`=== null`, `typeof`, a type guard for an `unknown`, [P-062](#p-062)); a cast that is really needed takes a suppression with its reason (ADR-0007). The vendored shadcn/ui components in `resources/js/components/ui/`, which cast CSS variables to `React.CSSProperties`, are already outside lint (the Base Kit's `ignorePatterns`), and the Overlay's own casts live in the npm package ([P-069](#p-069)), so app code needs no other exemption. Kit Conversion narrows the appearance `use-appearance.tsx` reads from `localStorage` with a check against the `Appearance` values, and types `use-current-url.ts`'s `whenCurrentUrl()` with overloads instead of `null as TIfFalse`. What still asserts without a cast: an `any` ([P-175](#p-175)) and a hand-written type guard ([P-176](#p-176)). Scenarios: `type-assertion-on-page-prop-fails-lint`, `angle-bracket-assertion-on-unknown-fails-lint`, `non-null-assertion-fails-lint`, `narrowed-instead-of-asserted-passes`, `assertion-rules-added-by-reinstall-fails-lint`.
 
 ### P-069
 
@@ -1928,6 +1932,34 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** each cast states what proves it (the recorded Contracts); the lint rule allows casts only in these modules.
 
 **Reasoning:** Inertia's own types are looser than the generated ones, so bridging them needs casts somewhere. Confining them to three modules, each cast justified and backed by Contracts, keeps the rest of the app cast-free.
+
+### P-175
+
+**An `any` from an untyped API reaches typed code without a cast**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #52
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `const project: ProjectData = JSON.parse(text)`, or a third-party function typed as returning `any`, compiles and passes lint: TypeScript lets `any` flow into any type, so the value is cast without `as`, and the rules against type assertions ([P-068](#p-068)) don't see it.
+
+**Manual workaround:** read such a value as `unknown` (`const parsed: unknown = JSON.parse(text)`) and narrow it.
+
+### P-176
+
+**A hand-written type guard is trusted as written**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #52
+- **Upstream:** by design: TypeScript doesn't check a written type predicate (`value is UserData`) against the function's body
+- **Status:** accepted gap
+
+**Reproduction:** `function isUser(value: unknown): value is UserData { return typeof value === 'object'; }` compiles and passes lint, and every `isUser(meta) && meta.name` after it reads `meta` as a `UserData` the check never proved, like a cast ([P-068](#p-068)).
+
+**Manual workaround:** check in the guard's body every field its predicate claims, and review guards as closely as casts.
+
+**Reasoning:** narrowing an `unknown` ([P-062](#p-062)) needs a guard whenever the check doesn't fit in one expression, and the predicate is how TypeScript lets a function narrow. Lint can't compare a predicate with its body (oxlint's own rules have no such check, and JS plugins are syntactic, [P-070](#p-070)), so rejecting written predicates would reject the narrowing P-068 asks for.
 
 ### P-070
 
