@@ -149,6 +149,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-081](#p-081) | A half-updated app runs one release's Composer package with another's npm package | every Type Boundary | closed |
 | [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
 | [P-124](#p-124) | `ci:check` fails in a fresh clone because feature tests need a Vite build | every Type Boundary | closed |
+| [P-146](#p-146) | AI coding agents are taught the untyped way | every Type Boundary | closed |
 
 ## Routes
 
@@ -1846,6 +1847,21 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** run `pnpm run build` before `ci:check`, or call `$this->withoutVite()` in the test case (the Reference Implementation's `tests/TestCase.php` did).
 
 **Closed by:** [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php), which the installer applies to every feature test, renders pages without the Vite build: Contracts check payloads, not asset tags. A test that needs the real tags calls `$this->withVite()`. Scenarios: `fresh-clone-without-build-passes-test`, `vite-assets-without-build-fails-test`.
+
+### P-146
+
+**AI coding agents are taught the untyped way**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 65 to 67; issue #30
+- **Upstream:** by design: Laravel Boost's guidance is written for any Inertia app ([`inertia-laravel/core`](https://github.com/laravel/boost/blob/main/.ai/inertia-laravel/core.blade.php), [`inertia-react-development`](https://github.com/laravel/boost/tree/main/.ai/inertia-react))
+- **Status:** closed
+
+**Reproduction:** the Base Kit is generated with `--no-boost`, so an AI coding agent working in an installed app gets no guidance at all. Add Boost the usual way (`composer require laravel/boost --dev`, `php artisan boost:install`) and the agent files it writes (`CLAUDE.md` or `AGENTS.md`, `.claude/skills`) say "Use `Inertia::render()` for server-side routing", and its `inertia-react-development` skill shows `<Link href="/users">`, `router.visit('/users')`, `useForm` and `<Form>`. Nothing mentions Page classes, input classes, `<TypedForm>`, `useRouteHttp()`, `forPage()`, Contracts or Contract Coverage. An agent that follows the guidance writes code `ci:check` rejects (`strictly.inertiaRender`, `strictly/typed-requests`, `strictly/no-hardcoded-urls`), or hand-types the props `ci:check` would have generated, and then works around the checks.
+
+**Manual workaround:** paste the type-safety standard (the Reference Implementation's `docs/type-safety.md`) into the app's `CLAUDE.md` and keep it in step with each release by hand.
+
+**Closed by:** the Composer package requires `laravel/boost` and ships a Boost core guideline (`resources/boost/guidelines/core.md`: the condensed standard, what checks what, and that it overrides Boost's generic Inertia guidance) and one skill per workflow (`resources/boost/skills/strictly-*/SKILL.md`), which Boost reads from the installed package, so they update with it. Boost installs a third-party package's guidance only when the app's `boost.json` lists it, and the Base Kit gitignores `boost.json` along with every agent file Boost writes; [`BoostGuidance`](../packages/laravel/src/Boost/BoostGuidance.php) adds the package to `boost.json` before `boost:install` and `boost:update` run, so no guidance is selected or committed by hand. The installer hook `Composer scripts: boost:update after composer update` ([`BoostUpdateScript`](../packages/laravel/src/Install/BoostUpdateScript.php)) runs `boost:update` after `composer update`, as `laravel new` does for an app it installs Boost in. Each skill's worked example is a scenario that passes the full `ci:check`, and `harness/tests/boost-guidance.test.ts` fails when a skill's code drifts from its scenario, quotes a diagnostic no breaking scenario produces, or names a lint rule or PHPStan identifier that doesn't exist. Scenarios: `skill-add-page-example-passes`, `skill-add-form-example-passes`, `skill-add-query-filters-example-passes`, `skill-add-json-endpoint-example-passes`, `skill-add-deferred-props-example-passes`, `skill-add-broadcast-event-example-passes`, `skill-add-translation-example-passes`, `skill-close-coverage-gap-example-passes`, `skill-close-coverage-gap-example-gap-fails-coverage`. Harness tests: "Boost installs the package's core guideline and every skill, and nothing it writes is committed (P-146)" and "composer update runs boost:update; an app that lost that script fails ci:check:install until strictly:install restores it (P-146)".
 
 ## Findings not registered
 
