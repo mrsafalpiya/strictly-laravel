@@ -1,6 +1,6 @@
 {
     "problem": "P-065",
-    "description": "A page prop built by hand from the models (a toArray() asserted to the Page class's array shape) sends keys its generated type doesn't have, and the page's recorded Contract fails tsc in ci:check.",
+    "description": "A page prop built by hand from the models (a toArray() asserted to the Page class's array shape, with strictly.dataShape suppressed on it, P-084) sends keys its generated type doesn't have, and the page's recorded Contract fails tsc in ci:check.",
     "expect": {
         "outcome": "fail",
         "errorContains": "error TS2353: Object literal may only specify known properties, and '\"id\"' does not exist in type '{ name: string; email: string; }'."
