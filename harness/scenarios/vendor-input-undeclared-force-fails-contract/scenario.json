@@ -1,0 +1,8 @@
+{
+    "problem": "P-025",
+    "description": "The Reference Implementation's second finding: a declared payload for Fortify's action enabling two-factor authentication that leaves out `force`, which Fortify reads, fails the input Contract the test enabling it records.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'string' is not assignable to type 'never'."
+    }
+}
