@@ -13,6 +13,9 @@ return [
         'hide_archived' => 'Archivierte ausblenden',
         'empty' => 'Noch keine Projekte.',
     ],
+    'card' => [
+        'issues' => '{0} Keine Vorgänge|{1} Ein Vorgang|[2,*] :count Vorgänge',
+    ],
     'create' => [
         'title' => 'Neues Projekt',
         'key_hint' => '2–10 Buchstaben, verwendet in Vorgangsnummern (:example). Er kann später nicht geändert werden.',
