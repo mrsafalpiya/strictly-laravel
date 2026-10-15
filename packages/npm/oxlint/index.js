@@ -244,6 +244,65 @@ const typedInertiaComponents = {
 };
 
 /**
+ * P-059: `usePage().props` is typed from the generated shared props (the app's shared props Data class) and, for a
+ * page's own props, `PageProps<'component'>`. Inertia's `usePage<T>()` trusts any type it is given, so a hand-written
+ * one (`usePage<{ features: { boards: boolean } }>()`) types a server setting or feature flag nothing sends. A type
+ * argument on Inertia's `usePage` (imported by name, renamed or through a namespace import) is rejected unless it is
+ * exactly a generated `PageProps<…>`.
+ *
+ * @type {Rule}
+ */
+const typedPageProps = {
+    meta: {
+        type: 'problem',
+        docs: { description: "Type usePage() from the generated shared props and Page classes, not a hand-written type argument." },
+    },
+    create(context) {
+        /** Local names of Inertia's `usePage`, and of namespace imports of `@inertiajs/react`. */
+        const usePageNames = new Set();
+        const namespaces = new Set();
+
+        return {
+            ImportDeclaration(node) {
+                if (node.source.value !== '@inertiajs/react') {
+                    return;
+                }
+
+                for (const specifier of node.specifiers) {
+                    if (specifier.type === 'ImportNamespaceSpecifier') {
+                        namespaces.add(specifier.local.name);
+                    } else if (specifier.type === 'ImportSpecifier' && nameOf(specifier.imported) === 'usePage') {
+                        usePageNames.add(specifier.local.name);
+                    }
+                }
+            },
+            CallExpression(node) {
+                const callee = node.callee;
+                const isUsePage =
+                    usePageNames.has(nameOf(callee) ?? '') ||
+                    (callee.type === 'MemberExpression' && !callee.computed && namespaces.has(nameOf(callee.object) ?? '') && nameOf(callee.property) === 'usePage');
+                const typeArgument = node.typeArguments?.params[0];
+
+                if (!isUsePage || typeArgument === undefined) {
+                    return;
+                }
+
+                const isGeneratedPageProps =
+                    typeArgument.type === 'TSTypeReference' && nameOf(typeArgument.typeName) === 'PageProps' && (typeArgument.typeArguments?.params.length ?? 0) > 0;
+
+                if (!isGeneratedPageProps) {
+                    context.report({
+                        node: node.typeArguments ?? node,
+                        message:
+                            "`usePage()` takes its props' type from the generated shared props and Page classes: drop the type argument. A server setting or feature flag every page needs is a property of the shared props Data class (App\\Data\\SharedProps); a page's own props are `PageProps<'component'>` from `@/generated`.",
+                    });
+                }
+            },
+        };
+    },
+};
+
+/**
  * P-045: an optimistic update receives the page's props and returns the ones to change. Inertia types those props as
  * an index signature, and `router.optimistic<TProps>()` trusts any type it is given, so a renamed prop silently
  * updates nothing. Rejects `router.optimistic()` and an `optimistic` option or `<Form optimistic>` that isn't
@@ -632,6 +691,7 @@ export default {
         'typed-forms': typedForms,
         'typed-inertia-components': typedInertiaComponents,
         'typed-optimistic-updates': typedOptimisticUpdates,
+        'typed-page-props': typedPageProps,
         'typed-prop-names': typedPropNames,
         'typed-requests': typedRequests,
     },

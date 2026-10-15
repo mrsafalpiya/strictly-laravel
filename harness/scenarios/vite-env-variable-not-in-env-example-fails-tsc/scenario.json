@@ -1,0 +1,6 @@
+{
+    "problem": "P-058",
+    "description": "Reading a VITE_* variable that .env.example doesn't list fails tsc, because import.meta.env is typed from .env.example's VITE_* variables, with no index signature.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'VITE_SENTRY_DSN' does not exist on type 'ImportMetaEnv'." }
+}
