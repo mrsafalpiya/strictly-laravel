@@ -1,0 +1,7 @@
+{
+    "problem": "P-124",
+    "description": "A feature test that asks for the real Vite assets in a clone without a build still fails on the missing manifest, so the passing scenario really has no build.",
+    "step": "test",
+    "delete": ["public/build"],
+    "expect": { "outcome": "fail", "errorContains": "Vite manifest not found at:" }
+}

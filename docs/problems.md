@@ -82,6 +82,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
+| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | open |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
@@ -123,6 +124,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | closed |
 | [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | open |
+| [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
+| [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
@@ -133,6 +136,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-080](#p-080) | An existing app silently lacks a hook a newer release adds, or one it lost | every Type Boundary | closed |
 | [P-081](#p-081) | A half-updated app runs one release's Composer package with another's npm package | every Type Boundary | closed |
 | [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
+| [P-124](#p-124) | `ci:check` fails in a fresh clone because feature tests need a Vite build | every Type Boundary | closed |
 
 ## Routes
 
@@ -825,9 +829,22 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `public static function authorize(): bool` on the input class, which laravel-data runs before validation (`AuthorizedDataPipe`).
 
-## Enums
-
 **Closed by:** laravel-data runs an input's `authorize()` before validation; the PHPStan rule `strictly.authorizeInInput` ([`AuthorizeInInputRule`](../packages/laravel/src/PHPStan/AuthorizeInInputRule.php)) rejects a controller action that takes an InputData and authorizes in its body instead (`Gate::authorize()`, `allowIf()`, `denyIf()`, `$this->authorize()`, `abort(403)`, `abort_if(…, 403)`, `abort_unless(…, 403)`). Matching is syntactic ([P-070](#p-070)). Scenarios: `unauthorized-input-gets-403-passes`, `authorize-in-action-body-fails-phpstan`.
+
+### P-126
+
+**An input's `authorize()` reads the route's models untyped**
+
+- **Type Boundary:** validation errors
+- **Source:** found porting Tracklane's Workspaces area into the Testbed App (#23)
+- **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
+- **Status:** open
+
+**Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`).
+
+**Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
+
+## Enums
 
 ### P-031
 
@@ -1434,6 +1451,38 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** model the item as a Data class (a `ProjectSummaryData` with `public ?string $lead`, or a Data class wrapping the union), whose shapes Contract Coverage does check.
 
+The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<IssueStatus>, array<int, IssueListItemData>>`, a map of lists), whose issues' shapes go unchecked. Its tests send an assigned, labelled, estimated issue with a due date anyway, so the gap closes as soon as this one does.
+
+### P-125
+
+**A form's empty defaults are a Contract Coverage gap no test can close**
+
+- **Type Boundary:** every Type Boundary (seen in form payloads)
+- **Source:** found porting Tracklane's Projects area into the Testbed App (#23); the Reference Implementation exempted input classes from its coverage check (`reference/showcase/app/Console/Commands/TypesCoverageCommand.php`, "Input classes only appear as form defaults/filters, which are empty by design")
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** a create page sends its input class as the form's initial state, `new CreatePage(defaults: new StoreProjectData(key: '', description: null, leadId: null, …))`, which every render sends with `description` and `leadId` null by design. Contract Coverage reports `✗ StoreProjectData.description is only ever null (at projects/create › defaults.description): add a feature test that renders projects/create with defaults.description not null.`, which no test can do, so `ci:check` can't pass without changing the page.
+
+**Manual workaround:** none that keeps the convention: send the defaults as a different class, or drop the nullable fields from them.
+
+**Closed by:** an input class is the type of what the form sends back as well, so a value the server accepted shows the same states. The Contract recorder keeps what each form request sent when the server accepted it (validated without errors, below 400) in its `form` record ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and [`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php) feeds it to [`ShapeCoverage::observeAccepted()`](../packages/laravel/src/Coverage/ShapeCoverage.php): a test that creates a project with a description closes the gap. Accepted values only mark states as seen; a field no test submits filled in is no gap of its own, since every form endpoint's input is already checked by its `form` Contracts. A gap on an input class now names both ways to close it: `…: add a feature test that renders projects/create with defaults.description not null, or one whose request a form endpoint accepts with StoreProjectData's description not null.` Scenarios: `form-defaults-empty-by-design-pass-coverage`, `form-field-never-sent-fails-coverage`.
+
+### P-127
+
+**Contract Coverage depends on the random data factories produce**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found porting Tracklane into the Testbed App (#23)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `ProjectFactory` fills `description` with `fake()->optional()->sentence()`, and the only test that renders the project edit page leaves it to the factory. Contract Coverage passes or fails `UpdateProjectData.description is only ever null` from one run to the next.
+
+**Manual workaround:** in the tests Contract Coverage relies on, set every nullable, optional or list field explicitly, once filled in and once empty.
+
+**Reasoning:** Contract Coverage reports what the tests produced, and only the app's tests decide what that is; the Overlay can't tell a value a test chose from one a factory drew. Each gap already names the test to add, and once a test sets the field explicitly the result is stable. The Testbed App's tests set every such field and run its Contract Coverage repeatedly without a gap.
+
 ### P-067
 
 **Combinations are proven per shape, not per combination**
@@ -1579,6 +1628,21 @@ Problems in generation or verification that affect every Type Boundary.
 **Manual workaround:** read the installer's output and the release notes carefully.
 
 **Closed by:** `ci:check:install` (`strictly:install --check`, [P-080](#p-080)) fails while any hook is `not applied`, and the error says what to do by hand. A hook the developer applied by hand counts as applied. The [upgrade guide](../packages/laravel/UPGRADE.md) lists each release's app-side changes and documents the release-check convention: every such change is applied by a hook, or detected by a hook that fails until it's made, or checked by a rule in the earliest tool that can express it, or marked as having no check, with the reason. Scenarios: `vite-plugin-unpatchable-fails-install-check`, `vite-plugin-registered-by-hand-passes`.
+
+### P-124
+
+**`ci:check` fails in a fresh clone because feature tests need a Vite build**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user story 58; found porting Tracklane into the Testbed App (#23)
+- **Upstream:** none (the Base Kit builds before its tests in its own CI)
+- **Status:** closed
+
+**Reproduction:** clone an installed app and run `composer ci:check`. `public/build` is gitignored and nothing in `ci:check` builds, so every feature test that renders a page fails with `Vite manifest not found at: …/public/build/manifest.json` (16 of the Base Kit's own tests). In a working copy that was built once, a new page fails the same way (`Unable to locate file in Vite manifest: resources/js/pages/projects/index.tsx`) until the next build. No Contract is recorded for those pages.
+
+**Manual workaround:** run `pnpm run build` before `ci:check`, or call `$this->withoutVite()` in the test case (the Reference Implementation's `tests/TestCase.php` did).
+
+**Closed by:** [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php), which the installer applies to every feature test, renders pages without the Vite build: Contracts check payloads, not asset tags. A test that needs the real tags calls `$this->withVite()`. Scenarios: `fresh-clone-without-build-passes-test`, `vite-assets-without-build-fails-test`.
 
 ## Findings not registered
 
