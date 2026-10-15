@@ -1,0 +1,9 @@
+{
+    "problem": "P-136",
+    "description": "In an app whose only translation is pluralised, t() still rejects its key and names choice(): with one key, the key TypeScript infers and the one it falls back to for a key that isn't one are the same.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/components/assigned-count.tsx(4,18): error TS2345: Argument of type '\"issues.assigned\"' is not assignable to parameter of type '\"issues.assigned is a plural message: use choice()\"'."
+    }
+}

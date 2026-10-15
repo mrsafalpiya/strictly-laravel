@@ -19,12 +19,22 @@ export type ChoiceParams<Param extends string> = { [Name in Exclude<Param, 'coun
     count?: string | number;
 };
 
+/** Whether `T` is a union of more than one type. */
+type IsUnion<T, All = T> = T extends unknown ? ([All] extends [T] ? false : true) : never;
+
+/**
+ * Whether `Key` is every key: TypeScript falls back to the constraint when the argument is no key at all. An app with
+ * a single key can't fall back to anything else, so its one key is always the key it names.
+ */
+type IsEveryKey<AnyKey extends string, Key extends AnyKey> = [AnyKey] extends [Key] ? IsUnion<AnyKey> : false;
+
 /**
  * What `choice()` takes after the count: params when the message has `:params` other than `:count`, else optionally
  * a `count` to show instead of the count. For a key that isn't one (`Key` fell back to every key), the params are
  * optional, so `tsc` reports the key rather than a missing argument.
  */
-export type ChoiceArgs<Keys extends Record<string, string>, Key extends keyof Keys> = [keyof Keys] extends [Key]
+export type ChoiceArgs<Keys extends Record<string, string>, Key extends keyof Keys> =
+    IsEveryKey<Extract<keyof Keys, string>, Extract<Key, string>> extends true
     ? [params?: ChoiceParams<Keys[Key] & string>]
     : [Exclude<Keys[Key], 'count'>] extends [never]
       ? [params?: ChoiceParams<never>]
@@ -35,14 +45,16 @@ export type ChoiceArgs<Keys extends Record<string, string>, Key extends keyof Ke
  * which function to call. A key that isn't one at all stays `keyof Keys` (the constraint TypeScript falls back to), so
  * its diagnostic names the keys' type.
  */
-export type SingularKey<AnyKey extends string, PluralKey extends string, Key extends AnyKey> = [AnyKey] extends [Key]
+export type SingularKey<AnyKey extends string, PluralKey extends string, Key extends AnyKey> =
+    IsEveryKey<AnyKey, Key> extends true
     ? Key
     : Key extends PluralKey
       ? `${Key} is a plural message: use choice()`
       : Key;
 
 /** The key `choice()` takes (Problem P-136): a key whose message isn't pluralised becomes a message naming `t()`. */
-export type PluralKeyArg<AnyKey extends string, PluralKey extends string, Key extends AnyKey> = [AnyKey] extends [Key]
+export type PluralKeyArg<AnyKey extends string, PluralKey extends string, Key extends AnyKey> =
+    IsEveryKey<AnyKey, Key> extends true
     ? Key
     : Key extends PluralKey
       ? Key
