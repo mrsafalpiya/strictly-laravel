@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-broadcast-event Boost skill: an event broadcasts a Data class payload on a channel routes/channels.php defines, a component listens with useChannelEvent(channel(...)), feature tests make it broadcast every payload shape, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-page Boost skill: a controller returns a Page class built from a Data class, its component reads PageProps<'projects/index'>, a feature test renders every shape of its props, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

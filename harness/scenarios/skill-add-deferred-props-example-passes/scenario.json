@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-deferred-props Boost skill: a Page class has a deferred Lazy prop and an infinite-scroll ScrollProp, the component renders them through forPage()'s Deferred and InfiniteScroll, feature tests load the deferred prop and scroll to the next page, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

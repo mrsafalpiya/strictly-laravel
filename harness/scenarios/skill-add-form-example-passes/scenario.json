@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-form Boost skill: an action takes an input class, a <TypedForm> built from its route names the fields with field() and reads errors keyed by the input, feature tests submit it valid and invalid, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

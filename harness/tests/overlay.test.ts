@@ -99,6 +99,67 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
         assert.ok(guide !== undefined && existsSync(join(app.dir, guide)), 'the check does not point to an upgrade guide the app has');
     });
 
+    test("Boost installs the package's core guideline and every skill, and nothing it writes is committed (P-146)", async () => {
+        const app = await createApp('boost-guidance');
+        await app.commitAll('after strictly:install');
+        // A developer's own choice of agents, which boost:install would otherwise ask for or detect.
+        writeFileSync(join(app.dir, 'boost.json'), `${JSON.stringify({ agents: ['claude_code'] }, null, 4)}\n`);
+        const skills = readdirSync(join(app.dir, 'vendor', 'mrsafalpiya', 'strictly-laravel', 'resources', 'boost', 'skills')).sort();
+
+        const listed = await app.run('php', ['artisan', 'boost:list-skills', '--no-ansi']);
+        const install = await app.run('php', ['artisan', 'boost:install', '--no-interaction', '--no-ansi']);
+
+        assert.equal(listed.exitCode, 0, tail(listed.output));
+        assert.equal(install.exitCode, 0, tail(install.output));
+        assert.ok(skills.length > 0, 'the package ships no skills');
+
+        for (const skill of skills) {
+            assert.match(listed.output, new RegExp(`│ ${skill}\\s+│ mrsafalpiya/strictly-laravel`), `boost:list-skills doesn't list ${skill}`);
+            assert.match(install.output, new RegExp(`\\b${skill}\\b`), `boost:install doesn't install ${skill}`);
+            assert.ok(existsSync(join(app.dir, '.claude', 'skills', skill, 'SKILL.md')), `${skill} wasn't written for Claude Code`);
+        }
+
+        assert.match(install.output, /mrsafalpiya\/strictly-laravel\/core/, "boost:install doesn't install the core guideline");
+        const guidelines = readFileSync(join(app.dir, existsSync(join(app.dir, 'CLAUDE.md')) ? 'CLAUDE.md' : 'AGENTS.md'), 'utf8');
+        assert.match(guidelines, /=== mrsafalpiya\/strictly-laravel\/core rules ===\n\n# Strictly Laravel\n/);
+        assert.deepEqual(
+            (JSON.parse(readFileSync(join(app.dir, 'boost.json'), 'utf8')) as { packages?: string[] }).packages,
+            ['mrsafalpiya/strictly-laravel'],
+        );
+        // The Base Kit gitignores Boost's agent files and boost.json: the guidance stays in the package.
+        assert.deepEqual(app.changedFiles(), [], 'Boost wrote files the app would commit');
+
+        const update = await app.run('php', ['artisan', 'boost:update', '--no-ansi']);
+        assert.equal(update.exitCode, 0, tail(update.output));
+        assert.match(update.output, /Boost guidelines and skills updated successfully\./);
+        assert.deepEqual(app.changedFiles(), [], 'boost:update wrote files the app would commit');
+    });
+
+    test('composer update runs boost:update; an app that lost that script fails ci:check:install until strictly:install restores it (P-146)', async () => {
+        const app = await createApp('boost-update-script');
+        const composerJson = join(app.dir, 'composer.json');
+        const script = '@php artisan boost:update --ansi';
+        const scripts = () => (JSON.parse(readFileSync(composerJson, 'utf8')) as { scripts: Record<string, string[]> }).scripts;
+
+        assert.ok(scripts()['post-update-cmd']?.includes(script), 'strictly:install did not add boost:update to post-update-cmd');
+
+        writeFileSync(composerJson, readFileSync(composerJson, 'utf8').replace(`,\n            "${script}"`, ''));
+        assert.ok(!scripts()['post-update-cmd']?.includes(script), 'the test did not remove the script');
+
+        assertOutcome(await app.check('install'), {
+            outcome: 'fail',
+            errorContains: 'Strictly Laravel is not fully applied to this app: Composer scripts: boost:update after composer update (missing).',
+        });
+
+        const reinstall = await app.install();
+        assert.deepEqual(
+            installerRows(reinstall.output).filter(({ status }) => status !== 'unchanged'),
+            [{ label: 'Composer scripts: boost:update after composer update', status: 'applied' }],
+        );
+        assert.ok(scripts()['post-update-cmd']?.includes(script), 'strictly:install did not restore the script');
+        assertOutcome(await app.check('install'), { outcome: 'pass' });
+    }, 10);
+
     test('Kit Conversion leaves a Base Kit file with unknown content untouched and reports it', async () => {
         const app = await createApp('kit-conversion-unknown-content', { install: false });
         const routes = join(app.dir, 'routes', 'web.php');

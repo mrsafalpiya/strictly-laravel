@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-close-coverage-gap Boost skill: the feature test the gap names (the projects page rendered with a description) is added next to the one that only rendered a null description, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
