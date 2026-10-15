@@ -196,7 +196,8 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
     tester.run('typed-broadcasts', rule('typed-broadcasts'), {
         valid: [
             "import { channel, useChannelEvent } from '@/generated/broadcasting'; useChannelEvent(channel('issues.{issue}', { issue }), 'CommentPosted', cb);",
-            "import { configureEcho, useConnectionStatus, useEchoNotification } from '@laravel/echo-react'; configureEcho({ broadcaster: 'reverb' }); useConnectionStatus(); useEchoNotification(name, cb);",
+            "import { configureEcho, useConnectionStatus } from '@laravel/echo-react'; configureEcho({ broadcaster: 'reverb' }); useConnectionStatus();",
+            "import { channel, useChannelEvent } from '@/generated/broadcasting'; import { useEchoNotification } from './hooks/notifications'; useEchoNotification(name, cb); useChannelEvent(channel('users.{user}', { user }), 'InvoicePaid', cb);",
             "import { useEcho } from './hooks/use-echo'; useEcho();",
             "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);",
         ],
@@ -208,6 +209,26 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             { code: "import { useEchoPresence as usePresence } from '@laravel/echo-react'; usePresence(name, 'Joined', cb);", errors: 1 },
             { code: "import { useEchoPublic } from '@laravel/echo-react'; useEchoPublic('status', 'Updated', cb);", errors: 1 },
             { code: "import * as Echo from '@laravel/echo-react'; Echo.useEcho(name, 'CommentPosted', cb);", errors: 1 },
+            {
+                code: "import { useEchoNotification } from '@laravel/echo-react'; useEchoNotification(`App.Models.User.${user.id}`, (n: { title: string }) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's `useEchoNotification\(\)` reads a broadcast notification's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the notification, and listen for it with `useChannelEvent\(channel, event, callback\)` from `@\/generated\/broadcasting`/,
+                    },
+                ],
+            },
+            {
+                code: "import { useEchoModel } from '@laravel/echo-react'; useEchoModel<{ name: string }, 'App.Models.Project'>('App.Models.Project', project.id, 'ProjectUpdated', cb);",
+                errors: [
+                    {
+                        message:
+                            /Echo's `useEchoModel\(\)` reads a model broadcast's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the model change, and listen for it with `useChannelEvent\(channel, event, callback\)` from `@\/generated\/broadcasting`/,
+                    },
+                ],
+            },
+            { code: "import { useEchoModel as useModel } from '@laravel/echo-react'; useModel('App.Models.Project', id, 'ProjectUpdated', cb);", errors: 1 },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.useEchoNotification(name, cb);", errors: 1 },
         ],
     });
 });

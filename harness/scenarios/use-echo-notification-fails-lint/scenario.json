@@ -1,0 +1,6 @@
+{
+    "problem": "P-142",
+    "description": "Reading a broadcast notification through Echo's own useEchoNotification(), whose payload is typed by hand, fails lint.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Echo's `useEchoNotification()` reads a broadcast notification's hand-typed payload" }
+}
