@@ -111,9 +111,12 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | open |
 | [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | open |
 | [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | open |
-| [P-055](#p-055) | Translation keys are unchecked strings | translations | open |
-| [P-056](#p-056) | Translation `:param` names are unchecked | translations | open |
-| [P-057](#p-057) | Other locales can miss keys or params | translations | open |
+| [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
+| [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
+| [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
+| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | open |
+| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
+| [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | open |
 | [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | open |
 | [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | open |
@@ -1273,11 +1276,13 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** spec user story 47; ADR-0006
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `lang/en/auth.php` defines `'throttle' => 'Too many login attempts. Please try again in :seconds seconds.'`; the client calls `t('auth.throtle')` and compiles, rendering the raw key.
 
 **Manual workaround:** none; keys are copied by hand.
+
+**Closed by:** `strictly:generate` reads the default locale's lang files (`app.locale`: every PHP file under `lang/<locale>/`, nested groups and directories flattened to the keys `__()` takes, plus `lang/<locale>.json`; [`Translations`](../packages/laravel/src/Translations/Translations.php)) and writes `@/generated/translations` ([`TranslationsModule`](../packages/laravel/src/Translations/TranslationsModule.php)): a `TranslationKeys` type, and the `t()` the npm package's [`createTranslator()`](../packages/npm/translations/index.d.ts) binds to each locale's messages, written as generated JSON that Vite bundles (no shared props, no request). `t()` takes only those keys, template-literal keys included, so a misspelled one fails `tsc`: `error TS2345: Argument of type '"auth.throtle"' is not assignable to parameter of type 'keyof TranslationKeys'.` The Vite plugin regenerates when a lang file changes. ADR-0006. Scenarios: `translation-keys-typed-passes`, `translation-key-misspelled-fails-tsc`.
 
 ### P-056
 
@@ -1286,11 +1291,13 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** spec user story 47; ADR-0006
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `t('auth.throttle', { second: 5 })` compiles; the message renders with the literal `:seconds`.
 
 **Manual workaround:** none.
+
+**Closed by:** `TranslationKeys` maps each key to the `:params` its default-locale message takes, named as Laravel's translator fills them (`:seconds`, `:Seconds` and `:SECONDS` are all the param `seconds`; a placeholder starts with a letter, so `10:30` is none), and `t(key, params)` takes exactly those: a misspelled param fails with `error TS2561: Object literal may only specify known properties, but 'second' does not exist in type 'TranslationParams<"seconds">'. Did you mean to write 'seconds'?`, a missing one with `error TS2554: Expected 2 arguments, but got 1.`, and a message without params takes none. At runtime `t()` fills them as Laravel does (`packages/npm/tests/translations.test.ts`). Scenarios: `translation-params-typed-passes`, `translation-param-misspelled-fails-tsc`, `translation-param-missing-fails-tsc`.
 
 ### P-057
 
@@ -1299,11 +1306,54 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** spec user story 48; ADR-0006
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** add a key to `lang/en/` but not `lang/de/`, or drop `:seconds` from the German message: nothing fails; German users see the fallback or a message missing its value.
 
 **Manual workaround:** none.
+
+**Closed by:** `strictly:install` publishes `tests/Feature/LocaleParityTest.php` (a hook, so a deleted one is restored and `ci:check:install` fails without it), which runs [`LocaleParity::assert()`](../packages/laravel/src/Testing/LocaleParity.php): every locale other than the default must have exactly its keys, each with the same params. One line per gap: `de: auth.password is missing`, `de: auth.throttle lacks :seconds`, a param the default message doesn't take (`t()` never fills it) and a key the default locale doesn't have. The Testbed App's Projects area is translated into German and covered by it. Scenarios: `locales-match-passes`, `locale-missing-key-fails-test`, `locale-missing-param-fails-test`.
+
+### P-136
+
+**A pluralised message has no typed `choice()` on the client**
+
+- **Type Boundary:** translations
+- **Source:** found building the translations boundary (#28)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `lang/en/issues.php` defines `'count' => '{0} No issues|{1} One issue|[2,*] :count issues'`; the client calls `t('issues.count', { count: 3 })`, which compiles and renders the whole message, pipes and ranges included. `trans_choice()` selects the variant on the server; nothing does on the client.
+
+**Manual workaround:** one key per variant (`issues.count_none`, `issues.count_one`, `issues.count_many`), chosen in TypeScript.
+
+### P-137
+
+**Translation keys used in PHP are unchecked**
+
+- **Type Boundary:** translations
+- **Source:** found translating the Testbed App's flash messages (#28)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `FlashData::success(__('projects.flash.saevd', ['key' => $project->key]))` passes PHPStan and the tests; the toast shows the raw key. A param misspelled in `__()`'s replacements leaves the `:key` placeholder unfilled the same way.
+
+**Manual workaround:** a feature test that asserts the flashed message's text.
+
+### P-138
+
+**Translations outside the app's lang files have no keys on the client**
+
+- **Type Boundary:** translations
+- **Source:** found building the translations boundary (#28)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `t('pagination.next')` or `t('validation.required')` fails `tsc` in an app that hasn't published Laravel's lang files, though `__()` finds them on the server; a package's namespaced keys (`lang/vendor/<package>/`, `__('package::file.key')`) are never generated.
+
+**Manual workaround:** `php artisan lang:publish` copies Laravel's own files into `lang/`, after which their keys are generated like the app's.
+
+**Reasoning:** the client only gets the messages the app owns, so its bundle doesn't carry every package's translations, and every key `t()` takes is one the app's own locales are checked for (P-057). Validation messages need no client-side key: the server sends them translated with the errors (P-028).
 
 ## Exposed config
 

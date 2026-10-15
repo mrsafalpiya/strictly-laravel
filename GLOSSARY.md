@@ -56,6 +56,10 @@ _Avoid_: vendor override, route map
 A model's key as the routes bound to that model take it (`show(Project $project)` takes a project's `id`, `{project:slug}` its `slug`), typed nominally by the model: `RouteKey<'Project', number>`, so another model's key or a plain number doesn't fit. A Data class property holds one when the class is built from the model (a `from…(Project $project)` method) and the property is named after a binding field the routes use for it, or when it declares `#[RouteKeyOf(Project::class)]`. Feature tests check every route key the server sends is an existing key of its model.
 _Avoid_: ID type, typed id
 
+**Default locale**:
+The locale `app.locale` names, whose lang files are the Source of Truth for translation keys: `t()` takes exactly their keys and each message's `:params`, and every other locale must have the same keys and params (the locale parity test, `tests/Feature/LocaleParityTest.php`). Messages reach the client as generated JSON bundled by Vite; only the locale's name may travel in the shared props.
+_Avoid_: base language, master locale
+
 **Contract**:
 A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture
