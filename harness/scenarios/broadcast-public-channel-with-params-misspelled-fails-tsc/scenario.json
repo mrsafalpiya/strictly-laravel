@@ -1,0 +1,6 @@
+{
+    "problem": "P-153",
+    "description": "Naming a public channel with parameters by a pattern config/strictly.php doesn't declare fails tsc on the pattern, not on the parameters passed for it.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2345: Argument of type '\"project.{project}.public\"' is not assignable to parameter of type '\"status\" | \"projects.{project}.public\"'." }
+}
