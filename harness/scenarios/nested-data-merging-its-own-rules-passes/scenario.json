@@ -1,0 +1,6 @@
+{
+    "problem": "P-099",
+    "description": "A plain Data class with rules() nested in an input, as a property and as a list item, carries #[MergeValidationRules] itself, so PHPStan accepts it and its rules() are merged with the rules inferred from its types: a missing nested title is still rejected.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}
