@@ -1,0 +1,8 @@
+{
+    "problem": "P-073",
+    "description": "A class that can't be loaded but would get no type (a provider for a dev-only package a production install leaves out, a Data class marked #[Hidden]) doesn't fail generation, and the other types are still generated.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "pass"
+    }
+}
