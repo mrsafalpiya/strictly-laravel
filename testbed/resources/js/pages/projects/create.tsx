@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { store } from '@/routes/projects';
 import type { PageProps } from '@/generated';
+import { t } from '@/generated/translations';
 import { useRouteForm } from '@mrsafalpiya/strictly-laravel/react';
 
 export default function ProjectsCreate({
@@ -17,7 +18,7 @@ export default function ProjectsCreate({
 
     return (
         <>
-            <Head title="New project" />
+            <Head title={t('projects.create.title')} />
             <form
                 className="mx-auto flex w-full max-w-2xl flex-col gap-5 p-4"
                 onSubmit={(event) => {
@@ -25,9 +26,15 @@ export default function ProjectsCreate({
                     form.submit();
                 }}
             >
-                <h1 className="text-xl font-semibold">New project</h1>
+                <h1 className="text-xl font-semibold">
+                    {t('projects.create.title')}
+                </h1>
 
-                <Field label="Key" htmlFor="key" error={form.errors.key}>
+                <Field
+                    label={t('projects.fields.key')}
+                    htmlFor="key"
+                    error={form.errors.key}
+                >
                     <Input
                         id="key"
                         value={form.data.key}
@@ -44,8 +51,9 @@ export default function ProjectsCreate({
                         }
                     />
                     <p className="text-xs text-muted-foreground">
-                        2–10 letters, used in issue identifiers (
-                        {form.data.key || 'KEY'}-1). It cannot be changed later.
+                        {t('projects.create.key_hint', {
+                            example: `${form.data.key || 'KEY'}-1`,
+                        })}
                     </p>
                 </Field>
 
@@ -58,7 +66,7 @@ export default function ProjectsCreate({
 
                 <div className="flex justify-end">
                     <Button type="submit" disabled={form.processing}>
-                        Create project
+                        {t('projects.create.submit')}
                     </Button>
                 </div>
             </form>

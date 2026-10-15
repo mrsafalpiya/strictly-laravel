@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { index, update } from '@/routes/projects';
 import type { PageProps } from '@/generated';
+import { t } from '@/generated/translations';
 import { useRouteForm } from '@mrsafalpiya/strictly-laravel/react';
 
 export default function ProjectsEdit({
@@ -20,7 +21,7 @@ export default function ProjectsEdit({
 
     return (
         <>
-            <Head title={`Edit ${project.key}`} />
+            <Head title={t('projects.edit.head', { key: project.key })} />
             <form
                 className="mx-auto flex w-full max-w-2xl flex-col gap-5 p-4"
                 onSubmit={(event) => {
@@ -30,17 +31,19 @@ export default function ProjectsEdit({
             >
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-semibold">
-                        Edit {project.name}
+                        {t('projects.edit.title', { name: project.name })}
                     </h1>
                     {project.archivedAt !== null && (
-                        <Badge variant="secondary">Archived</Badge>
+                        <Badge variant="secondary">
+                            {t('projects.edit.archived')}
+                        </Badge>
                     )}
                 </div>
 
                 <OpenIssueCounts counts={project.openIssueCounts} />
 
                 {/* Not part of UpdateProjectData: the server prohibits changing the key. */}
-                <Field label="Key" htmlFor="key">
+                <Field label={t('projects.fields.key')} htmlFor="key">
                     <Input
                         id="key"
                         value={project.key}
@@ -59,10 +62,12 @@ export default function ProjectsEdit({
 
                 <div className="flex justify-end gap-2">
                     <Button asChild variant="ghost">
-                        <Link href={index(workspace)}>Cancel</Link>
+                        <Link href={index(workspace)}>
+                            {t('projects.edit.cancel')}
+                        </Link>
                     </Button>
                     <Button type="submit" disabled={form.processing}>
-                        Save
+                        {t('projects.edit.submit')}
                     </Button>
                 </div>
             </form>

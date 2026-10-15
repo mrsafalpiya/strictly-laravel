@@ -4,6 +4,7 @@ namespace App\Data;
 
 use App\Data\Workspaces\CurrentWorkspaceData;
 use App\Data\Workspaces\WorkspaceSummaryData;
+use App\Enums\Locale;
 use StrictlyLaravel\Inertia\Shared;
 
 /**
@@ -13,6 +14,8 @@ final class SharedProps extends Shared
 {
     public function __construct(
         public string $name,
+        /** The locale the client's t() translates into (its messages are generated JSON, never shared props). */
+        public Locale $locale,
         public AuthData $auth,
         public bool $sidebarOpen,
         /** The workspace in the URL, null outside /w/{workspace}/... */
