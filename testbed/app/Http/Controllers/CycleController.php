@@ -6,6 +6,7 @@ use App\Data\Cycles\BurndownPointData;
 use App\Data\Cycles\CycleData;
 use App\Data\Cycles\CycleFormData;
 use App\Data\Cycles\CycleStatsData;
+use App\Data\Cycles\StatusGroupData;
 use App\Data\FlashData;
 use App\Data\Issues\IssueListItemData;
 use App\Enums\IssueStatus;
@@ -73,21 +74,16 @@ final class CycleController extends Controller
             ->orderBy('id')
             ->get();
 
-        $issuesByStatus = [];
-
-        foreach (IssueStatus::cases() as $status) {
-            $issuesByStatus[$status->value] = [];
-        }
-
-        foreach ($issues as $issue) {
-            $issuesByStatus[$issue->status->value][] = IssueListItemData::fromModel($issue);
-        }
+        $statusGroups = array_map(fn (IssueStatus $status): StatusGroupData => new StatusGroupData(
+            status: $status,
+            issues: array_values($issues->where('status', $status)->map(fn (Issue $issue): IssueListItemData => IssueListItemData::fromModel($issue))->all()),
+        ), IssueStatus::cases());
 
         $cycle->loadCount($this->issueCounts());
 
         return new ShowPage(
             cycle: CycleData::fromModel($cycle),
-            issuesByStatus: $issuesByStatus,
+            statusGroups: $statusGroups,
             stats: Lazy::inertiaDeferred(fn (): CycleStatsData => $this->stats($cycle)),
             defaults: CycleFormData::fromModel($cycle),
         );
