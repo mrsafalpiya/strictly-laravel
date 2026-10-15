@@ -7,7 +7,6 @@ use App\Support\Workspaces\CurrentWorkspace;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelData\Attributes\Validation\After;
-use Spatie\LaravelData\Attributes\Validation\DateFormat;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use StrictlyLaravel\Data\DateOnly;
 use StrictlyLaravel\Data\InputData;
@@ -22,9 +21,9 @@ final class CycleFormData extends InputData
     public function __construct(
         #[Max(100)]
         public string $name,
-        #[DateOnly, DateFormat('Y-m-d')]
+        #[DateOnly]
         public CarbonInterface $startsOn,
-        #[DateOnly, DateFormat('Y-m-d'), After('startsOn')]
+        #[DateOnly, After('startsOn')]
         public CarbonInterface $endsOn,
     ) {}
 

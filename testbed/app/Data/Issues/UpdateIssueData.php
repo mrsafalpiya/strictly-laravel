@@ -12,7 +12,6 @@ use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Gate;
-use Spatie\LaravelData\Attributes\Validation\DateFormat;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
 use Spatie\LaravelData\Optional;
@@ -40,7 +39,7 @@ final class UpdateIssueData extends InputData
         public Optional|array $labelIds,
         #[Min(0), Max(100)]
         public Optional|int|null $estimate,
-        #[DateOnly, DateFormat('Y-m-d')]
+        #[DateOnly]
         public Optional|CarbonInterface|null $dueOn,
         #[KeyOf(Cycle::class)]
         public Optional|int|null $cycleId,
