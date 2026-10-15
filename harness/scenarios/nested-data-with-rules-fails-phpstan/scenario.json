@@ -1,0 +1,6 @@
+{
+    "problem": "P-099",
+    "description": "A plain Data class with rules() nested in an input class, whose rules() would replace the rules inferred for it, fails PHPStan (strictly.inputData) until it extends InputData too.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "App\\Data\\StoreTaskData::$task nests App\\Data\\TaskData, whose rules()" }
+}
