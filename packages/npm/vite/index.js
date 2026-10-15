@@ -13,6 +13,10 @@
  * Builds, typecheck and `ci:check` don't need it: their scripts run `php artisan strictly:generate` first. Wayfinder's
  * own Vite plugin regenerates the routes, so this one generates only the types.
  *
+ * It regenerates on a saved .env.example too, from which `strictly:generate` types `import.meta.env` (Problem P-058).
+ * And because those types promise every `VITE_*` variable .env.example lists, a build fails when the environment it
+ * runs with doesn't set one, and the dev server warns (Problem P-140).
+ *
  * In dev and in builds it also warns when the installed Composer package's version differs from this npm package's
  * (Problem P-081).
  *
@@ -49,6 +53,19 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
 
             if (mismatch !== null) {
                 config.logger.warn(`[strictly] ${mismatch}`, { timestamp: config.command === 'serve' });
+            }
+
+            for (const variable of unsetEnvVariables(config.root, config.env)) {
+                const message =
+                    `.env.example lists ${variable}, but the environment Vite runs with doesn't set it, so ` +
+                    `import.meta.env.${variable} is undefined although its type is string. Set it in .env or the ` +
+                    'environment (an empty value counts), or remove it from .env.example if nothing reads it.';
+
+                if (config.command === 'build') {
+                    throw new Error(`[strictly] ${message}`);
+                }
+
+                config.logger.warn(`[strictly] ${message}`, { timestamp: true });
             }
         },
         configureServer(server) {
@@ -110,6 +127,29 @@ function versionMismatch(root) {
 }
 
 /**
+ * Problem P-140: `strictly:generate` types every `VITE_*` variable .env.example lists as a string on `import.meta.env`
+ * (P-058). Returns the listed ones the environment Vite loaded (`.env` files and the process environment) lacks, which
+ * Vite would leave `undefined` in the bundle. Commented-out lines aren't listed; the same pattern as the generator's.
+ *
+ * @param {string} root the project root
+ * @param {Record<string, unknown>} env the variables Vite exposes to the client (`config.env`)
+ * @returns {string[]}
+ */
+function unsetEnvVariables(root, env) {
+    let envExample;
+
+    try {
+        envExample = readFileSync(join(root, '.env.example'), 'utf8');
+    } catch {
+        return [];
+    }
+
+    const listed = [...envExample.matchAll(/^[ \t]*(?:export[ \t]+)?(VITE_[A-Za-z0-9_]*)[ \t]*=/gm)].map((match) => match[1] ?? '');
+
+    return [...new Set(listed)].filter((variable) => env[variable] === undefined);
+}
+
+/**
  * @param {string | URL} file
  * @returns {any} the parsed JSON, or undefined when the file doesn't exist or isn't JSON
  */
@@ -122,13 +162,17 @@ function readJson(file) {
 }
 
 /**
- * Whether a file event changes the types: any PHP file under app/, and a page component file created or deleted (its
- * contents aren't generated from, so saving one changes nothing).
+ * Whether a file event changes the types: any PHP file under app/, .env.example (`import.meta.env`), and a page
+ * component file created or deleted (its contents aren't generated from, so saving one changes nothing).
  *
  * @param {'add' | 'change' | 'unlink'} event
  * @param {string} path relative to the project root, with forward slashes
  */
 function regeneratesTypes(event, path) {
+    if (path === '.env.example') {
+        return true;
+    }
+
     if (path.startsWith('app/')) {
         return path.endsWith('.php');
     }

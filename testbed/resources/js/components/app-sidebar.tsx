@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, LifeBuoy } from 'lucide-react';
+import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -13,8 +14,10 @@ import { workspaceNav } from '@/navigation';
 import { dashboard } from '@/routes';
 
 export function AppSidebar() {
-    const { workspace } = usePage().props;
-    const nav = workspace === null ? null : workspaceNav(workspace);
+    const { workspace, features } = usePage().props;
+    const nav = workspace === null ? null : workspaceNav(workspace, features);
+    // Where users get help, per deployment; .env.example lists it, so it is typed (and set in every build).
+    const supportUrl = import.meta.env.VITE_TRACKLANE_SUPPORT_URL;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -43,6 +46,17 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
+                {supportUrl !== '' && (
+                    <NavFooter
+                        items={[
+                            {
+                                title: 'Support',
+                                href: supportUrl,
+                                icon: LifeBuoy,
+                            },
+                        ]}
+                    />
+                )}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

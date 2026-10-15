@@ -19,5 +19,7 @@ final class SharedProps extends Shared
         public ?CurrentWorkspaceData $workspace,
         /** @var array<int, WorkspaceSummaryData> Every workspace the user belongs to, by name (empty for guests). */
         public array $workspaces,
+        /** The areas of Tracklane config/tracklane.php turns on. */
+        public FeaturesData $features,
     ) {}
 }

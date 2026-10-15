@@ -115,9 +115,11 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | open |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | open |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | open |
-| [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | open |
-| [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | open |
-| [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | open |
+| [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
+| [P-140](#p-140) | A `VITE_*` variable `.env.example` lists can be unset when Vite builds | exposed config | closed |
+| [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | closed |
+| [P-141](#p-141) | A value the root Blade template writes into the page reaches React untyped | exposed config | accepted gap |
+| [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | closed |
 | [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | closed |
 | [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
@@ -1323,18 +1325,40 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 
 The Reference Implementation never exercised this Type Boundary beyond `config()->string('app.name')` in shared props (spec user stories 50–51).
 
+**The convention.** Config the frontend sees comes from one of two places, and both are typed:
+
+- **Server settings and feature flags** are properties of the shared props Data class (`App\Data\SharedProps`, [P-012](#p-012)), usually a nested Data class such as `FeaturesData`, built in the share step from `config()`'s typed accessors (`config()->boolean('tracklane.features.cycles')`). React reads them from `usePage().props`, typed from the Data class; nothing else carries them ([P-059](#p-059), [P-060](#p-060), [P-088](#p-088)).
+- **Build-time values** are `VITE_*` variables listed in `.env.example`, read as `import.meta.env.VITE_*`, typed from `.env.example` ([P-058](#p-058)) and set wherever Vite builds ([P-140](#p-140)). They are public: they end up in the bundle.
+
 ### P-058
 
 **`VITE_*` variables are untyped**
 
 - **Type Boundary:** exposed config
 - **Source:** spec user story 51; ecosystem C ("Broadcast / env")
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: Vite's `ImportMetaEnv` has an index signature unless an app sets the `strictImportMetaEnv` type option ([`types/importMeta.d.ts`](https://github.com/vitejs/vite/blob/main/packages/vite/types/importMeta.d.ts))
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `vite-env.d.ts` only references `vite/client`, whose `ImportMetaEnv` has an index signature; `import.meta.env.VITE_APP_NAM` compiles and is `undefined` at runtime (`resources/js/app.tsx` reads `VITE_APP_NAME`).
 
 **Manual workaround:** hand-write `ImportMetaEnv` keys for the variables in `.env.example`.
+
+**Closed by:** `strictly:generate` types `import.meta.env` from the `VITE_*` variables `.env.example` lists ([`ViteEnvTypes`](../packages/laravel/src/TypeScript/ViteEnvTypes.php)): `@/generated` sets Vite's `strictImportMetaEnv` type option, which removes the index signature, and declares each listed variable `readonly VITE_…: string`. A variable `.env.example` doesn't list fails `tsc` where it is read: `error TS2339: Property 'VITE_SENTRY_DSN' does not exist on type 'ImportMetaEnv'.` The Vite plugin regenerates the types when `.env.example` is saved. Only Vite's default `VITE_` prefix is typed; with another `envPrefix` the app's variables fail `tsc` until it reverts. Scenarios: `vite-env-variable-in-env-example-passes`, `vite-env-variable-not-in-env-example-fails-tsc`; harness test (`harness/tests/vite-plugin.test.ts`): "saving .env.example regenerates too".
+
+### P-140
+
+**A `VITE_*` variable `.env.example` lists can be unset when Vite builds**
+
+- **Type Boundary:** exposed config
+- **Source:** found while closing [P-058](#p-058)
+- **Upstream:** none (Vite inlines whatever the environment has, and `undefined` for the rest)
+- **Status:** closed
+
+**Reproduction:** `.env.example` lists `VITE_SENTRY_DSN`, so `import.meta.env.VITE_SENTRY_DSN` is typed `string` ([P-058](#p-058)), but the `.env` of a deployment written before the variable was added doesn't set it. `vite build` succeeds and the bundle reads `undefined`.
+
+**Manual workaround:** compare `.env` with `.env.example` before each build.
+
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js)) compares the `VITE_*` variables `.env.example` lists with the environment Vite loaded (its `.env` files and the process environment). A build fails on each one that isn't set (`[strictly] .env.example lists VITE_APP_NAME, but the environment Vite runs with doesn't set it, so import.meta.env.VITE_APP_NAME is undefined although its type is string. …`), and the dev server warns. An empty value counts as set. `ci:check` doesn't build, so it doesn't run this check. Harness tests: "the build fails when the environment lacks a VITE_* variable .env.example lists, which import.meta.env types as a string (P-140)" (`harness/tests/overlay.test.ts`), and the dev server's warning (`harness/tests/vite-plugin.test.ts`).
 
 ### P-059
 
@@ -1342,12 +1366,29 @@ The Reference Implementation never exercised this Type Boundary beyond `config()
 
 - **Type Boundary:** exposed config
 - **Source:** spec user story 50
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: Inertia's `usePage<TPageProps>()` trusts the type argument it is given ([`usePage.ts`](https://github.com/inertiajs/inertia/blob/master/packages/react/src/usePage.ts))
+- **Status:** closed
 
-**Reproduction:** a feature flag is added to `share()` as `'features' => ['boards' => Feature::active('boards')]` or passed as an inline prop; its type is written by hand, or hidden by the shared props index signature ([P-013](#p-013)).
+**Reproduction:** a feature flag is added to `share()` as `'features' => ['boards' => Feature::active('boards')]` or passed as an inline prop; its type is written by hand (`usePage<{ features: { boards: boolean } }>().props.features`), or hidden by the shared props index signature ([P-013](#p-013)).
 
 **Manual workaround:** add the setting as a typed property of the shared props Data class.
+
+**Closed by:** the shared props Data class is the one way in ([P-012](#p-012)): a setting or flag is a property of it, generated into `usePage().props`. A value shared beside it fails its Contract ([P-088](#p-088)). The oxlint rule `strictly/typed-page-props` ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)) rejects a type argument on Inertia's `usePage()` other than a generated `PageProps<'component'>`, so a flag's type can't be written by hand: `` `usePage()` takes its props' type from the generated shared props and Page classes: drop the type argument. `` The Testbed App's feature flags (`App\Data\FeaturesData`, from `config/tracklane.php`) go this way, and its tests render pages with each flag on and off. A value the root Blade template writes into the page bypasses it: [P-141](#p-141). Scenarios: `feature-flags-through-shared-props-pass`, `feature-flag-typed-by-hand-fails-lint`.
+
+### P-141
+
+**A value the root Blade template writes into the page reaches React untyped**
+
+- **Type Boundary:** exposed config
+- **Source:** found while closing [P-059](#p-059)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `resources/views/app.blade.php` writes `<script>window.tracklane = @json(['boards' => config('tracklane.features.boards')])</script>` and a hand-written `declare global { interface Window { tracklane: { boards: boolean } } }` types it. Nothing compares the declaration with what the template writes.
+
+**Manual workaround:** share the value through the shared props Data class instead.
+
+**Reasoning:** the template's output isn't an Inertia response, so no Contract records it, and a `Window` declaration is a hand-written type like any other the app may write. The convention (above) sends every server value through the shared props, which are checked; rejecting every `Window` augmentation would also reject legitimate ones for third-party scripts.
 
 ### P-060
 
@@ -1356,11 +1397,13 @@ The Reference Implementation never exercised this Type Boundary beyond `config()
 - **Type Boundary:** exposed config
 - **Source:** eval-01 S2; eval-03 §9
 - **Upstream:** none (by design: config is untyped)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `'name' => config('app.name')` is `mixed`, so nothing proves the value is the string the TypeScript type promises (Wayfinder `next` generates `name: unknown`; PHPStan max reports it).
 
 **Manual workaround:** typed accessors, `config()->string('app.name')`, enforced by PHPStan max.
+
+**Closed by:** the shared props are a Data class with typed properties ([P-012](#p-012)), and the app's PHPStan runs at max level, so a `config()` value passed to one fails the `test` step (`Parameter $name of class App\Data\SharedProps constructor expects string, mixed given.`) until it is read with a typed accessor (`config()->string()`, `config()->boolean()`, `config()->integer()`), which throws when the value isn't of that type. Kit Conversion's `HandleInertiaRequests` reads the app name that way. Scenarios: `config-value-typed-accessor-passes`, `config-value-mixed-fails-phpstan`.
 
 ## Every Type Boundary
 
@@ -1420,7 +1463,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** a Vite plugin (`vite-plugins/php-types.ts`) that regenerates on PHP changes under `app/`, plus `File::ensureDirectoryExists()` before generating; build, typecheck and CI regenerate first.
 
-**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010), or `.env.example` is saved, [P-058](#p-058)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
 
 ### P-065
 
