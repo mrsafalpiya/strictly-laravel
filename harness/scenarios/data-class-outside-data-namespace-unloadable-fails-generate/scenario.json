@@ -1,0 +1,9 @@
+{
+    "problem": "P-073",
+    "description": "A Data class outside App\\Data saved mid-edit so that it can't be loaded (an interface it implements doesn't exist) fails generation too: its Data parent class makes it one, so its type would be missing.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "app/Reports/ReportData.php: App\\Reports\\ReportData can't be loaded: Interface \"App\\Reports\\Wireabl\" not found"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "problem": "P-073",
+    "description": "A Data class saved mid-edit so that it parses but can't be loaded (its parent class doesn't exist) fails generation, naming the class, its file and the load error, instead of silently dropping its type, so the Vite plugin keeps the last good types.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "app/Data/ProjectData.php: App\\Data\\ProjectData can't be loaded: Class \"App\\Data\\Dat\" not found"
+    }
+}

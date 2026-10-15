@@ -390,7 +390,7 @@ export default function ProjectStatuses() {
         );
     });
 
-    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class or two that generate the same type name keep the last good types', async () => {
+    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can\'t be loaded or two that generate the same type name keep the last good types', async () => {
         const app = await createApp('live-regeneration');
         const dataClass = join(app.dir, 'app', 'Data', 'ProjectData.php');
         const projectData = (properties: string) =>
@@ -425,6 +425,16 @@ export default function ProjectStatuses() {
             writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}'));
             writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3, lead: 'Ada'"));
             await untilTsc('tsc passes with the finished edit', tsc, 'pass', dev);
+
+            // Saved mid-edit so that it parses but can't be loaded: its parent class is half-typed (P-073).
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}').replace('extends Data', 'extends Dat'));
+            await until('the class that can\'t be loaded was reported', () => dev.output().includes('App\\Data\\ProjectData can\'t be loaded: Class "App\\Data\\Dat" not found'), dev);
+            assertOutcome(await tsc(), { outcome: 'pass' });
+            assert.equal(dev.exited(), false, 'the dev server stopped');
+
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n        public int $closedIssues,\n    ) {}'));
+            writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3, lead: 'Ada', closedIssues: 5"));
+            await untilTsc('tsc passes once the class loads again', tsc, 'pass', dev);
 
             // A second ProjectData in another namespace would generate the same type name (P-063).
             const sameName = join(app.dir, 'app', 'Data', 'Archive', 'ProjectData.php');
