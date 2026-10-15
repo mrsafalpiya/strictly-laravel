@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import { selectedKey } from '@/lib/keys';
 import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,7 +61,15 @@ export default function IssuesCreate({
                                 : String(form.data.projectId)
                         }
                         onValueChange={(value) =>
-                            form.setData('projectId', Number(value))
+                            form.setData(
+                                'projectId',
+                                selectedKey(
+                                    options.projects.map(
+                                        (project) => project.id,
+                                    ),
+                                    value,
+                                ),
+                            )
                         }
                     >
                         <SelectTrigger aria-label="Project">
@@ -175,7 +184,12 @@ export default function IssuesCreate({
                             onValueChange={(value) =>
                                 form.setData(
                                     'assigneeId',
-                                    value === NONE ? null : Number(value),
+                                    selectedKey(
+                                        options.members.map(
+                                            (member) => member.id,
+                                        ),
+                                        value,
+                                    ),
                                 )
                             }
                         >
@@ -250,7 +264,10 @@ export default function IssuesCreate({
                             onValueChange={(value) =>
                                 form.setData(
                                     'cycleId',
-                                    value === NONE ? null : Number(value),
+                                    selectedKey(
+                                        options.cycles.map((cycle) => cycle.id),
+                                        value,
+                                    ),
                                 )
                             }
                         >

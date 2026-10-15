@@ -44,7 +44,7 @@ export default function IssuesIndex({
 }: PageProps<'issues/index'>) {
     const workspace = useWorkspace();
     const reloadViews = { only: page.only('savedViews') };
-    const [selected, setSelected] = useState<number[]>([]);
+    const [selected, setSelected] = useState<BulkUpdateIssuesData['ids']>([]);
 
     // The payload is the bulk action's input class: only status, priority and assigneeId can be set.
     const applyToSelection = (changes: Omit<BulkUpdateIssuesData, 'ids'>) => {

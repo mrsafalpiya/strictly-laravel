@@ -5,7 +5,10 @@ namespace App\Data\Issues;
 use App\Enums\IssuePriority;
 use App\Enums\IssueSort;
 use App\Enums\IssueStatus;
+use App\Models\Label;
+use App\Models\User;
 use Spatie\LaravelData\Attributes\Validation\Max;
+use StrictlyLaravel\Data\KeyOf;
 use StrictlyLaravel\Data\QueryData;
 
 /**
@@ -23,7 +26,9 @@ final class IssueFiltersData extends QueryData
         /** @var list<IssuePriority> */
         public array $priorities = [],
         /** @var list<int> */
+        #[KeyOf(Label::class)]
         public array $labelIds = [],
+        #[KeyOf(User::class)]
         public ?int $assigneeId = null,
         public ?string $projectKey = null,
         public IssueSort $sort = IssueSort::Newest,

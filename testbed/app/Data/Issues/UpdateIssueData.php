@@ -4,7 +4,10 @@ namespace App\Data\Issues;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Models\Cycle;
 use App\Models\Issue;
+use App\Models\Label;
+use App\Models\User;
 use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Carbon\CarbonInterface;
@@ -15,6 +18,7 @@ use Spatie\LaravelData\Attributes\Validation\Min;
 use Spatie\LaravelData\Optional;
 use StrictlyLaravel\Data\DateOnly;
 use StrictlyLaravel\Data\InputData;
+use StrictlyLaravel\Data\KeyOf;
 
 /**
  * PATCH /w/{workspace}/projects/{project}/issues/{issue}: every field is optional, so the
@@ -29,13 +33,16 @@ final class UpdateIssueData extends InputData
         public Optional|string|null $description,
         public Optional|IssueStatus $status,
         public Optional|IssuePriority $priority,
+        #[KeyOf(User::class)]
         public Optional|int|null $assigneeId,
         /** @var Optional|list<int> */
+        #[KeyOf(Label::class)]
         public Optional|array $labelIds,
         #[Min(0), Max(100)]
         public Optional|int|null $estimate,
         #[DateOnly, DateFormat('Y-m-d')]
         public Optional|CarbonInterface|null $dueOn,
+        #[KeyOf(Cycle::class)]
         public Optional|int|null $cycleId,
     ) {}
 

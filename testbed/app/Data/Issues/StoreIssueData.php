@@ -4,6 +4,11 @@ namespace App\Data\Issues;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Models\Cycle;
+use App\Models\Issue;
+use App\Models\Label;
+use App\Models\Project;
+use App\Models\User;
 use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Carbon\CarbonInterface;
@@ -13,6 +18,7 @@ use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
 use StrictlyLaravel\Data\DateOnly;
 use StrictlyLaravel\Data\InputData;
+use StrictlyLaravel\Data\KeyOf;
 
 /**
  * POST /w/{workspace}/issues. Also the initial form state sent by Issues\CreatePage,
@@ -21,6 +27,7 @@ use StrictlyLaravel\Data\InputData;
 final class StoreIssueData extends InputData
 {
     public function __construct(
+        #[KeyOf(Project::class)]
         public ?int $projectId,
         #[Max(200)]
         public string $title,
@@ -28,14 +35,18 @@ final class StoreIssueData extends InputData
         public ?string $description,
         public IssueStatus $status,
         public IssuePriority $priority,
+        #[KeyOf(User::class)]
         public ?int $assigneeId,
         /** @var list<int> */
+        #[KeyOf(Label::class)]
         public array $labelIds,
         #[Min(0), Max(100)]
         public ?int $estimate,
         #[DateOnly, DateFormat('Y-m-d')]
         public ?CarbonInterface $dueOn,
+        #[KeyOf(Issue::class)]
         public ?int $parentId,
+        #[KeyOf(Cycle::class)]
         public ?int $cycleId,
     ) {}
 

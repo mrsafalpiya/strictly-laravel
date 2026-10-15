@@ -1,0 +1,9 @@
+{
+    "problem": "P-128",
+    "description": "Passing an issue's id where an input's #[KeyOf(User::class)] assignee is expected fails tsc, although both are numbers.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2345: Argument of type 'number & { readonly [keyOf]: \"Issue.id\"; }' is not assignable to parameter of type '(number & { readonly [keyOf]: \"User.id\"; }) | null'."
+    }
+}

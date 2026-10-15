@@ -1,0 +1,5 @@
+{
+    "problem": "P-128",
+    "description": "Model keys flow from output Data classes to input classes without casts: an issue's id fills a bulk action's #[KeyOf(Issue::class)] ids, a member's id (or an issue's #[KeyOf(User::class)] assignee) its assignee, the route bound by number takes the issue's number (which RouteKey<'Issue', number> still names), and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

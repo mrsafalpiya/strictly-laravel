@@ -9,23 +9,52 @@
  * Types only: nothing here exists at runtime.
  */
 
-declare const routeKeyOf: unique symbol;
+declare const keyOf: unique symbol;
 
 /**
- * A model's route key (Problem P-003): what a route parameter bound to the model takes, and how the matching property
- * of a Data class built from the model, or declared `#[RouteKeyOf(Project::class)]`, is generated:
+ * A model's key by one of its fields (Problem P-128): `Key<'Issue', 'id', number>` is an issue's primary key,
+ * `Key<'Issue', 'number', number>` its per-project number. Another model's key, another field of the same model, or a
+ * plain number doesn't fit, although each is a number. Branded by the model's class basename and the field:
  *
- *     public function show(Project $project)   →   show(project), show(project.id), show(issue.project_id)
+ *  - a route parameter bound to a model takes the key of the field the route binds by: `show(Issue $issue)` on
+ *    `issues/{issue}` takes `Key<'Issue', 'number', number>` when Issue's route key name is `number` (Problem P-003);
+ *  - a Data class built from a model (a static `from…(Issue $issue)` method) has its primary key, and each property
+ *    named after a field a route binds the model by, generated as that field's key;
+ *  - any property declared `#[KeyOf(User::class)]` (input, query and output classes alike) is generated as the
+ *    model's primary key, or the key of the field it names: `#[KeyOf(Issue::class, 'number')]`. A list of keys is
+ *    branded per item.
  *
- * all take `RouteKey<'Project', number>`, so an issue, its `id` or a plain number don't fit. Branded by the model's
- * class basename. Feature tests check that every branded value the server sends is an existing key of its model.
+ * So keys flow from what the server sent (`issue.id`, `member.id`) to the inputs and routes that take them, without a
+ * cast. Contracts check a key as its plain value (`Contract<T>`), and feature tests check that every key the server
+ * sends is an existing key of its model (Problem P-116). `TValue` is the key's value type.
  */
-export type RouteKey<TModel extends string, TValue> = TValue extends string | number
-    ? TValue & { readonly [routeKeyOf]: TModel }
+export type Key<TModel extends string, TField extends string, TValue = string | number> = TValue extends string | number
+    ? TValue & { readonly [keyOf]: `${TModel}.${TField}` }
     : TValue;
 
-/** Any model's route key (`RouteKey<'Project', number>`): what Contracts strip, since JSON can't carry the brand. */
-export type AnyRouteKey = { readonly [routeKeyOf]: string };
+/**
+ * The field the routes bind each model by when a route names none (`{issue}`): the model's route key name. Filled in
+ * by `strictly:generate` (`@/generated/route-keys`), for every model a route or broadcast channel binds.
+ */
+export interface RouteKeyFields {}
+
+/**
+ * A model's route key (Problem P-003): the key of the field a route binds the model by when it names none, its route
+ * key name. `RouteKey<'Issue', number>` is `Key<'Issue', 'number', number>` when Issue's route key name is `number`,
+ * and `Key<'Project', 'id', number>` for a Project bound by its id. For a model no route or channel binds, it is any
+ * key of the model.
+ */
+export type RouteKey<TModel extends string, TValue> = Key<
+    TModel,
+    TModel extends keyof RouteKeyFields ? Extract<RouteKeyFields[TModel], string> : string,
+    TValue
+>;
+
+/** Any model's key (`Key<'Project', 'id', number>`): what Contracts strip, since JSON can't carry the brand. */
+export type AnyKey = { readonly [keyOf]: string };
+
+/** @deprecated Use `AnyKey`: every model key, a route key included, has the same brand. */
+export type AnyRouteKey = AnyKey;
 
 /** An HTTP method an Inertia visit can use. */
 export type VisitMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
