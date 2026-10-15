@@ -730,7 +730,6 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Reasoning:** the server now rejects such a value with a 422 on the field, which is what P-075 asked. A template literal can't tell the formats apart (`${number}-${number}-${number}T${string}` takes the milliseconds too), and the format is the app's choice in `data.date_format` or a `#[WithCast]`, so a type that encodes it would need a branded datetime type and a helper to build one: a design of its own, worth a ticket if apps keep sending the wrong format.
 
-
 ### P-189
 
 **A datetime input typed by an interface is a 500 for every value**
