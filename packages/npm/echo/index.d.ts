@@ -1,7 +1,7 @@
 import type { DependencyList } from 'react';
 
 /*
- * The typed Echo helpers (Problems P-052, P-053, P-054, P-143), built on Laravel's own React hooks, `@laravel/echo-react`,
+ * The typed Echo helpers (Problems P-052, P-053, P-054, P-143, P-144), built on Laravel's own React hooks, `@laravel/echo-react`,
  * which `php artisan install:broadcasting` installs and configures (`configureEcho()`). `php artisan strictly:generate`
  * writes `@/generated/broadcasting`, which binds them to the app's broadcast events and channels; apps import
  * `channel`, `publicChannel` and `useChannelEvent` from there:
@@ -30,11 +30,36 @@ export type ChannelPattern<Channels extends Record<string, ChannelDefinition>, V
     string
 >;
 
-/** A named channel to listen on, from `channel()` or `publicChannel()`. */
-export type BroadcastChannel = {
+/**
+ * A named channel to listen on, from `channel()` or `publicChannel()`: the pattern it was named by, which decides the
+ * events `useChannelEvent()` takes on it, its name and how a client subscribes to it.
+ */
+export type BroadcastChannel<Pattern extends string = string> = {
+    readonly pattern: Pattern;
     readonly name: string;
     readonly visibility: ChannelVisibility;
 };
+
+/**
+ * Which events are sent on each channel, by its pattern, as `@/generated/broadcasting`'s `ChannelEvents` maps them
+ * from the events' #[BroadcastsOn]: an event name, a union of them, or `never`.
+ */
+export type ChannelEventMap<Events extends Record<string, unknown>, Channels extends Record<string, ChannelDefinition>> = {
+    [Pattern in keyof Channels]: Extract<keyof Events, string>;
+};
+
+/** The patterns of the channels an event is sent on. */
+export type EventPatterns<ChannelEvents extends Record<string, string>, Event extends string> = {
+    [Pattern in keyof ChannelEvents]: Event extends ChannelEvents[Pattern] ? Pattern : never;
+}[keyof ChannelEvents];
+
+/**
+ * The events sent on every channel of `Pattern`: those of its channel, or, for a channel whose pattern is one of
+ * several (`ready ? channel('a') : channel('b')`), those sent on each of them, so that the callback runs whichever it is.
+ */
+export type ChannelEventName<ChannelEvents extends Record<string, string>, Pattern extends keyof ChannelEvents> = {
+    [Event in ChannelEvents[Pattern]]: [Pattern] extends [EventPatterns<ChannelEvents, Event>] ? Event : never;
+}[ChannelEvents[Pattern]];
 
 /** Whether `Pattern` is a single pattern rather than a union of them. */
 type IsOnePattern<Pattern extends PropertyKey> = { [One in Pattern]: [Exclude<Pattern, One>] extends [never] ? true : false }[Pattern];
@@ -65,7 +90,11 @@ export interface ChannelEventListener {
 }
 
 /** The helpers bound to an app's broadcast events and channels, as `@/generated/broadcasting` exports them. */
-export interface Broadcasting<Events extends Record<string, unknown>, Channels extends Record<string, ChannelDefinition>> {
+export interface Broadcasting<
+    Events extends Record<string, unknown>,
+    Channels extends Record<string, ChannelDefinition>,
+    ChannelEvents extends ChannelEventMap<Events, Channels>,
+> {
     /**
      * A channel routes/channels.php defines, by its pattern, with its name's parameters filled: a pattern it doesn't
      * define, or a missing or misnamed parameter, fails `tsc` (Problem P-054). A parameter the channel binds to a model
@@ -74,7 +103,7 @@ export interface Broadcasting<Events extends Record<string, unknown>, Channels e
     channel: <Pattern extends ChannelPattern<Channels, 'private' | 'presence'>>(
         pattern: Pattern,
         ...params: ChannelArgs<Channels, Pattern>
-    ) => BroadcastChannel;
+    ) => BroadcastChannel<Pattern>;
     /**
      * A public channel config/strictly.php declares (`public_channels`), by its pattern, with its name's parameters
      * filled as `channel()` fills them: a name it doesn't declare fails `tsc` (Problem P-143).
@@ -82,15 +111,16 @@ export interface Broadcasting<Events extends Record<string, unknown>, Channels e
     publicChannel: <Pattern extends ChannelPattern<Channels, 'public'>>(
         pattern: Pattern,
         ...params: ChannelArgs<Channels, Pattern>
-    ) => BroadcastChannel;
+    ) => BroadcastChannel<Pattern>;
     /**
-     * Listen on a channel for an event the app broadcasts, by the name Echo listens for it (`CommentPosted`, or
+     * Listen on a channel for an event sent on it, by the name Echo listens for it (`CommentPosted`, or
      * `.comment.posted` for an event broadcast as `comment.posted`): a name no event has fails `tsc` (Problem P-053),
-     * and the callback's payload is the event's Data class (Problem P-052). Subscribes on mount and leaves on unmount,
-     * as Echo's `useEcho()` does; `dependencies` are the callback's, as for `useCallback()`.
+     * and so does an event whose #[BroadcastsOn] doesn't declare the channel's pattern, whose callback would never run
+     * (Problem P-144). The callback's payload is the event's Data class (Problem P-052). Subscribes on mount and leaves
+     * on unmount, as Echo's `useEcho()` does; `dependencies` are the callback's, as for `useCallback()`.
      */
-    useChannelEvent: <Event extends Extract<keyof Events, string>>(
-        channel: BroadcastChannel,
+    useChannelEvent: <Pattern extends Extract<keyof Channels, string>, Event extends ChannelEventName<ChannelEvents, Pattern>>(
+        channel: BroadcastChannel<Pattern>,
         event: Event,
         callback: (payload: Events[Event]) => void,
         dependencies?: DependencyList,
@@ -107,11 +137,16 @@ export type UseEcho = (
 ) => ChannelEventListener;
 
 /**
- * Bind the helpers to an app's broadcast events and channels: `definitions` holds each pattern's visibility and, for a
- * parameter bound to a model, the route key field to read from a Data object passed for it (`null` for a plain one).
- * `@/generated/broadcasting` calls it; apps import the helpers from there.
+ * Bind the helpers to an app's broadcast events and channels, and to which events are sent on which channel
+ * (`ChannelEvents`): `definitions` holds each pattern's visibility and, for a parameter bound to a model, the route key
+ * field to read from a Data object passed for it (`null` for a plain one). `@/generated/broadcasting` calls it; apps
+ * import the helpers from there.
  */
-export function createBroadcasting<Events extends Record<string, unknown>, Channels extends Record<string, ChannelDefinition>>(
+export function createBroadcasting<
+    Events extends Record<string, unknown>,
+    Channels extends Record<string, ChannelDefinition>,
+    ChannelEvents extends ChannelEventMap<Events, Channels>,
+>(
     definitions: {
         [Pattern in keyof Channels]: {
             visibility: Channels[Pattern]['visibility'];
@@ -119,7 +154,7 @@ export function createBroadcasting<Events extends Record<string, unknown>, Chann
         };
     },
     useEcho?: UseEcho,
-): Broadcasting<Events, Channels>;
+): Broadcasting<Events, Channels, ChannelEvents>;
 
 /**
  * The name Echo's `listen()` takes for an event key, absolute so that it doesn't depend on the namespace Echo is
