@@ -23,4 +23,15 @@ final class FlashData extends Flash
     {
         (new self(toast: new ToastData($type, $message)))->flash();
     }
+
+    public static function success(string $message): void
+    {
+        self::toast(ToastType::Success, $message);
+    }
+
+    /** A refusal that isn't about a field of the request's input (those are validation errors). */
+    public static function error(string $message): void
+    {
+        self::toast(ToastType::Error, $message);
+    }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Data;
 
+use App\Data\Workspaces\CurrentWorkspaceData;
+use App\Data\Workspaces\WorkspaceSummaryData;
 use StrictlyLaravel\Inertia\Shared;
 
 /**
@@ -13,5 +15,9 @@ final class SharedProps extends Shared
         public string $name,
         public AuthData $auth,
         public bool $sidebarOpen,
+        /** The workspace in the URL, null outside /w/{workspace}/... */
+        public ?CurrentWorkspaceData $workspace,
+        /** @var array<int, WorkspaceSummaryData> Every workspace the user belongs to, by name (empty for guests). */
+        public array $workspaces,
     ) {}
 }

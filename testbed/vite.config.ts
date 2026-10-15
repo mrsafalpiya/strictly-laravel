@@ -30,6 +30,11 @@ export default defineConfig({
         }),
         strictlyLaravel(),
     ]),
+    resolve: {
+        // The npm package is linked from the monorepo (link:), so its imports would resolve to its own copies of React
+        // and Inertia: two Reacts break hooks and two Inertias share no page. A published install has one of each.
+        dedupe: ['react', 'react-dom', '@inertiajs/core', '@inertiajs/react'],
+    },
     server: {
         watch: {
             ignored: [

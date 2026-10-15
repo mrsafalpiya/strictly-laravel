@@ -5,6 +5,10 @@ namespace App\Http\Middleware;
 use App\Data\AuthData;
 use App\Data\SharedProps;
 use App\Data\UserData;
+use App\Data\Workspaces\CurrentWorkspaceData;
+use App\Data\Workspaces\WorkspaceSummaryData;
+use App\Models\Membership;
+use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +45,8 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $workspace = $request->route('workspace');
+        $role = $user !== null && $workspace instanceof Workspace ? $user->roleIn($workspace) : null;
 
         return [
             ...parent::share($request),
@@ -48,6 +54,12 @@ class HandleInertiaRequests extends Middleware
                 name: config()->string('app.name'),
                 auth: new AuthData(user: $user === null ? null : UserData::fromModel($user)),
                 sidebarOpen: ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+                workspace: $workspace instanceof Workspace && $role !== null ? CurrentWorkspaceData::fromModel($workspace, $role) : null,
+                workspaces: $user === null ? [] : $user->memberships()->with('workspace')->get()
+                    ->sortBy(fn (Membership $membership): string => $membership->workspace->name)
+                    ->map(fn (Membership $membership): WorkspaceSummaryData => WorkspaceSummaryData::fromModel($membership->workspace, $membership->role))
+                    ->values()
+                    ->all(),
             ))->props(),
         ];
     }
