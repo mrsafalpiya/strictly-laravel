@@ -16,6 +16,10 @@ return [
         'hide_archived' => 'Hide archived',
         'empty' => 'No projects yet.',
     ],
+    'card' => [
+        // Pluralised: rendered with choice(), which picks the form for the count as trans_choice() does.
+        'issues' => '{0} No issues|{1} One issue|[2,*] :count issues',
+    ],
     'create' => [
         'title' => 'New project',
         'key_hint' => '2–10 letters, used in issue identifiers (:example). It cannot be changed later.',

@@ -1,4 +1,4 @@
-import { t } from '@/generated/translations';
+import { choice, t } from '@/generated/translations';
 
 export function ProjectsHeading({
     count,
@@ -13,7 +13,7 @@ export function ProjectsHeading({
             <p>
                 {count === 0
                     ? t('projects.index.empty')
-                    : t('projects.index.count', { count, archived })}
+                    : choice('projects.index.count', count, { archived })}
             </p>
         </header>
     );

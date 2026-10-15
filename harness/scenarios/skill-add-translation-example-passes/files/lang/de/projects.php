@@ -3,7 +3,7 @@
 return [
     'index' => [
         'title' => 'Projekte',
-        'count' => ':count Projekte, :archived archiviert',
+        'count' => ':count Projekt, :archived archiviert|:count Projekte, :archived archiviert',
         'empty' => 'Noch keine Projekte.',
     ],
 ];

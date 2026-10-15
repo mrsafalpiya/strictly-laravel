@@ -125,7 +125,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
-| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | open |
+| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
+| [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
 | [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
 | [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
@@ -1509,11 +1510,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found building the translations boundary (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `lang/en/issues.php` defines `'count' => '{0} No issues|{1} One issue|[2,*] :count issues'`; the client calls `t('issues.count', { count: 3 })`, which compiles and renders the whole message, pipes and ranges included. `trans_choice()` selects the variant on the server; nothing does on the client.
 
 **Manual workaround:** one key per variant (`issues.count_none`, `issues.count_one`, `issues.count_many`), chosen in TypeScript.
+
+**Closed by:** a message is pluralised when it contains `|` (`StrictlyLaravel\Translations\Translations::isPlural()`), and `@/generated/translations` lists those keys as `PluralTranslationKey`. Its `choice(key, count, params?)` picks the form as Laravel's `MessageSelector` does (a `{n}` or `[from,to]` range holding the count first, `*` leaving a range open, then the plural rule of the locale whose message it is, falling back to the default locale's message like `t()`), fills `:count` with the count (or a `count` param) and takes the message's other `:params`. `t()` rejects a pluralised key (`error TS2345: Argument of type '"issues.count"' is not assignable to parameter of type '"issues.count is a plural message: use choice()"'.`) and `choice()` every other key (`… '"issues.title is not a plural message: use t()"'.`). The locale parity test ([P-057](#p-057)) reports a locale whose message is pluralised where the default locale's isn't, or the other way round (`de: issues.count isn't plural, but the en message is, so choice() can't pick its form`); the number of forms may differ, since each locale's plural rule has its own. The npm package's unit tests compare `choice()` with what `trans_choice()` returns in `en`, `de`, `fr`, `ru`, `pl`, `ar` and `ja`. Scenarios: `translation-plural-choice-passes`, `translation-plural-key-in-t-fails-tsc`, `translation-singular-key-in-choice-fails-tsc`, `locale-plural-mismatch-fails-test`.
+
+### P-161
+
+**A message with a literal `|` is a pluralised message**
+
+- **Type Boundary:** translations
+- **Source:** found typing `choice()` (#47)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `lang/en/app.php` defines `'title' => 'Tracklane | Projects'`, which isn't pluralised. `t('app.title')` fails `tsc` (`… is a plural message: use choice()`), and `choice('app.title', 1)` renders `Tracklane `, the first form.
+
+**Manual workaround:** keep the `|` out of the message: `` `${t('app.name')} | ${t('projects.index.title')}` ``, or a different character (`·`, `—`).
+
+**Reasoning:** `|` is Laravel's form separator and has no escape: `trans_choice()` splits such a message on the server just as `choice()` does on the client. Only `__()` renders it whole, and telling a literal `|` from a form separator would mean guessing at the message's intent; a wrong guess renders a pluralised message whole, which is the Problem P-136 closed.
 
 ### P-137
 
