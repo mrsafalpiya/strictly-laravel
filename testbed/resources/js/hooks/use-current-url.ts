@@ -13,11 +13,18 @@ export type IsCurrentOrParentUrlFn = (
     currentUrl?: string,
 ) => boolean;
 
-export type WhenCurrentUrlFn = <TIfTrue, TIfFalse = null>(
-    urlToCheck: NonNullable<InertiaLinkProps['href']>,
-    ifTrue: TIfTrue,
-    ifFalse?: TIfFalse,
-) => TIfTrue | TIfFalse;
+// Without ifFalse it returns null; overloads type that without casting null to TIfFalse (P-068).
+export type WhenCurrentUrlFn = {
+    <TIfTrue>(
+        urlToCheck: NonNullable<InertiaLinkProps['href']>,
+        ifTrue: TIfTrue,
+    ): TIfTrue | null;
+    <TIfTrue, TIfFalse>(
+        urlToCheck: NonNullable<InertiaLinkProps['href']>,
+        ifTrue: TIfTrue,
+        ifFalse: TIfFalse,
+    ): TIfTrue | TIfFalse;
+};
 
 export type UseCurrentUrlReturn = {
     currentUrl: string;
@@ -66,13 +73,26 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
         return isCurrentUrl(urlToCheck, currentUrl, true);
     };
 
-    const whenCurrentUrl: WhenCurrentUrlFn = <TIfTrue, TIfFalse = null>(
+    function whenCurrentUrl<TIfTrue>(
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
         ifTrue: TIfTrue,
-        ifFalse: TIfFalse = null as TIfFalse,
-    ): TIfTrue | TIfFalse => {
-        return isCurrentUrl(urlToCheck) ? ifTrue : ifFalse;
-    };
+    ): TIfTrue | null;
+    function whenCurrentUrl<TIfTrue, TIfFalse>(
+        urlToCheck: NonNullable<InertiaLinkProps['href']>,
+        ifTrue: TIfTrue,
+        ifFalse: TIfFalse,
+    ): TIfTrue | TIfFalse;
+    function whenCurrentUrl<TIfTrue, TIfFalse>(
+        urlToCheck: NonNullable<InertiaLinkProps['href']>,
+        ifTrue: TIfTrue,
+        ...ifFalse: [] | [TIfFalse]
+    ): TIfTrue | TIfFalse | null {
+        if (isCurrentUrl(urlToCheck)) {
+            return ifTrue;
+        }
+
+        return ifFalse.length === 1 ? ifFalse[0] : null;
+    }
 
     return {
         currentUrl: currentUrlPath,
