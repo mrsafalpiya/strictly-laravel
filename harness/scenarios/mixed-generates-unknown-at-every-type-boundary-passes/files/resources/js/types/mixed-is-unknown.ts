@@ -31,6 +31,10 @@ export type MixedIsUnknown = [
     // A Page class.
     Expect<Equals<Show['context'], unknown>>,
     Expect<Equals<Show['filters'], Record<string, unknown>>>,
+    // mixed inside a prop wrapper Inertia resolves before sending.
+    Expect<Equals<Show['preferences'], Record<string, unknown>>>,
+    Expect<Equals<Show['activity'], unknown[]>>,
+    Expect<Equals<Show['timeline'], Record<string, unknown>>>,
     // The shared props.
     Expect<Equals<SharedProps['features'], Record<string, unknown>>>,
     // An input class and a query class.
