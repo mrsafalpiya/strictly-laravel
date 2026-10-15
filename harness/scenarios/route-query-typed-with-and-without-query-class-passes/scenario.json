@@ -1,0 +1,5 @@
+{
+    "problem": "P-106",
+    "description": "Route functions are used the typed way: a query string only on a route whose action takes a query class, read on the server from that class, and none on a controller action without one, a closure route or the Base Kit's routes; the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

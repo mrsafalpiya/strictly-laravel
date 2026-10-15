@@ -1,0 +1,6 @@
+{
+    "problem": "P-099",
+    "description": "A Data class with rules() nested in an input, as a property and as a list item, extends InputData, so its rules() are merged with the rules inferred from its types and a missing nested title is still rejected.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}
