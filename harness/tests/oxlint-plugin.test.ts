@@ -192,6 +192,26 @@ describe('oxlint plugin: strictly/typed-optimistic-updates', () => {
     });
 });
 
+describe('oxlint plugin: strictly/typed-broadcasts', () => {
+    tester.run('typed-broadcasts', rule('typed-broadcasts'), {
+        valid: [
+            "import { channel, useChannelEvent } from '@/generated/broadcasting'; useChannelEvent(channel('issues.{issue}', { issue }), 'CommentPosted', cb);",
+            "import { configureEcho, useConnectionStatus, useEchoNotification } from '@laravel/echo-react'; configureEcho({ broadcaster: 'reverb' }); useConnectionStatus(); useEchoNotification(name, cb);",
+            "import { useEcho } from './hooks/use-echo'; useEcho();",
+            "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);",
+        ],
+        invalid: [
+            {
+                code: "import { useEcho } from '@laravel/echo-react'; useEcho(`issues.${issue.id}`, 'CommentPostd', (e: { id: number }) => {});",
+                errors: [{ message: /Echo's `useEcho\(\)` takes any event name and a hand-typed payload: use `useChannelEvent\(channel, event, callback\)`/ }],
+            },
+            { code: "import { useEchoPresence as usePresence } from '@laravel/echo-react'; usePresence(name, 'Joined', cb);", errors: 1 },
+            { code: "import { useEchoPublic } from '@laravel/echo-react'; useEchoPublic('status', 'Updated', cb);", errors: 1 },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.useEcho(name, 'CommentPosted', cb);", errors: 1 },
+        ],
+    });
+});
+
 describe('oxlint plugin: strictly/typed-requests', () => {
     tester.run('typed-requests', rule('typed-requests'), {
         valid: [

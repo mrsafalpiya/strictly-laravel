@@ -1,0 +1,6 @@
+{
+    "problem": "P-052",
+    "description": "A listener that reads a field the event's payload Data class doesn't have fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'title' does not exist on type 'ProjectData'." }
+}

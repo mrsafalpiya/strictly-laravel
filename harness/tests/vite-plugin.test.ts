@@ -168,6 +168,17 @@ describe('Vite plugin: live regeneration', () => {
         await until('a run after the deleted lang file finished', () => finishedRuns(dev) === 4);
     });
 
+    test('routes/channels.php created or saved regenerates the broadcast channels', async () => {
+        const dev = await startDevServer();
+        await until('the first run finished', () => finishedRuns(dev) === 1);
+
+        dev.create('routes/channels.php');
+        await until('a run after the new channels file finished', () => finishedRuns(dev) === 2);
+
+        dev.save('routes/channels.php');
+        await until('a run after the saved channels file finished', () => finishedRuns(dev) === 3);
+    });
+
     test('saving .env.example regenerates too, since import.meta.env is typed from it', async () => {
         const dev = await startDevServer();
         await until('the first run finished', () => finishedRuns(dev) === 1);

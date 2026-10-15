@@ -1,0 +1,6 @@
+{
+    "problem": "P-053",
+    "description": "useChannelEvent() takes every event the app broadcasts by the name Echo listens for it (relative to App\\Events, or its broadcastAs() after a dot), typing each payload, and tsc passes.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,6 @@
+{
+    "problem": "P-053",
+    "description": "Listening through Echo's own useEcho(), which takes any event name and a hand-typed payload, fails lint.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Echo's `useEcho()` takes any event name and a hand-typed payload" }
+}
