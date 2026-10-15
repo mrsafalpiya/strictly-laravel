@@ -1,0 +1,6 @@
+{
+    "problem": "P-049",
+    "description": "useRouteHttp's submit() resolves with the response or, on a 422, with the validation errors, so reading the response without checking which one it got fails tsc instead of reading undefined at runtime.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'response' does not exist on type 'HttpResult<SearchQueryData, SearchResultsData>'." }
+}

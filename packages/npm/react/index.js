@@ -1,7 +1,7 @@
 // @ts-check
 // React helpers of the Overlay. Plain JS (no build step), typed by index.d.ts next to it.
-import { Deferred, Form, InfiniteScroll, Link, router, useForm, WhenVisible } from '@inertiajs/react';
-import { createElement } from 'react';
+import { Deferred, Form, InfiniteScroll, Link, router, useForm, useHttp, WhenVisible } from '@inertiajs/react';
+import { createElement, useCallback } from 'react';
 
 /**
  * @import { PageHelpers, PageName, PaginationProps, PaginatorLink } from './index.js'
@@ -61,6 +61,44 @@ export function TypedForm({ children, ...props }) {
     const render = typeof children === 'function' ? (/** @type {Record<string, unknown>} */ slot) => children({ ...slot, field }) : children;
 
     return createElement(Form, /** @type {any} */ (props), /** @type {any} */ (render));
+}
+
+/**
+ * Inertia's `useHttp()` sent to the route's URL with the route's method. A 422 resolves with the validation errors
+ * instead of Inertia's `undefined` (Problem P-049, behaviour of https://github.com/inertiajs/inertia/pull/3142): Inertia
+ * reports them through `onError` before resolving, so a request that reported none succeeded.
+ *
+ * @param {RouteTarget} route
+ * @param {Record<string, unknown>} [init]
+ */
+export function useRouteHttp(route, init = {}) {
+    const http = useHttp(/** @type {Record<string, any>} */ (init));
+    const send = http.submit;
+    const { url, method } = route;
+
+    const submit = useCallback(
+        /** @param {{ onError?: (errors: Record<string, string>) => void }} [options] */
+        async (options = {}) => {
+            /** @type {Record<string, string> | null} */
+            let refused = null;
+            const response = await send(
+                { url, method },
+                {
+                    ...options,
+                    /** @param {Record<string, string>} errors */
+                    onError: (errors) => {
+                        refused = errors;
+                        options.onError?.(errors);
+                    },
+                },
+            );
+
+            return refused === null ? { ok: true, response } : { ok: false, errors: refused };
+        },
+        [send, url, method],
+    );
+
+    return { ...http, submit };
 }
 
 /**

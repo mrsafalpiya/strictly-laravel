@@ -101,8 +101,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-046](#p-046) | A nested partial reload returns only the subtree | pagination and deferred props | closed |
 | [P-092](#p-092) | A partial reload's shared props aren't checked | pagination and deferred props | accepted gap |
 | [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
-| [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | open |
-| [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | open |
+| [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
+| [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
+| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
+| [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | open |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | open |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | open |
@@ -1110,11 +1112,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** overview §2; ecosystem A.3 and B.2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `useHttp<{ q: string }, SearchResults>()` takes whatever types are named; the Base Kit's `use-two-factor-auth.ts` calls `useHttp` for JSON with hand-written shapes. Nothing ties them to the controller.
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
+
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Kit Conversion leaves the Base Kit's `use-two-factor-auth.ts` on `useHttp()` with a reasoned suppression, because Fortify's endpoints have no declared response yet ([P-050](#p-050)). A JSON endpoint returning a list isn't branded: [P-108](#p-108); nor is a closure route's response: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
@@ -1123,11 +1127,39 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** overview §4; `reference/showcase/resources/js/components/search/use-search.ts`
 - **Upstream:** behaviour introduced by [inertiajs/inertia#3142](https://github.com/inertiajs/inertia/pull/3142) (`return undefined as TResponse`); no upstream issue filed for the return type
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `const results = await http.submit()` with a query the server rejects: `results` is `undefined` while typed `SearchResultsData`.
 
 **Manual workaround:** read results from `http.response` and errors from `http.errors`, never from the resolved value.
+
+**Closed by:** `useRouteHttp(route, init).submit()` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.js)) resolves with `{ ok: true, response }` or, on a 422, with `{ ok: false, errors }`, the validation errors keyed by the route's input (`ErrorsOf<SearchQueryData>`), which Inertia reports through `onError` before it resolves `undefined`; any other failure still rejects. Reading `result.response` before checking `result.ok` fails `tsc`, and so does an error key the input doesn't have. The npm package's tests (`packages/npm/tests/http.test.ts`) send it a 201, a 422 and a 500. Scenarios: `json-refusal-read-as-errors-passes`, `json-refusal-read-as-response-fails-tsc`, `json-refusal-wrong-error-key-fails-tsc`.
+
+### P-108
+
+**A JSON endpoint that returns a list of Data objects has no response type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-048](#p-048)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `public function recent(): array` with `@return list<ProjectData>`, or a `DataCollection` / `PaginatedDataCollection` return type: the PHP return type doesn't name a Data class, so the route isn't branded, `useRouteHttp(recent())` types the result `unknown`, no Contract records its responses and Contract Coverage doesn't list it. The same holds for a nullable or union return type (`?ProjectData`).
+
+**Manual workaround:** return one Data class that holds the list (`RecentProjectsData` with `@param list<ProjectData> $projects`).
+
+### P-109
+
+**A closure route's response isn't on its route type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-048](#p-048), like [P-097](#p-097) for inputs
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** open
+
+**Reproduction:** `Route::get('stats', fn (): StatsData => …)->name('stats')`: the generated `@/routes` `stats()` has no `WithResponse` brand, so `useRouteHttp(stats())` types the result `unknown`. The JSON Contracts and the JSON-endpoint coverage do see the closure.
+
+**Manual workaround:** return JSON from controller actions only.
 
 ### P-050
 
