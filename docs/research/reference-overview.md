@@ -1,15 +1,15 @@
-> **Archived from the earlier research thread (2026-10-14).** This is the Reference Implementation's own overview, kept verbatim apart from paths rewritten to where things now live in this repo. Its "copy `template/` for new projects" advice is superseded by the Overlay approach (ADR-0001); the evaluation apps themselves were not copied, only their findings. The full-size originals remain in `/home/safal/.t3/scratch/2026-10-14-i-want-to-setup-a-978ad4b8` for as long as that scratch folder exists.
+> **Archived from the earlier research thread (2026-10-14).** This is the Reference Implementation's own overview, kept verbatim apart from paths. Its code was archived in this repo and then retired (#31), once the Overlay had extracted the template and Tracklane had been ported into the Testbed App (`testbed/`); `template/` and `showcase/` below name those two apps, which are no longer in the repo, and the template's standard is kept as [`type-safety.md`](type-safety.md). Its "copy `template/` for new projects" advice is superseded by the Overlay approach (ADR-0001); the evaluation apps themselves were not copied, only their findings. The full-size originals remain in `/home/safal/.t3/scratch/2026-10-14-i-want-to-setup-a-978ad4b8` for as long as that scratch folder exists.
 
 # Type-safe Laravel + Inertia + React: research, template, and a large test app
 
-**Recommendation (Oct 2026):** start from `reference/template/`, the official Laravel React starter kit plus a
+**Recommendation (Oct 2026):** start from `template/`, the official Laravel React starter kit plus a
 type-generation and verification layer. You write PHP and the TypeScript is generated, then **verified against
 what the server actually sends**. There's nothing to keep in sync by hand.
 
 | Directory | What it is |
 |---|---|
-| `reference/template/` | **The starter to copy for new projects** (git repo, 13 commits). Read `reference/template/README.md`, then `reference/template/docs/type-safety.md` (the whole standard in one page). |
-| `reference/showcase/` | **Tracklane**, a multi-tenant issue tracker built on the template to stress-test it: 28 pages, 90 Data classes, 13 models, 197 tests. |
+| `template/` | **The starter to copy for new projects** (git repo, 13 commits). Read `template/README.md`, then `template/docs/type-safety.md` (the whole standard in one page; kept as [`type-safety.md`](type-safety.md)). |
+| `showcase/` | **Tracklane**, a multi-tenant issue tracker built on the template to stress-test it: 28 pages, 90 Data classes, 13 models, 197 tests. |
 | `docs/research/evaluations/` | Findings of each candidate evaluation, one file per evaluation (the evaluation apps were not copied). |
 | `docs/research/` | Shared fixture spec and showcase spec. |
 
@@ -104,7 +104,7 @@ generated types are true.
 - `useUser()`
 - the `lib/domain.ts` enum-label pattern
 
-## 3. The large test app (`reference/showcase/`, "Tracklane")
+## 3. The large test app (`showcase/`, "Tracklane")
 
 Feature areas were built by four parallel engineers (agents) following only `docs/type-safety.md`. Each one
 logged every friction point, and every lesson was folded back into the template.

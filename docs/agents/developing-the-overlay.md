@@ -6,7 +6,7 @@ How to work on Strictly Laravel itself: the Composer and npm packages, the insta
 
 ### 1. Start from a Problem
 
-Find the Problem your ticket closes in `docs/problems.md`. Read its reproduction, its manual workaround (usually what the Reference Implementation did by hand, under `reference/`) and any ADR that touches its Type Boundary.
+Find the Problem your ticket closes in `docs/problems.md`. Read its reproduction, its manual workaround (usually what the Reference Implementation did by hand) and any ADR that touches its Type Boundary.
 
 If the work has no Problem yet, record one first (see "Adding a Problem" in the register). A change that closes no Problem is either enforcement or infrastructure for one; name the Problem it serves.
 
@@ -58,4 +58,4 @@ In `docs/problems.md`, set the Problem's status to `closed`, add **Closed by** w
 
 **Vocabulary.** Name domain concepts with the terms in [`GLOSSARY.md`](../../GLOSSARY.md): Problem, Type Boundary, Contract, Contract Coverage, Base Kit, Overlay, Kit Conversion, Testbed App, Tracklane, Reference Implementation, Source of Truth. This applies to code, scenario names, comments, commits and tickets. A concept missing from the glossary is a signal to add it there first.
 
-**The Reference Implementation is read-only.** `reference/` is a spec to extract from. Copy what a Problem needs into the packages; leave `reference/` untouched and out of all tooling.
+**The Reference Implementation is retired.** Its code was deleted once the Overlay had extracted the template and Tracklane had been ported into the Testbed App (#31). Its findings live on in [`docs/research/`](../research/README.md) (its overview, evaluations and type-safety standard) and in the Problem register's manual workarounds; for working code, look at the packages and `testbed/`.
