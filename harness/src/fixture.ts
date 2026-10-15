@@ -128,7 +128,11 @@ export async function prepareInstalledFixture(options: { fresh?: boolean } = {})
     await runOrThrow('composer', ['require', `${composerPackageName}:*`, '--no-interaction'], inInstalled);
     // A full pnpm install too. The Base Kit arrives with Chisel's npm-installed node_modules and no pnpm-lock.yaml: the
     // installer's own `pnpm install --ansi` is rejected by pnpm 11 ("Unknown option: 'ansi'") yet reported as done.
-    await runOrThrow('pnpm', ['add', `${npmPackageName}@link:${relative(installedDir, npmPackageDir)}`], inInstalled);
+    // Copied out of pnpm's store, not hard-linked to it: every app hard-links installed/'s files (createAppDir()), and a
+    // store file is already linked into every pnpm project on the machine. A licence file many packages share reaches
+    // the filesystem's link limit (65000 on ext4) once a few worktrees each run the full suite, and `cp -al` then fails
+    // with "Too many links".
+    await runOrThrow('pnpm', ['add', `${npmPackageName}@link:${relative(installedDir, npmPackageDir)}`, '--package-import-method=copy'], inInstalled);
     await runOrThrow('git', ['add', '--all'], inInstalled);
     await runOrThrow('git', ['commit', '--quiet', '--message', 'Require the Overlay packages from local paths'], inInstalled);
     await sealDependencies();

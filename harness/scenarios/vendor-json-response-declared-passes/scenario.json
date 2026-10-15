@@ -1,0 +1,7 @@
+{
+    "problem": "P-050",
+    "description": "A Data class config/strictly.php declares as the response of Fortify's password confirmation status endpoint types useRouteHttp's result, the feature test that calls it records the response as a Contract, and the full ci:check passes.",
+    "expect": {
+        "outcome": "pass"
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "problem": "P-100",
+    "description": "<TypedForm {...store.form()}> for Fortify's login takes its fields and error keys from the payload config/strictly.php declares for the action, with no type argument, and passes the lint and tsc steps of the full ci:check.",
+    "expect": { "outcome": "pass" }
+}

@@ -59,7 +59,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-089](#p-089) | A page rendered without the Inertia middleware lacks the shared props its type promises | shared props | accepted gap |
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | closed |
 | [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | closed |
-| [P-100](#p-100) | A form to a route without an input brand names its payload by hand | form payloads | open |
+| [P-100](#p-100) | A form to a route without an input brand names its payload by hand | form payloads | closed |
 | [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | open |
 | [P-015](#p-015) | Form control names are plain strings | form payloads | closed |
 | [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | closed |
@@ -76,7 +76,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | open |
-| [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | open |
+| [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
 | [P-027](#p-027) | `FieldName` proves a name came from some `field()`, not this form's | form payloads | accepted gap |
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
@@ -105,7 +105,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
 | [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | open |
-| [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | open |
+| [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | open |
 | [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | open |
@@ -261,7 +261,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Upstream:** none (Wayfinder's `query` option is `RouteQueryOptions` on every route)
 - **Status:** open
 
-**Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). Vendor GETs that do read a query string (Fortify's password reset reads `email`) have no class to type it by yet ([P-025](#p-025)). A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
+**Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). A vendor GET that reads a query string gets a query class only by declaring one in `config/strictly.php` ([P-025](#p-025)), as the Base Kit's password reset link (`email`) is. A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
 
 **Manual workaround:** take a query class on every action that reads its query string.
 
@@ -681,9 +681,9 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Upstream:** none
 - **Status:** open
 
-**Reproduction:** an action taking a FormRequest, such as the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` before Kit Conversion gave it `PasswordUpdateData`, validates `current_password` and `password` and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form's type is hand-written (a `<TypedForm>` for such a route takes its payload as a type argument, [P-100](#p-100)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing.
+**Reproduction:** an action taking a FormRequest, such as the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` before Kit Conversion gave it `PasswordUpdateData`, validates `current_password` and `password` and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form has no fields (naming its payload as a `<TypedForm>` type argument fails lint, [P-100](#p-100)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing. A vendor action is one of them until `config/strictly.php` declares its payload ([P-025](#p-025)); the Base Kit's Fortify actions that take no payload (logout, disabling two-factor authentication) aren't declared.
 
-**Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)). A GET action's reads aren't checked against its query class either: the input Contracts cover form endpoints only.
+**Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)); declare one for a vendor action that reads either ([P-025](#p-025)). A GET with a query class records the keys it reads as a `query` Contract checked against the class.
 
 ### P-025
 
@@ -692,11 +692,20 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** overview §2; type-safety rule 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's login, register and 2FA controllers take no input Data class, so their payloads are hand-written. The Reference Implementation's declarations missed `remember` on register and `force` on enabling 2FA until the input Contracts caught them.
 
 **Manual workaround:** declare the payload per vendor action in `config/types.php` (`route_inputs`: `Controller@method => Data class`, or a `QueryData` class for a GET). Tests submit the forms; every key the vendor validates, reports an error for or reads must be a field of the declaration, and Contract Coverage fails on a declared field never validated or read.
+
+**Closed by:** vendor declarations ([`VendorDeclarations`](../packages/laravel/src/Routes/VendorDeclarations.php)) in the app's `config/strictly.php`, keyed by action: `vendor_inputs` names an input class for a vendor action (`AuthenticatedSessionController::class.'@store' => LoginData::class`) and `vendor_queries` a query class for a vendor GET. [`RouteInput`](../packages/laravel/src/Routes/RouteInput.php) and [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) read them before the action's own parameters, so the route is branded with them as an app action is (`<TypedForm {...store.form()}>`, `submit(store(), data)`, `reset(token, { query: { email } })`), and its requests are recorded and covered as a form endpoint's. The declarations are verified, not trusted:
+
+- one naming an action no route runs, or a class that doesn't exist or doesn't extend `InputData` or `QueryData`, fails `strictly:generate`;
+- every key the vendor validates, reads or reports an error for during a feature test must be a field of the declared input (the `form` Contract of [P-024](#p-024), [P-029](#p-029) and [P-113](#p-113)): `Type '"remember"' is not assignable to type '"name" | "email" | "password" | "password_confirmation"'.` That includes reads through the vendor's own FormRequest (Fortify's `LoginRequest`), which [`InputReads`](../packages/laravel/src/Testing/InputReads.php) has the container build as a subclass that reports them ([`TracksInputReads`](../packages/laravel/src/Testing/TracksInputReads.php)); a final one can't be tracked ([P-026](#p-026));
+- a GET to a route with a query class, declared or the action's own, records the query keys it validated and read as a `query` Contract (`__contracts__/_queries/`) checked against the class;
+- Contract Coverage reports a declared field no test saw the vendor use ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php)): `✗ LoginData.nickname is declared for a vendor action that never uses it (at POST /login): add a feature test that submits to POST /login with nickname, or remove it from the declaration in config/strictly.php if … doesn't validate or read it.`
+
+`strictly:install` publishes `config/strictly.php` with the Base Kit's Fortify declarations ([`stubs/strictly.php`](../packages/laravel/stubs/strictly.php); the package's merged defaults declare nothing), and Kit Conversion adds their classes under `App\Data\Auth`, with the Reference Implementation's two findings declared: `remember` on registration and `force` on enabling two-factor authentication, both `bool|Optional`. Its `tests/Feature/ContractCoverageTest.php` submits to the Fortify actions the Base Kit's tests don't (password confirmation, the two-factor challenge, enabling and confirming two-factor authentication) and opens the password reset link with its `email`. Not declared: the passkey routes, whose requests Laravel Passkeys' own client sends, and the Fortify actions that take no payload (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes), whose reads are checked by nothing like any action without an input ([P-112](#p-112)). Scenarios: `vendor-input-declared-passes`, `vendor-input-undeclared-read-fails-contract`, `vendor-input-undeclared-force-fails-contract`, `vendor-form-wrong-field-fails-tsc`, `vendor-input-field-never-used-fails-coverage`, `vendor-request-reads-declared-key-passes`, `vendor-request-reads-undeclared-key-fails-contract`, `vendor-query-declared-passes`, `vendor-query-key-misspelled-fails-tsc`, `vendor-query-undeclared-read-fails-contract`, `vendor-declaration-unknown-class-fails-generate`.
 
 ### P-026
 
@@ -741,7 +750,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the Reference Implementation's headless `<TypedForm {...store.form()}>` with a `field()` render prop, and its lint rule rejecting an untyped `<Form>`.
 
-**Closed by:** [`<TypedForm {...route.form()}>`](../packages/npm/react/index.d.ts) (`@mrsafalpiya/strictly-laravel/react`), Inertia's `<Form>` typed by the input Data class the route is branded with ([P-014](#p-014)): its render prop's `field()` takes only the input's field paths (nested and list ones too) and returns a `FieldName` ([P-015](#p-015)), and its `errors`, `resetOnSuccess`, `resetOnError` and `onError` are keyed by them, so a misspelled field or error key fails `tsc`. A route whose action takes no input gets a form without fields. The oxlint rule `strictly/typed-forms` rejects importing Inertia's `<Form>`. Kit Conversion turns the Base Kit's settings actions into input classes (`ProfileUpdateData`, `ProfileDeleteData`, `PasswordUpdateData`) and every Base Kit form into a `<TypedForm>`; the Fortify-backed ones name their payload by hand until vendor payloads are declared ([P-100](#p-100)). Scenarios: `typed-form-passes`, `typed-form-wrong-field-fails-tsc`, `typed-form-wrong-error-key-fails-tsc`, `inertia-form-fails-lint`.
+**Closed by:** [`<TypedForm {...route.form()}>`](../packages/npm/react/index.d.ts) (`@mrsafalpiya/strictly-laravel/react`), Inertia's `<Form>` typed by the input Data class the route is branded with ([P-014](#p-014)): its render prop's `field()` takes only the input's field paths (nested and list ones too) and returns a `FieldName` ([P-015](#p-015)), and its `errors`, `resetOnSuccess`, `resetOnError` and `onError` are keyed by them, so a misspelled field or error key fails `tsc`. A route whose action takes no input gets a form without fields. The oxlint rule `strictly/typed-forms` rejects importing Inertia's `<Form>`. Kit Conversion turns the Base Kit's settings actions into input classes (`ProfileUpdateData`, `ProfileDeleteData`, `PasswordUpdateData`) and every Base Kit form into a `<TypedForm>`; the Fortify-backed ones take theirs from the payloads `config/strictly.php` declares for Fortify's actions ([P-025](#p-025), [P-100](#p-100)). Scenarios: `typed-form-passes`, `typed-form-wrong-field-fails-tsc`, `typed-form-wrong-error-key-fails-tsc`, `inertia-form-fails-lint`.
 
 ### P-100
 
@@ -750,11 +759,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-096](#p-096)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's routes have no input class ([P-025](#p-025)), and a closure route's input isn't branded ([P-097](#p-097)), so `<TypedForm {...store.form()}>` for them has no fields. Its payload can be given as a type argument instead, which nothing checks against what the server validates: `<TypedForm<LoginData> {...store.form()}>` compiles with any Data class, and so does `<TypedForm<OtherData> {...update.form()}>` on a branded route whenever `OtherData` has a subset of its input's fields. The Base Kit's auth and two-factor forms do this after Kit Conversion (`App\Data\Auth\*Data`). The validation-error Contracts don't cover such a form either: its route isn't a form endpoint.
 
 **Manual workaround:** keep each hand-named payload class next to the vendor action it describes and check it against the vendor's rules by reading them.
+
+**Closed by:** the oxlint rule `strictly/typed-forms` rejects a type argument on `<TypedForm>` or an alias of it (`` `<TypedForm>`'s payload comes from the route it submits to: drop the type argument. `` …), so a form's payload, field names and error keys always come from its route's brand. A vendor route gets its brand from the payload `config/strictly.php` declares for its action ([P-025](#p-025)), so Kit Conversion's Fortify forms (login, registration, password reset and confirmation, the two-factor challenge and setup) drop their type arguments, and their routes are form endpoints whose validation errors, validated fields and reads are Contracts. A closure route's form still has no fields until its input moves to a controller action ([P-097](#p-097)). Scenarios: `vendor-form-typed-by-declaration-passes`, `typed-form-type-argument-fails-lint`.
 
 ### P-097
 
@@ -1118,7 +1129,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
 
-**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Kit Conversion leaves the Base Kit's `use-two-factor-auth.ts` on `useHttp()` with a reasoned suppression, because Fortify's endpoints have no declared response yet ([P-050](#p-050)). A JSON endpoint returning a list isn't branded: [P-108](#p-108); nor is a closure route's response: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); nor is a closure route's response: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
@@ -1168,11 +1179,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** overview §2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's 2FA QR code, secret key and recovery-code endpoints return JSON from controllers the app doesn't own; the Base Kit types them by hand (`TwoFactorSetupData`).
 
 **Manual workaround:** declare the response per vendor action in `config/types.php` (`route_responses`: a Data class, or a TypeScript type such as `'{ svg: string; url: string } | []'`); tests check every response against it, and Contract Coverage fails on a declared endpoint never called.
+
+**Closed by:** `vendor_responses` in `config/strictly.php` declares a vendor JSON endpoint's response per action, a Data class or, for JSON that isn't one object, a TypeScript type (`TwoFactorQrCodeController::class.'@show' => '{ svg: string; url: string } | []'`). [`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php) reads the declaration before the action's return type, so the route is branded `WithResponse<…>` and `useRouteHttp(qrCode())` types its result: reading `svg` before ruling out `[]` fails `tsc`. Every successful response a feature test gets is recorded as a JSON Contract checked against the declaration, `satisfies Contract<{ svg: string; url: string } | []>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), so a declaration that doesn't match what the vendor sends fails `tsc`; Contract Coverage fails on a declared endpoint no test calls and observes the shapes of a Data class response (a TypeScript type's it can't: [P-051](#p-051)). A declared class that doesn't exist, or isn't a Data class, fails `strictly:generate`. The Base Kit's two-factor endpoints are declared (`App\Data\Auth\TwoFactorSecretKeyData` for the secret key, which Fortify always sends as one object, TypeScript types for the QR code and the recovery codes), and Kit Conversion moves `use-two-factor-auth.ts` from `useHttp()` and its casts to `useRouteHttp()`. Scenarios: `vendor-json-response-declared-passes`, `vendor-json-response-mismatch-fails-contract`, `vendor-json-typescript-response-mismatch-fails-contract`, `vendor-json-union-response-misread-fails-tsc`, `vendor-json-endpoint-no-test-calls-fails-coverage`.
 
 ### P-051
 
@@ -1183,7 +1196,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Upstream:** none
 - **Status:** accepted gap
 
-**Reproduction:** `'{ svg: string; url: string } | []'` for the QR code endpoint: each recorded response is checked by `tsc`, but nothing reports a union member no test produced.
+**Reproduction:** `'{ svg: string; url: string } | []'` for the QR code endpoint, as the Base Kit's `config/strictly.php` declares it ([P-050](#p-050)): each recorded response is checked by `tsc`, but nothing reports a union member no test produced (no test sees the `[]`).
 
 **Manual workaround:** none; prefer declaring a Data class where the JSON is one object.
 

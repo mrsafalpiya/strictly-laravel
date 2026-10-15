@@ -1,0 +1,9 @@
+{
+    "problem": "P-050",
+    "description": "The TypeScript type config/strictly.php declares for Fortify's QR code endpoint includes the `[]` it sends when the user has no secret, so reading `svg` without ruling that out fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2339: Property 'svg' does not exist on type '[] | { svg: string; url: string; }'."
+    }
+}

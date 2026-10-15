@@ -1,0 +1,9 @@
+{
+    "problem": "P-025",
+    "description": "A query key the password reset link's declared query class doesn't have fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2561: Object literal may only specify known properties, but 'mail' does not exist in type 'Partial<ResetPasswordQueryData>'."
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "problem": "P-025",
+    "description": "A key read through Fortify's LoginRequest that the login's declared payload has passes the input Contracts and Contract Coverage, and the full ci:check passes.",
+    "expect": {
+        "outcome": "pass"
+    }
+}

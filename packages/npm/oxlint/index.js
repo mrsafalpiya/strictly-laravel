@@ -434,20 +434,36 @@ const typedForm = `\`<TypedForm {...route.form()}>\` from \`${reactHelpers}\``;
  * from the Wayfinder route. Inertia's `<Form>` takes any of them, so importing or re-exporting it from
  * `@inertiajs/react`, or using it through a namespace import (`<Inertia.Form>`), is rejected.
  *
+ * P-100: the payload comes from the route, never from a type argument. `<TypedForm<LoginData> {...store.form()}>`
+ * names it by hand, which nothing checks against what the server validates, so a type argument on `<TypedForm>` (or
+ * an alias of it) is rejected too. A vendor route gets its payload from config/strictly.php instead.
+ *
  * @type {Rule}
  */
 const typedForms = {
     meta: {
         type: 'problem',
-        docs: { description: "Use <TypedForm> instead of Inertia's untyped <Form>." },
+        docs: { description: "Use <TypedForm> instead of Inertia's untyped <Form>, and let it take its payload from the route." },
     },
     create(context) {
         const message = `Inertia's \`<Form>\` is untyped: use ${typedForm}, which takes the payload, the field names and the error keys from the route.`;
+        const typeArgumentMessage =
+            "`<TypedForm>`'s payload comes from the route it submits to: drop the type argument. A route without an input brand takes an input class in its action, or, for a vendor action, the one config/strictly.php declares for it (`vendor_inputs`).";
         /** Local names of namespace imports of `@inertiajs/react`. */
         const namespaces = new Set();
+        /** Local names `<TypedForm>` is used under: its own and any alias it is imported as. */
+        const formNames = new Set(['TypedForm']);
 
         /** @param {ESTree.ImportDeclaration | ESTree.ExportNamedDeclaration} node */
         const check = (node) => {
+            if (node.type === 'ImportDeclaration' && node.source?.value === reactHelpers) {
+                for (const specifier of node.specifiers) {
+                    if (specifier.type === 'ImportSpecifier' && nameOf(specifier.imported) === 'TypedForm') {
+                        formNames.add(specifier.local.name);
+                    }
+                }
+            }
+
             if (node.source?.value !== '@inertiajs/react') {
                 return;
             }
@@ -473,6 +489,12 @@ const typedForms = {
             JSXOpeningElement(node) {
                 if (node.name.type === 'JSXMemberExpression' && namespaces.has(nameOf(node.name.object) ?? '') && nameOf(node.name.property) === 'Form') {
                     context.report({ node, message });
+                }
+
+                const typeArguments = 'typeArguments' in node ? node.typeArguments : null;
+
+                if (typeArguments && formNames.has(nameOf(node.name) ?? '')) {
+                    context.report({ node: typeArguments, message: typeArgumentMessage });
                 }
             },
         };
