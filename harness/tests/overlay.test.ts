@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
-import { before, describe, test } from 'node:test';
+import { before, describe, test as nodeTest } from 'node:test';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import plugin from '../../packages/npm/oxlint/index.js';
@@ -9,10 +9,23 @@ import { failureReport } from '../src/failure-report.ts';
 import { appConcurrency, createApp, prepareInstalledFixture } from '../src/fixture.ts';
 import { fixturesDir } from '../src/paths.ts';
 import { type BackgroundCommand, type CommandResult, tail } from '../src/run.ts';
-import { assertOutcome, loadScenarios, runScenario } from '../src/scenario.ts';
+import { assertOutcome, loadScenarios, runScenario, type Scenario } from '../src/scenario.ts';
+import { harnessShard, type ShardedTest, testsInShard } from '../src/shard.ts';
+
+const collected: ShardedTest[] = [];
+
+/**
+ * Collect a test for the shard to register. `cost` is roughly how many seconds it takes on one CPU: an app test runs one
+ * or more checks in a fresh app, from a few seconds to about 30 for a dev server or a fresh clone.
+ */
+function test(name: string, fn: () => Promise<void>, cost = 15): void {
+    collected.push({ name, cost, fn });
+}
 
 // Every test here works on its own copy of one cached app (latest Base Kit + Overlay installed from local paths), in its
-// own directory with its own TMPDIR, so they run concurrently (appConcurrency(), STRICTLY_HARNESS_CONCURRENCY).
+// own directory with its own TMPDIR, so they run concurrently (appConcurrency(), STRICTLY_HARNESS_CONCURRENCY). They
+// are collected by test() above and registered at the end, so a CI shard (STRICTLY_HARNESS_SHARD, src/shard.ts) runs
+// only its share.
 describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, () => {
     before(async () => {
         await prepareInstalledFixture();
@@ -249,9 +262,20 @@ export default function ProjectStatuses() {
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
             assertOutcome(await runScenario(scenario), scenario.expect);
-        });
+        }, scenarioCost(scenario));
+    }
+
+    for (const { name, fn } of testsInShard(collected, harnessShard())) {
+        nodeTest(name, fn);
     }
 });
+
+/** Roughly how many seconds a scenario takes on one CPU (CI's averages per step); the full ci:check when no step. */
+function scenarioCost(scenario: Scenario): number {
+    const stepCosts: Record<string, number> = { test: 10, tsc: 7, lint: 5 };
+
+    return scenario.step === undefined ? 18 : (stepCosts[scenario.step] ?? 2);
+}
 
 /** Wait until `condition` holds while a background command runs; fail with its output after `timeoutMs`. */
 async function until(what: string, condition: () => boolean, command: BackgroundCommand, timeoutMs = 30_000): Promise<void> {
