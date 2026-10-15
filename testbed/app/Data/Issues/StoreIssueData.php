@@ -13,7 +13,6 @@ use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Gate;
-use Spatie\LaravelData\Attributes\Validation\DateFormat;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
 use StrictlyLaravel\Data\DateOnly;
@@ -42,7 +41,7 @@ final class StoreIssueData extends InputData
         public array $labelIds,
         #[Min(0), Max(100)]
         public ?int $estimate,
-        #[DateOnly, DateFormat('Y-m-d')]
+        #[DateOnly]
         public ?CarbonInterface $dueOn,
         #[KeyOf(Issue::class)]
         public ?int $parentId,

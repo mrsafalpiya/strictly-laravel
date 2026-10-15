@@ -73,7 +73,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-021](#p-021) | Typed iterables are not cast by default | form payloads | closed |
 | [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | closed |
 | [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
-| [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
+| [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | closed |
+| [P-173](#p-173) | A datetime input's TypeScript type doesn't say which format the server reads | form payloads | accepted gap |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
@@ -101,7 +102,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
-| [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
+| [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | closed |
 | [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | closed |
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | accepted gap |
 | [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | closed |
@@ -674,7 +675,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a `#[DateOnly]` attribute with `DateOnlyCast`: `"2026-10-14"` both ways; other dates are ISO-8601 strings.
 
-**Closed by:** the `#[DateOnly]` attribute ([`packages/laravel/src/Data/DateOnly.php`](../packages/laravel/src/Data/DateOnly.php)) on a `Carbon`, `CarbonImmutable` or `CarbonInterface` property of a Data class, which keeps the declared class. Its cast reads and sends `"2026-10-14"` and rejects anything else (a timestamp, an impossible date such as `2026-02-30`) with a validation error on the field instead of a 500; the property is generated as `DateOnly` (`` `${number}-${number}-${number}` ``), with an `isDateOnly()` guard in `@/generated` that turns an `<input type="date">` value into one without a cast ([`DateOnlyTypes`](../packages/laravel/src/TypeScript/DateOnlyTypes.php)). Every other date is an ISO-8601 `string`. A plain datetime input given anything but an ISO-8601 timestamp is still a 500: [P-075](#p-075). Scenarios: `date-only-round-trips-passes`, `timestamp-for-date-only-fails-tsc`.
+**Closed by:** the `#[DateOnly]` attribute ([`packages/laravel/src/Data/DateOnly.php`](../packages/laravel/src/Data/DateOnly.php)) on a `Carbon`, `CarbonImmutable` or `CarbonInterface` property of a Data class, which keeps the declared class. Its cast reads and sends `"2026-10-14"` and rejects anything else (a timestamp, an impossible date such as `2026-02-30`) with a validation error on the field instead of a 500; the property is generated as `DateOnly` (`` `${number}-${number}-${number}` ``), with an `isDateOnly()` guard in `@/generated` that turns an `<input type="date">` value into one without a cast ([`DateOnlyTypes`](../packages/laravel/src/TypeScript/DateOnlyTypes.php)). Every other date is an ISO-8601 `string`; a datetime input is validated against its cast's format too ([P-075](#p-075)). Scenarios: `date-only-round-trips-passes`, `timestamp-for-date-only-fails-tsc`.
 
 ### P-075
 
@@ -683,11 +684,28 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-023](#p-023)
 - **Upstream:** no upstream issue filed (laravel-data infers no rule for a `DateTimeInterface` property, so its cast is the first to see the value)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an input Data class with `public CarbonImmutable $startsAt`; posting `startsAt: '2026-10-14'` or `'tomorrow'` passes validation, then laravel-data's `DateTimeInterfaceCast` throws `CannotCastDate` ("Could not cast date `2026-10-14` into a `Carbon\CarbonImmutable` using formats: Y-m-d\TH:i:sP"): a 500 instead of a 422, while the TypeScript type `string` accepts the value.
 
 **Manual workaround:** `#[DateFormat(DATE_ATOM)]` on every datetime input property, or `#[DateOnly]` for a calendar date.
+
+**Closed by:** [`DateFormatRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRuleInferrer.php) validates a `DateTimeInterface` property of any Data class against the formats its `DateTimeInterfaceCast` reads ([`DateFormatRule`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRule.php)): a `#[WithCast(DateTimeInterfaceCast::class, format: …)]` format, otherwise `data.date_format` (DATE_ATOM by default). A value the cast can't read, or one naming an impossible date it would roll over (`2026-02-30T09:30:00+00:00`), gets a 422 on the field ("The starts at field must match the format Y-m-d\TH:i:sP."), alongside the other fields' errors; a timestamp ending in `Z`, which the cast reads, is accepted. Each item of a `list<CarbonImmutable>` is validated the same way, and a `#[DateOnly]` property gets `date_format:Y-m-d`, so its error comes with the others instead of after them. Null, a missing key and an `Optional` keep the inferred nullable and required rules, `rules()` still merge, an explicit `#[DateFormat]` replaces the inferred rule, and a property with another cast is left to that cast. The TypeScript type is still `string`: [P-173](#p-173). Scenarios: `datetime-input-validated-passes`, `non-iso-datetime-for-input-fails-test`.
+
+### P-173
+
+**A datetime input's TypeScript type doesn't say which format the server reads**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-075](#p-075)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `public CarbonImmutable $startsAt` on an input is generated as `startsAt: string`, so `tsc` accepts `startsAt: new Date().toISOString()` (`2026-10-14T09:30:00.000Z`), whose milliseconds DATE_ATOM has no place for; the request gets a 422 on `startsAt` naming the format.
+
+**Manual workaround:** send the format the server sends back (DATE_ATOM, `2026-10-14T09:30:00+00:00`), or add `u` or `v` to `data.date_format` to read milliseconds.
+
+**Reasoning:** the server now rejects such a value with a 422 on the field, which is what P-075 asked. A template literal can't tell the formats apart (`${number}-${number}-${number}T${string}` takes the milliseconds too), and the format is the app's choice in `data.date_format` or a `#[WithCast]`, so a type that encodes it would need a branded datetime type and a helper to build one: a design of its own, worth a ticket if apps keep sending the wrong format.
 
 ### P-024
 
@@ -1158,11 +1176,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** eval-02 §3, §4 and §9
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Inertia::scroll($paginator)` sends the paginator's own flat JSON, while a paginator inside a Data class is typed `{ data, links, meta }`; the infinite-scroll prop's type is wrong.
 
 **Manual workaround:** `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, X>> */ public ScrollProp $items` with `new ScrollProp(X::collect($cursorPaginator, CursorPaginatedDataCollection::class), …)` (type-safety rule 10).
+
+**Closed by:** the existing checks, proven to catch both ways of sending a raw paginator from a Page class. Filling a `ScrollProp<PaginatedDataCollection<…>>` property with `Inertia::scroll($paginator)` fails PHPStan, since the facade returns `ScrollProp<mixed>` (`… Inertia\ScrollProp<mixed> given.`), and so does `new ScrollProp($paginator)` (`… Inertia\ScrollProp<Illuminate\Pagination\LengthAwarePaginator<…>> given.`). Typing the property as the raw paginator instead (`ScrollProp<LengthAwarePaginator<int, X>>`) passes PHPStan, but its generated type is `{ data, links, meta }`, so the Contract of the feature test that renders the page fails `tsc` on the flat keys (`'"current_page"' does not exist in type …`), and Contract Coverage makes sure some test renders it. The typed way is unchanged. Scenarios: `inertia-scroll-into-typed-scroll-prop-fails-phpstan`, `scroll-prop-of-raw-paginator-fails-contract`, `scroll-prop-typed-as-its-items-passes`, `scroll-prop-every-item-shape-passes-coverage`.
 
 ### P-043
 

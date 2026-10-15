@@ -1,0 +1,8 @@
+{
+    "problem": "P-075",
+    "description": "A datetime property of an input Data class is validated against the format its cast reads (DATE_ATOM, a #[WithCast] format, YYYY-MM-DD for #[DateOnly]), in a list too, so anything else gets a 422 on the field instead of a 500, while a valid timestamp, a date-only date, null and a missing optional key round-trip and rules() still merge.",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}
