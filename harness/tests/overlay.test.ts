@@ -410,6 +410,18 @@ export default function ProjectStatuses() {
         });
     });
 
+    test('the build fails when the environment lacks a VITE_* variable .env.example lists, which import.meta.env types as a string (P-140)', async () => {
+        const app = await createApp('vite-env-variable-unset');
+        const env = join(app.dir, '.env');
+        // A deployment whose .env was written before the variable was added to .env.example.
+        writeFileSync(env, readFileSync(env, 'utf8').replace(/^VITE_APP_NAME=.*\n/m, ''));
+
+        assertOutcome(await app.run('pnpm', ['exec', 'vite', 'build']), {
+            outcome: 'fail',
+            errorContains: "[strictly] .env.example lists VITE_APP_NAME, but the environment Vite runs with doesn't set it",
+        });
+    });
+
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
             assertOutcome(await runScenario(scenario), scenario.expect);

@@ -55,7 +55,11 @@ afterEach(async () => {
     }
 });
 
-async function startDevServer(behaviour: { ms: number; fail?: string } = { ms: 0 }, composerVersion?: string): Promise<Harness> {
+async function startDevServer(
+    behaviour: { ms: number; fail?: string } = { ms: 0 },
+    composerVersion?: string,
+    files: Record<string, string> = {},
+): Promise<Harness> {
     scratch = mkdtempSync(join(tmpdir(), 'strictly-vite-plugin-'));
     const root = join(scratch, 'app-root');
     const log = join(scratch, 'run.log');
@@ -70,6 +74,10 @@ async function startDevServer(behaviour: { ms: number; fail?: string } = { ms: 0
     logger.error = (message) => void logged.error.push(message);
 
     mkdirSync(root);
+
+    for (const [path, contents] of Object.entries(files)) {
+        writeFileSync(join(root, path), contents);
+    }
 
     if (composerVersion !== undefined) {
         // What Composer 2 writes for the installed Composer package.
@@ -160,6 +168,15 @@ describe('Vite plugin: live regeneration', () => {
         await until('a run after the deleted lang file finished', () => finishedRuns(dev) === 4);
     });
 
+    test('saving .env.example regenerates too, since import.meta.env is typed from it', async () => {
+        const dev = await startDevServer();
+        await until('the first run finished', () => finishedRuns(dev) === 1);
+
+        dev.save('.env.example');
+
+        await until('a run after the save finished', () => finishedRuns(dev) === 2);
+    });
+
     test('files that are not PHP under app/ are ignored, and so are saves to page component files', async () => {
         const dev = await startDevServer();
         await until('the first run finished', () => finishedRuns(dev) === 1);
@@ -171,6 +188,7 @@ describe('Vite plugin: live regeneration', () => {
         dev.save('application/Thing.php');
         dev.save('lang/README.md');
         dev.save('lang/vendor/acme/en/messages.php');
+        dev.save('resources/.env.example');
         await sleep(500);
 
         assert.equal(finishedRuns(dev), 1);
@@ -251,5 +269,31 @@ describe('Vite plugin: Composer and npm package versions', () => {
 
     test('an app with no vendor/ yet is not warned about', async () => {
         assert.deepEqual(versionWarnings(await startDevServer()), []);
+    });
+});
+
+// The fixture-app harness proves a build fails on a missing variable (overlay.test.ts); the dev server only warns.
+describe('Vite plugin: VITE_* variables .env.example lists', () => {
+    const envWarnings = (dev: Harness) => dev.logged.warn.filter((message) => message.includes('.env.example lists'));
+    const envExample = 'APP_NAME=Laravel\n# VITE_COMMENTED_OUT=\nVITE_APP_NAME="${APP_NAME}"\nVITE_SENTRY_DSN=\n';
+
+    test('the dev server warns about each listed variable the environment does not set', async () => {
+        const dev = await startDevServer({ ms: 0 }, undefined, { '.env.example': envExample, '.env': 'APP_NAME=Tracklane\nVITE_APP_NAME="${APP_NAME}"\n' });
+
+        assert.match(
+            envWarnings(dev).join('\n'),
+            /\[strictly\] \.env\.example lists VITE_SENTRY_DSN, but the environment Vite runs with doesn't set it, so import\.meta\.env\.VITE_SENTRY_DSN is undefined although its type is string\./,
+        );
+        assert.doesNotMatch(envWarnings(dev).join('\n'), /VITE_APP_NAME|VITE_COMMENTED_OUT/);
+    });
+
+    test('a variable set to an empty value counts as set', async () => {
+        const dev = await startDevServer({ ms: 0 }, undefined, { '.env.example': envExample, '.env': 'VITE_APP_NAME=Tracklane\nVITE_SENTRY_DSN=\n' });
+
+        assert.deepEqual(envWarnings(dev), []);
+    });
+
+    test('an app with no .env.example is not warned about', async () => {
+        assert.deepEqual(envWarnings(await startDevServer()), []);
     });
 });

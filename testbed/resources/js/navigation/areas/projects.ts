@@ -5,7 +5,7 @@ import { index as cycles } from '@/routes/cycles';
 import { index as labels } from '@/routes/labels';
 import { index as projects } from '@/routes/projects';
 
-export default ((workspace) => [
+export default ((workspace, features) => [
     {
         group: 'workspace',
         order: 40,
@@ -13,18 +13,26 @@ export default ((workspace) => [
         href: projects(workspace),
         icon: FolderKanban,
     },
-    {
-        group: 'workspace',
-        order: 50,
-        title: t('projects.nav.cycles'),
-        href: cycles(workspace),
-        icon: IterationCw,
-    },
-    {
-        group: 'manage',
-        order: 10,
-        title: t('projects.nav.labels'),
-        href: labels(workspace),
-        icon: Tags,
-    },
+    ...(features.cycles
+        ? [
+              {
+                  group: 'workspace' as const,
+                  order: 50,
+                  title: t('projects.nav.cycles'),
+                  href: cycles(workspace),
+                  icon: IterationCw,
+              },
+          ]
+        : []),
+    ...(features.labels
+        ? [
+              {
+                  group: 'manage' as const,
+                  order: 10,
+                  title: t('projects.nav.labels'),
+                  href: labels(workspace),
+                  icon: Tags,
+              },
+          ]
+        : []),
 ]) satisfies WorkspaceNav;
