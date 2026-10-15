@@ -234,7 +234,7 @@ final class AppName
         });
     });
 
-    test('the strictness flags and the oxlint plugin reach a tsconfig.json and lint config the app edited', async () => {
+    test('the strictness flags, the oxlint plugin and the rules against assertions (P-068) reach a tsconfig.json and lint config the app edited', async () => {
         const app = await createApp('ts-strictness-edited-config', { install: false });
         const tsconfig = join(app.dir, 'tsconfig.json');
         const viteConfig = join(app.dir, 'vite.config.ts');
@@ -259,6 +259,8 @@ final class AppName
         for (const rule of Object.keys(plugin.rules)) {
             assert.ok(lintConfig.includes(`'strictly/${rule}': 'error',`), `the oxlint rule strictly/${rule} is not turned on`);
         }
+        assert.match(lintConfig, /'typescript\/consistent-type-assertions': \[\n\s+'error',\n\s+\{ assertionStyle: 'never' \},\n\s+\],/);
+        assert.ok(lintConfig.includes("'typescript/no-non-null-assertion': 'error',"), 'typescript/no-non-null-assertion is not turned on');
         assertOutcome(await app.check('lint'), { outcome: 'pass' });
 
         mkdirSync(join(app.dir, 'resources', 'js', 'lib'), { recursive: true });

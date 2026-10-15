@@ -1,0 +1,6 @@
+{
+    "problem": "P-068",
+    "description": "App code that narrows with checks (a nullable shared prop, an unknown value through a type guard), uses as const, and casts only under a reasoned suppression, plus a vendored shadcn/ui component under components/ui/ that casts, passes the lint step.",
+    "step": "lint",
+    "expect": { "outcome": "pass" }
+}

@@ -113,8 +113,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
 | [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
-| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
+| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | closed |
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
+| [P-179](#p-179) | A closure route that answers JSON without a Data class isn't rejected | JSON endpoints | open |
+| [P-180](#p-180) | JSON an action builds itself has no response type | JSON endpoints | accepted gap |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
@@ -152,8 +154,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
 | [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
-| [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
+| [P-068](#p-068) | Type assertions override generated types | every Type Boundary | closed |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
+| [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
+| [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | closed |
@@ -1064,7 +1068,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `enumValues.IssueStatus` generated from PHP in case order (`EnumValuesProvider`); for a literal union, `allOf<WeekStart>()('monday', 'sunday')`.
 
-**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and rejecting type assertions is [P-068](#p-068). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
+**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
 
 ### P-035
 
@@ -1327,7 +1331,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
 
-**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); and a closure route can't return a Data class: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. An action that answers JSON through anything but one Data class (a list, a collection, a nullable or union type) fails PHPStan: [P-108](#p-108); a JSON response the action builds itself stays `unknown`: [P-180](#p-180). A closure route can't return a Data class: [P-109](#p-109); one that answers JSON without a Data class isn't checked: [P-179](#p-179). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
@@ -1351,11 +1355,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** found while closing [P-048](#p-048)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public function recent(): array` with `@return list<ProjectData>`, or a `DataCollection` / `PaginatedDataCollection` return type: the PHP return type doesn't name a Data class, so the route isn't branded, `useRouteHttp(recent())` types the result `unknown`, no Contract records its responses and Contract Coverage doesn't list it. The same holds for a nullable or union return type (`?ProjectData`).
 
 **Manual workaround:** return one Data class that holds the list (`RecentProjectsData` with `@param list<ProjectData> $projects`).
+
+**Closed by:** the PHPStan rule `strictly.jsonResponse` ([`JsonResponseRule`](../packages/laravel/src/PHPStan/JsonResponseRule.php)) rejects a controller action whose native return type is something Laravel answers as JSON with no Data class (`array` or `iterable`, a `@return list<ProjectData>` included, a Collection, laravel-data's `DataCollection`, `PaginatedDataCollection` and `CursorPaginatedDataCollection`, a paginator, a model or an API resource: anything `Arrayable`, `Jsonable` or `JsonSerializable` that isn't a Data class), `App\Http\Controllers\ProjectController::recent() returns array, which Laravel sends as JSON that nothing types: useRouteHttp() types the route's response unknown, and no Contract checks it.`, and one that returns a nullable Data class or a union holding one (`?ProjectData`, `ProjectData|RedirectResponse`), `… returns App\Data\ProjectData|null, a nullable or union type, which declares no response: …`. Its tip says to return one Data class that holds the value (`RecentProjectsData` with a `list<ProjectData>` property), which is a JSON endpoint like any other: its route is branded, its responses are recorded as Contracts and Contract Coverage sees the list filled. Page classes (on their own, nullable or in a union), redirects, `Response`, downloads and `void` stay allowed, and so does a `JsonResponse`, JSON the action builds itself ([P-180](#p-180)). A closure route returning such JSON isn't checked: [P-179](#p-179). The PHPStan rule-test kit covers each rejected and allowed return type. Scenarios: `json-endpoint-returning-list-fails-phpstan`, `json-endpoint-returning-nullable-data-fails-phpstan`, `json-endpoint-returning-wrapped-list-passes`.
 
 ### P-109
 
@@ -1371,6 +1377,34 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** return JSON from controller actions only.
 
 **Closed by:** `strictly.closureRoute` ([P-097](#p-097)) also rejects a closure route whose return type, declared or inferred, is a Data class other than a Page class (a closure route may still render a page): `The closure route GET stats returns App\Data\StatsData, but Wayfinder types a route function's response only from a controller action: useRouteHttp() types its result unknown.` Scenarios: `closure-routes-without-data-classes-pass` (a controller action returns the Data class), `data-response-from-closure-route-fails-phpstan`.
+
+### P-179
+
+**A closure route that answers JSON without a Data class isn't rejected**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-108](#p-108)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `Route::get('projects/recent', fn (): array => Project::query()->latest()->take(5)->get()->all())`: Laravel answers the array as JSON, but `strictly.jsonResponse` checks controller actions only, so the route function's response is `unknown`, no Contract records it and Contract Coverage doesn't list it, without a word. A closure route returning a Data class fails `strictly.closureRoute` ([P-109](#p-109)), but its check stops at Data classes.
+
+**Manual workaround:** return JSON from controller actions only, as one Data class.
+
+### P-180
+
+**JSON an action builds itself has no response type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-108](#p-108)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `public function health(): JsonResponse { return response()->json(['status' => 'ok']); }`, or a `Responsable` whose `toResponse()` builds JSON, or a `mixed` return type: the route isn't branded, so `useRouteHttp(health())` types the result `unknown`; no Contract records the response and Contract Coverage doesn't list the route.
+
+**Manual workaround:** return one Data class instead; where the JSON must stay untyped, narrow the `unknown` result before reading it, which `tsc` enforces.
+
+**Reasoning:** a `JsonResponse` is the explicit way to answer JSON no Data class describes (a health check, a payload a third party dictates), and the client already can't read it without narrowing, so it fails loudly rather than silently. Rejecting it would leave such endpoints only a suppression; what `strictly.jsonResponse` rejects are the return types that look typed in PHP (`list<ProjectData>`, `?ProjectData`) yet reach the client as `unknown` ([P-108](#p-108)).
 
 ### P-050
 
@@ -1955,11 +1989,13 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `props.project as ProjectData`, `<T>x` or `user!.name` in app code compiles whatever the generated type says.
 
 **Manual workaround:** the `type-safety/no-type-assertions` lint rule rejects `as`, `<T>x` and `!` (not `as const`) outside the boundary modules ([P-069](#p-069)).
+
+**Closed by:** the installer hook `vite.config.ts: oxlint rejects type and non-null assertions` ([`ViteLintPlugin::rejectAssertions()`](../packages/laravel/src/Install/ViteLintPlugin.php)) turns on oxlint's own `typescript/consistent-type-assertions` (with `assertionStyle: 'never'`, which still allows `as const`) and `typescript/no-non-null-assertion` in the app's Vite+ lint config. `props.project as ProjectData` and `<UserData>meta` fail `ci:check:lint` with `typescript(consistent-type-assertions): Do not use any type assertions.`, and `auth.user!.name` with `typescript(no-non-null-assertion): Forbidden non-null assertion.` App code narrows with a check instead (`=== null`, `typeof`, a type guard for an `unknown`, [P-062](#p-062)); a cast that is really needed takes a suppression with its reason (ADR-0007). The vendored shadcn/ui components in `resources/js/components/ui/`, which cast CSS variables to `React.CSSProperties`, are already outside lint (the Base Kit's `ignorePatterns`), and the Overlay's own casts live in the npm package ([P-069](#p-069)), so app code needs no other exemption. Kit Conversion narrows the appearance `use-appearance.tsx` reads from `localStorage` with a check against the `Appearance` values, and types `use-current-url.ts`'s `whenCurrentUrl()` with overloads instead of `null as TIfFalse`. What still asserts without a cast: an `any` ([P-175](#p-175)) and a hand-written type guard ([P-176](#p-176)). Scenarios: `type-assertion-on-page-prop-fails-lint`, `angle-bracket-assertion-on-unknown-fails-lint`, `non-null-assertion-fails-lint`, `narrowed-instead-of-asserted-passes`, `assertion-rules-added-by-reinstall-fails-lint`.
 
 ### P-069
 
@@ -1975,6 +2011,34 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** each cast states what proves it (the recorded Contracts); the lint rule allows casts only in these modules.
 
 **Reasoning:** Inertia's own types are looser than the generated ones, so bridging them needs casts somewhere. Confining them to three modules, each cast justified and backed by Contracts, keeps the rest of the app cast-free.
+
+### P-175
+
+**An `any` from an untyped API reaches typed code without a cast**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #52
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `const project: ProjectData = JSON.parse(text)`, or a third-party function typed as returning `any`, compiles and passes lint: TypeScript lets `any` flow into any type, so the value is cast without `as`, and the rules against type assertions ([P-068](#p-068)) don't see it.
+
+**Manual workaround:** read such a value as `unknown` (`const parsed: unknown = JSON.parse(text)`) and narrow it.
+
+### P-176
+
+**A hand-written type guard is trusted as written**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #52
+- **Upstream:** by design: TypeScript doesn't check a written type predicate (`value is UserData`) against the function's body
+- **Status:** accepted gap
+
+**Reproduction:** `function isUser(value: unknown): value is UserData { return typeof value === 'object'; }` compiles and passes lint, and every `isUser(meta) && meta.name` after it reads `meta` as a `UserData` the check never proved, like a cast ([P-068](#p-068)).
+
+**Manual workaround:** check in the guard's body every field its predicate claims, and review guards as closely as casts.
+
+**Reasoning:** narrowing an `unknown` ([P-062](#p-062)) needs a guard whenever the check doesn't fit in one expression, and the predicate is how TypeScript lets a function narrow. Lint can't compare a predicate with its body (oxlint's own rules have no such check, and JS plugins are syntactic, [P-070](#p-070)), so rejecting written predicates would reject the narrowing P-068 asks for.
 
 ### P-070
 

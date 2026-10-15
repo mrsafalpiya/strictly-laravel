@@ -56,6 +56,11 @@ export default defineConfig({
     lint: {
         jsPlugins: ['@mrsafalpiya/strictly-laravel/oxlint'],
         rules: {
+            'typescript/consistent-type-assertions': [
+                'error',
+                { assertionStyle: 'never' },
+            ],
+            'typescript/no-non-null-assertion': 'error',
             'strictly/typed-broadcasts': 'error',
             'strictly/typed-page-props': 'error',
             'strictly/no-hardcoded-urls': 'error',
