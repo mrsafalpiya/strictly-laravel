@@ -15,8 +15,8 @@ export interface ShardedTest {
     readonly fn: () => Promise<void>;
 }
 
-/** The shard this process runs (STRICTLY_HARNESS_SHARD), or null to run every test. */
-export function harnessShard(value = process.env['STRICTLY_HARNESS_SHARD']): Shard | null {
+/** The shard a STRICTLY_HARNESS_SHARD value names, or null (unset or empty) to run every test. */
+export function harnessShard(value: string | undefined): Shard | null {
     if (value === undefined || value === '') {
         return null;
     }

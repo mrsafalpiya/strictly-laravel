@@ -431,7 +431,7 @@ export default function ProjectStatuses() {
         }, scenarioCost(scenario));
     }
 
-    for (const { name, fn } of testsInShard(collected, harnessShard())) {
+    for (const { name, fn } of testsInShard(collected, harnessShard(process.env['STRICTLY_HARNESS_SHARD']))) {
         nodeTest(name, fn);
     }
 });
