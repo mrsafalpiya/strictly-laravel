@@ -201,6 +201,8 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             "import { useEcho } from './hooks/use-echo'; useEcho();",
             "import { channel, usePresence } from '@/generated/broadcasting'; usePresence(channel('issues.{issue}.viewers', { issue }), { here: cb });",
             "import { usePresenceChannel } from './hooks/presence'; usePresenceChannel(name);",
+            "import { useChannel } from '@laravel/echo-react'; useChannel(`issues.${issue.id}`); useChannel(`issues.${issue.id}`, 'private');",
+            "import { useChannel } from './hooks/channel'; useChannel(name, 'presence');",
         ],
         invalid: [
             {
@@ -240,6 +242,17 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
                 ],
             },
             { code: "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);", errors: 1 },
+            {
+                code: "import { useChannel } from '@laravel/echo-react'; useChannel(`issues.${issue.id}.viewers`, 'presence').channel().here((members: { name: string }[]) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's `useChannel\(name, 'presence'\)` hands out a presence channel whose members are typed by hand: use `usePresence\(channel, \{ here, joining, leaving \}\)` from `@\/generated\/broadcasting`, which types its members from the Data class the channel's callback returns\./,
+                    },
+                ],
+            },
+            { code: "import { useChannel as useEchoChannel } from '@laravel/echo-react'; useEchoChannel(name, `presence`);", errors: 1 },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.useChannel(name, 'presence');", errors: 1 },
         ],
     });
 });
