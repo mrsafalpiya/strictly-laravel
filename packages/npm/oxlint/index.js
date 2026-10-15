@@ -697,6 +697,26 @@ const frameworkBroadcastHooks = new Map([
 const untypedPresenceHook = 'usePresenceChannel';
 
 /**
+ * P-145: whether a call to Echo's `useChannel()` asks for a presence channel (`useChannel(name, 'presence')`), which
+ * hands it out as `usePresenceChannel()` does. Another visibility, or one only known at runtime, is left alone.
+ *
+ * @param {ESTree.CallExpression} node
+ */
+function joinsPresence(node) {
+    const visibility = node.arguments[1];
+
+    if (visibility === undefined) {
+        return false;
+    }
+
+    if (visibility.type === 'Literal') {
+        return visibility.value === 'presence';
+    }
+
+    return visibility.type === 'TemplateLiteral' && visibility.expressions.length === 0 && visibility.quasis[0]?.value.cooked === 'presence';
+}
+
+/**
  * P-052, P-053, P-142, P-145: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
  * `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data
  * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type,
@@ -706,7 +726,8 @@ const untypedPresenceHook = 'usePresenceChannel';
  * `BroadcastsData` payload alongside. A presence channel's members are followed through `usePresence(channel, { here,
  * joining, leaving })`, which types them from the Data class the channel's callback returns, so Echo's
  * `usePresenceChannel()`, whose channel's `here()`, `joining()` and `leaving()` take hand-typed members, is rejected
- * too. Its other hooks stay allowed: channels and connection state carry no typed data.
+ * too, and so is its `useChannel(name, 'presence')`, which hands out the same channel. Its other hooks stay allowed:
+ * channels and connection state carry no typed data.
  *
  * @type {Rule}
  */
@@ -760,10 +781,10 @@ const typedBroadcasts = {
                         node,
                         message: `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
                     });
-                } else if (hook === untypedPresenceHook) {
+                } else if (hook === untypedPresenceHook || (hook === 'useChannel' && joinsPresence(node))) {
                     context.report({
                         node,
-                        message: `Echo's \`${hook}()\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`,
+                        message: `Echo's \`${hook === untypedPresenceHook ? `${hook}()` : "useChannel(name, 'presence')"}\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`,
                     });
                 } else if (framework !== undefined) {
                     context.report({
