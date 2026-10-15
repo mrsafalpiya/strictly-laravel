@@ -1,0 +1,6 @@
+{
+    "problem": "P-097",
+    "description": "Closure routes that render a page or read only the signed-in user, controller actions that take an input class and return a Data class, and a test that registers a closure route taking an input class pass PHPStan and their feature tests.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}
