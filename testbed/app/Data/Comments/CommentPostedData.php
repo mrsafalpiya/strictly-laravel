@@ -9,6 +9,7 @@ use App\Models\Issue;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Spatie\LaravelData\Data;
+use StrictlyLaravel\Data\KeyOf;
 
 /**
  * Broadcast to the workspace when a comment is posted (App\Events\CommentPosted): the same for every member, so it
@@ -17,9 +18,11 @@ use Spatie\LaravelData\Data;
 final class CommentPostedData extends Data
 {
     public function __construct(
+        #[KeyOf(Issue::class)]
         public int $issueId,
         public IssueReferenceData $issue,
         public UserSummaryData $author,
+        #[KeyOf(Comment::class)]
         public int $commentId,
         public string $excerpt,
     ) {}

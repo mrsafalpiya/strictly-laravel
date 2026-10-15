@@ -4,11 +4,13 @@ namespace App\Data\Projects;
 
 use App\Enums\Color;
 use App\Models\Project;
+use App\Models\User;
 use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use StrictlyLaravel\Data\InputData;
+use StrictlyLaravel\Data\KeyOf;
 
 /**
  * PATCH /w/{workspace}/projects/{project}. Also the initial form state sent by Projects\EditPage.
@@ -22,6 +24,7 @@ final class UpdateProjectData extends InputData
         #[Max(5_000)]
         public ?string $description,
         public Color $color,
+        #[KeyOf(User::class)]
         public ?int $leadId,
     ) {}
 

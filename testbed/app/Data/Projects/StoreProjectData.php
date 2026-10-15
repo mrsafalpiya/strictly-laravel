@@ -3,6 +3,7 @@
 namespace App\Data\Projects;
 
 use App\Enums\Color;
+use App\Models\User;
 use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Illuminate\Support\Facades\Gate;
@@ -10,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Regex;
 use StrictlyLaravel\Data\InputData;
+use StrictlyLaravel\Data\KeyOf;
 
 /**
  * POST /w/{workspace}/projects. Also the initial form state sent by Projects\CreatePage.
@@ -25,6 +27,7 @@ final class StoreProjectData extends InputData
         #[Max(5_000)]
         public ?string $description,
         public Color $color,
+        #[KeyOf(User::class)]
         public ?int $leadId,
     ) {}
 

@@ -12,6 +12,7 @@ use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\WorkspaceRole;
 use App\Http\Controllers\ActivityController;
+use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\User;
 use App\Models\Workspace;
@@ -78,7 +79,8 @@ test('the activity feed scrolls through every entry of the workspace with a curs
     $record->handle($workspace, $user, null, new MemberJoinedPayload(role: WorkspaceRole::Owner));
     $record->handle($workspace, $user, $issue, new IssueCreatedPayload);
     foreach (range(1, ActivityController::PER_PAGE + 2) as $i) {
-        $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: $i, excerpt: "Comment {$i}"));
+        $comment = Comment::factory()->create(['issue_id' => $issue->id, 'user_id' => $user->id]);
+        $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: $comment->id, excerpt: "Comment {$i}"));
     }
     $record->handle($workspace, $user, $issue, new StatusChangedPayload(from: IssueStatus::Todo, to: IssueStatus::InProgress));
 
@@ -122,7 +124,8 @@ test('the activity feed can be filtered by type, and the filter survives scrolli
     $record = app(RecordActivity::class);
 
     foreach (range(1, ActivityController::PER_PAGE + 1) as $i) {
-        $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: $i, excerpt: "Comment {$i}"));
+        $comment = Comment::factory()->create(['issue_id' => $issue->id, 'user_id' => $user->id]);
+        $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: $comment->id, excerpt: "Comment {$i}"));
         $record->handle($workspace, $user, $issue, new StatusChangedPayload(from: IssueStatus::Todo, to: IssueStatus::Done));
     }
 
@@ -164,7 +167,8 @@ test('every kind of activity reaches the feed as its own variant of the payload 
     $record->handle($workspace, $user, $issue, new PriorityChangedPayload(from: IssuePriority::Low, to: IssuePriority::Urgent));
     $record->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: null, to: UserSummaryData::fromModel($assignee)));
     $record->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: UserSummaryData::fromModel($assignee), to: null));
-    $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: 1, excerpt: 'Ship it'));
+    $comment = Comment::factory()->create(['issue_id' => $issue->id, 'user_id' => $user->id]);
+    $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: $comment->id, excerpt: 'Ship it'));
     $record->handle($workspace, $user, null, new MemberJoinedPayload(role: WorkspaceRole::Member));
 
     $this->actingAs($user)
@@ -174,7 +178,7 @@ test('every kind of activity reaches the feed as its own variant of the payload 
             ->has('activity.data', 7)
             ->where('activity.data.0.payload', ['role' => 'member', 'type' => 'member_joined'])
             ->where('activity.data.0.issue', null)
-            ->where('activity.data.1.payload', ['commentId' => 1, 'excerpt' => 'Ship it', 'type' => 'commented'])
+            ->where('activity.data.1.payload', ['commentId' => $comment->id, 'excerpt' => 'Ship it', 'type' => 'commented'])
             ->where('activity.data.2.payload.to', null)
             ->where('activity.data.2.payload.from.name', 'Ada')
             ->where('activity.data.3.payload.to.name', 'Ada')

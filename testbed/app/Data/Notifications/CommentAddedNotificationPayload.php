@@ -11,6 +11,7 @@ use App\Models\Workspace;
 use App\Notifications\NotificationType;
 use Illuminate\Support\Str;
 use Spatie\LaravelData\Data;
+use StrictlyLaravel\Data\KeyOf;
 use StrictlyLaravel\Data\RouteKeyOf;
 
 /** Stored as the `data` of a CommentAdded database notification: a snapshot taken when it was sent. */
@@ -21,6 +22,7 @@ final class CommentAddedNotificationPayload extends Data
         public string $workspaceSlug,
         public IssueReferenceData $issue,
         public UserSummaryData $author,
+        #[KeyOf(Comment::class)]
         public int $commentId,
         public string $excerpt,
         /** @var NotificationType::CommentAdded */
