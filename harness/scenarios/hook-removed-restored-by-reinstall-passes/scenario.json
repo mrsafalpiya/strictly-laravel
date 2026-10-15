@@ -1,0 +1,6 @@
+{
+    "problem": "P-080",
+    "description": "Running strictly:install again restores the noUncheckedIndexedAccess hook an app's tsconfig.json lost, and ci:check passes.",
+    "reinstall": true,
+    "expect": { "outcome": "pass" }
+}

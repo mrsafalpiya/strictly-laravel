@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-query-filters Boost skill: a GET action takes a query class and sends it back as a page prop, the page builds filter URLs with the route's typed query option, feature tests request it with and without filters, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

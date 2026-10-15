@@ -1,0 +1,6 @@
+{
+    "problem": "P-096",
+    "description": "Inertia's untyped <Form> fails the lint step through the strictly/typed-forms rule, which points to <TypedForm {...route.form()}>.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Inertia's `<Form>` is untyped: use `<TypedForm {...route.form()}>`" }
+}

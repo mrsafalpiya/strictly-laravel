@@ -1,0 +1,6 @@
+{
+    "problem": "P-015",
+    "description": "A plain string as the name of a raw <input> fails tsc: the narrowed JSX types (ADR-0004) accept only a FieldName from field().",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2322: Type 'string' is not assignable to type 'FieldName'." }
+}

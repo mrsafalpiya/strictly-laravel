@@ -1,0 +1,6 @@
+{
+    "problem": "P-048",
+    "description": "Inertia's untyped useHttp(), whose request and response types are picked by hand, fails the lint step through the strictly/typed-requests rule, which points to useRouteHttp(route, init).",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Inertia's `useHttp()` is untyped: use `useRouteHttp(route, init)`" }
+}

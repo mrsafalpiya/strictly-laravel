@@ -1,0 +1,8 @@
+{
+    "problem": "P-020",
+    "description": "A PHPDoc literal union on an input property is validated as `in:`, so only the literals its TypeScript type allows are accepted.",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}

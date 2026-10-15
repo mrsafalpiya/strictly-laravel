@@ -1,0 +1,6 @@
+{
+    "problem": "P-049",
+    "description": "useRouteHttp's submit() resolves with the response or, on a 422, with the validation errors keyed by the route's input, and code that checks which one it got before reading it passes tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

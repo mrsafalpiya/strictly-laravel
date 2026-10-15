@@ -1,0 +1,5 @@
+{
+    "problem": "P-029",
+    "description": "Validation errors under the input's fields (nested and list keys too) record Contracts that pass tsc, and a refusal that isn't about a field is an error toast through the flash Data class; the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

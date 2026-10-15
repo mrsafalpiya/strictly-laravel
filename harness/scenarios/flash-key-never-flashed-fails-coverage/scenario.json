@@ -1,0 +1,8 @@
+{
+    "problem": "P-066",
+    "description": "A key of the flash Data class that no feature test ever flashes fails Contract Coverage, which names it and the test to add.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ FlashData.highlight is only ever absent (at flash data › highlight): add a feature test that flashes data with highlight sent."
+    }
+}

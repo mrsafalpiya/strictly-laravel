@@ -1,0 +1,6 @@
+{
+    "problem": "P-096",
+    "description": "Reading a validation error under a key the route's input Data class doesn't have, from <TypedForm>'s render prop, fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'nmae' does not exist on type 'Partial<Record<\"name\"" }
+}

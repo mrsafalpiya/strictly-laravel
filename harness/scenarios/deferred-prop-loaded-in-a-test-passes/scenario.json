@@ -1,0 +1,5 @@
+{
+    "problem": "P-043",
+    "description": "Deferred and lazy page props (Lazy|Data with Lazy::inertiaDeferred() and Lazy::inertia()) are optional, a component that handles their absence passes tsc, and feature tests that load them record Contracts that cover them: the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

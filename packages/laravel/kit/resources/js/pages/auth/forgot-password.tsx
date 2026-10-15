@@ -1,5 +1,6 @@
 // Components
-import { Form, Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { TypedForm } from '@mrsafalpiya/strictly-laravel/react';
 import { LoaderCircle } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -24,15 +25,15 @@ export default function ForgotPassword({
             )}
 
             <div className="space-y-6">
-                <Form {...email.form()}>
-                    {({ processing, errors }) => (
+                <TypedForm {...email.form()}>
+                    {({ processing, errors, field }) => (
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
                                     id="email"
                                     type="email"
-                                    name="email"
+                                    name={field('email')}
                                     autoComplete="off"
                                     autoFocus
                                     placeholder="email@example.com"
@@ -55,7 +56,7 @@ export default function ForgotPassword({
                             </div>
                         </>
                     )}
-                </Form>
+                </TypedForm>
 
                 <div className="space-x-1 text-center text-sm text-muted-foreground">
                     <span>Or, return to</span>

@@ -1,0 +1,5 @@
+{
+    "problem": "P-076",
+    "description": "Only an empty map may arrive as []: a non-empty list sent for an array<string, V> map prop still fails its page's Contract in ci:check.",
+    "expect": { "outcome": "fail", "errorContains": "error TS2322: Type '[number, number]' is not assignable to type '[] | { [x: string]: number; }'." }
+}

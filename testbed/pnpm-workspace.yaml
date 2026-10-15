@@ -1,0 +1,9 @@
+packages:
+    - '.'
+
+publicHoistPattern:
+    - '@inertiajs/core'
+    # Vite+ resolves oxlint from the working directory first. Inside the monorepo, without oxlint in this app's own
+    # node_modules, that walk reaches the monorepo root's oxlint, which can't load this app's vite.config.ts.
+    - 'oxlint'
+    - 'oxlint-tsgolint'

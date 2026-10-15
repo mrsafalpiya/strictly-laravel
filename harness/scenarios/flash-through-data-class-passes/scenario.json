@@ -1,0 +1,5 @@
+{
+    "problem": "P-047",
+    "description": "A route flashes a toast through the flash Data class before redirecting, its feature test records the flash as a Contract, and a component reads the toast with no cast; the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

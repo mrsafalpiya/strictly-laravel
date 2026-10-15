@@ -1,0 +1,8 @@
+{
+    "problem": "P-017",
+    "description": "The rules an input Data class returns from rules() are merged with the rules inferred from its types, so a custom max: keeps the inferred required.",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}

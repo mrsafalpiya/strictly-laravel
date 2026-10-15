@@ -1,0 +1,9 @@
+{
+    "problem": "P-043",
+    "description": "A page prop typed as Inertia's raw DeferProp, which is absent on the first load and carries no value type, fails generation and says to declare it Lazy|Data with Lazy::inertiaDeferred().",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "ReportsPage.stats is typed with Inertia\\DeferProp, which is absent until it is loaded and has no value type: declare it `Lazy|YourData` and pass `Lazy::inertiaDeferred(fn () => …)`"
+    }
+}

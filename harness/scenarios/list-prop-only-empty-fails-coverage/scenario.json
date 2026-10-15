@@ -1,0 +1,8 @@
+{
+    "problem": "P-066",
+    "description": "A list prop that every feature test sends empty, so tsc never checked the type of its items: Contract Coverage fails ci:check, naming the prop and the test to add.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ MembersPage.members is only ever empty (at members › members): add a feature test that renders members with at least one item in members."
+    }
+}

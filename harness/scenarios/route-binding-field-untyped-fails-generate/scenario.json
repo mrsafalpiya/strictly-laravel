@@ -1,0 +1,9 @@
+{
+    "problem": "P-002",
+    "description": "A route bound by a field ({project:slug}) whose action takes a string instead of type-hinting the model fails generation, since Wayfinder can't type its parameter as the model's key.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "GET projects/{project}: {project:slug} in App\\Http\\Controllers\\ProjectController@show"
+    }
+}

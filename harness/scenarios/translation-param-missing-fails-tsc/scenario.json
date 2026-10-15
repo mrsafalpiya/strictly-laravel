@@ -1,0 +1,9 @@
+{
+    "problem": "P-056",
+    "description": "Leaving out a message's :params fails tsc: t('auth.throttle') when the message takes :seconds.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/components/throttle-notice.tsx(4,16): error TS2554: Expected 2 arguments, but got 1."
+    }
+}

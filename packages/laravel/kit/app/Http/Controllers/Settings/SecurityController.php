@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Data\FlashData;
 use App\Data\PasskeyData;
+use App\Data\PasswordUpdateData;
+use App\Enums\ToastType;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use App\Models\User;
 use App\Pages\Settings\SecurityPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
-use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\LaravelData\Optional;
 
@@ -52,13 +53,13 @@ class SecurityController extends Controller
     /**
      * Update the user's password.
      */
-    public function update(PasswordUpdateRequest $request, #[CurrentUser] User $user): RedirectResponse
+    public function update(PasswordUpdateData $data, #[CurrentUser] User $user): RedirectResponse
     {
         $user->update([
-            'password' => $request->string('password')->toString(),
+            'password' => $data->password,
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
+        FlashData::toast(ToastType::Success, __('Password updated.'));
 
         return back();
     }

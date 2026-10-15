@@ -1,0 +1,5 @@
+{
+    "problem": "P-132",
+    "description": "Feature tests that send each variant of a discriminated union of Data classes with the same keys (a status change and a priority change): Contract Coverage sees both variants and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

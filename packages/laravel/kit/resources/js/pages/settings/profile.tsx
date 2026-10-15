@@ -1,4 +1,5 @@
-import { Form, Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { TypedForm } from '@mrsafalpiya/strictly-laravel/react';
 import { Link } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
@@ -7,6 +8,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useUser } from '@/hooks/use-user';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { PageProps } from '@/generated';
@@ -15,7 +17,7 @@ export default function Profile({
     mustVerifyEmail,
     status,
 }: PageProps<'settings/profile'>) {
-    const { auth } = usePage().props;
+    const user = useUser();
 
     return (
         <>
@@ -30,14 +32,14 @@ export default function Profile({
                     description="Update your name and email address"
                 />
 
-                <Form
+                <TypedForm
                     {...ProfileController.update.form()}
                     options={{
                         preserveScroll: true,
                     }}
                     className="space-y-6"
                 >
-                    {({ processing, errors }) => (
+                    {({ processing, errors, field }) => (
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="name">Name</Label>
@@ -45,8 +47,8 @@ export default function Profile({
                                 <Input
                                     id="name"
                                     className="mt-1 block w-full"
-                                    defaultValue={auth.user.name}
-                                    name="name"
+                                    defaultValue={user.name}
+                                    name={field('name')}
                                     required
                                     autoComplete="name"
                                     placeholder="Full name"
@@ -65,8 +67,8 @@ export default function Profile({
                                     id="email"
                                     type="email"
                                     className="mt-1 block w-full"
-                                    defaultValue={auth.user.email}
-                                    name="email"
+                                    defaultValue={user.email}
+                                    name={field('email')}
                                     required
                                     autoComplete="username"
                                     placeholder="Email address"
@@ -79,7 +81,7 @@ export default function Profile({
                             </div>
 
                             {mustVerifyEmail &&
-                                auth.user.email_verified_at === null && (
+                                user.email_verified_at === null && (
                                     <div>
                                         <p className="-mt-4 text-sm text-muted-foreground">
                                             Your email address is unverified.{' '}
@@ -113,7 +115,7 @@ export default function Profile({
                             </div>
                         </>
                     )}
-                </Form>
+                </TypedForm>
             </div>
 
             <DeleteUser />

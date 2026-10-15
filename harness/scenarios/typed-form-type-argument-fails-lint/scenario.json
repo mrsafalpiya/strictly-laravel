@@ -1,0 +1,9 @@
+{
+    "problem": "P-100",
+    "description": "A <TypedForm> that names its payload by hand with a type argument (`<TypedForm<LoginData>>`) fails the lint step through the strictly/typed-forms rule, which points to the route's own payload.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "`<TypedForm>`'s payload comes from the route it submits to: drop the type argument."
+    }
+}

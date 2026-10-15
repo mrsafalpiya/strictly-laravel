@@ -1,4 +1,5 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { TypedForm } from '@mrsafalpiya/strictly-laravel/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -17,19 +18,19 @@ export default function ResetPassword({
         <>
             <Head title="Reset password" />
 
-            <Form
+            <TypedForm
                 {...update.form()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
             >
-                {({ processing, errors }) => (
+                {({ processing, errors, field }) => (
                     <div className="grid gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
                             <Input
                                 id="email"
                                 type="email"
-                                name="email"
+                                name={field('email')}
                                 autoComplete="email"
                                 value={email}
                                 className="mt-1 block w-full"
@@ -45,7 +46,7 @@ export default function ResetPassword({
                             <Label htmlFor="password">Password</Label>
                             <PasswordInput
                                 id="password"
-                                name="password"
+                                name={field('password')}
                                 autoComplete="new-password"
                                 className="mt-1 block w-full"
                                 autoFocus
@@ -61,7 +62,7 @@ export default function ResetPassword({
                             </Label>
                             <PasswordInput
                                 id="password_confirmation"
-                                name="password_confirmation"
+                                name={field('password_confirmation')}
                                 autoComplete="new-password"
                                 className="mt-1 block w-full"
                                 placeholder="Confirm password"
@@ -84,7 +85,7 @@ export default function ResetPassword({
                         </Button>
                     </div>
                 )}
-            </Form>
+            </TypedForm>
         </>
     );
 }

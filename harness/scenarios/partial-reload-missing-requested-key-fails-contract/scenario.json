@@ -1,0 +1,8 @@
+{
+    "problem": "P-046",
+    "description": "A partial reload whose response lacks a prop it asked for (here, a lazy prop the server withholds from unverified users) fails its Contract, though the prop is optional in the page's type.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Property 'stats' is missing in type '{}' but required in type"
+    }
+}

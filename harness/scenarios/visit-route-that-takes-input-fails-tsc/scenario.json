@@ -1,0 +1,6 @@
+{
+    "problem": "P-014",
+    "description": "visit() to a route whose action takes an input Data class fails tsc, since it would send no payload: such a route takes submit(route, data).",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "& { __strictly: \"this route's action takes an input Data class: use submit(route, data)\"; }'." }
+}

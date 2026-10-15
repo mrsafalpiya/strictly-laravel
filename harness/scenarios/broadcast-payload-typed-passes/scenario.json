@@ -1,0 +1,5 @@
+{
+    "problem": "P-052",
+    "description": "A broadcast event's payload is the Data class its broadcastData() declares: a listener's callback is typed by it, every broadcast a feature test makes is recorded as a Contract checked against it, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

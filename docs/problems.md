@@ -20,7 +20,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Upstream.** For a Problem caused by a third-party tool: a link to the upstream issue or PR that matches it, "by design" with the link that shows it, or "no upstream issue filed". When one is filed, link it here and in the code comment of the isolated workaround. Problems that aren't a tool's defect say "none".
 
-**Reference Implementation names.** Manual workarounds use the Reference Implementation's names: `config/types.php`, the `type-safety/*` lint rules, the `@/lib/*` modules. In the Overlay the config is `config/strictly.php` and suppressible rules are `strictly/<rule>` (oxlint) and `strictly.<rule>` (PHPStan), per ADR-0007.
+**Reference Implementation names.** Manual workarounds use the Reference Implementation's names: `config/types.php`, the `type-safety/*` lint rules, the `@/lib/*` modules, and the template's and Tracklane's classes and files. That code was retired once the Overlay had extracted it (#31), so these names describe what it did; its overview and standard are kept in the research docs (below). In the Overlay the config is `config/strictly.php` and suppressible rules are `strictly/<rule>` (oxlint) and `strictly.<rule>` (PHPStan), per ADR-0007.
 
 **Adding a Problem.** Copy an entry, take the next free ID, add a row to the index, and give a reproduction concrete enough to become a breaking scenario.
 
@@ -29,7 +29,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **overview**: [`research/reference-overview.md`][overview]
 - **eval-01**, **eval-02**, **eval-03**: [`research/evaluations/01-wayfinder-next.md`][eval-01], [`02-laravel-data-ts.md`][eval-02], [`03-other-tools.md`][eval-03]
 - **ecosystem**: [`research/ecosystem.md`][ecosystem]
-- **type-safety**: the Reference Implementation's standard, [`reference/template/docs/type-safety.md`][type-safety]
+- **type-safety**: the Reference Implementation's standard, [`research/type-safety.md`][type-safety]
 - **spec**: the parent spec, [issue #1][spec]
 
 ## Index
@@ -37,80 +37,119 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | ID | Problem | Type Boundary | Status |
 |---|---|---|---|
 | [P-001](#p-001) | Wayfinder output fails `tsc` on Laravel 13.35+ (`QUERY` verb) | routes | open |
-| [P-002](#p-002) | Wayfinder reads binding keys only from controller type-hints | routes | open |
-| [P-003](#p-003) | Route parameters are structural, so any model's key fits | routes | open |
+| [P-002](#p-002) | Wayfinder reads binding keys only from controller type-hints | routes | closed |
+| [P-003](#p-003) | Route parameters are structural, so any model's key fits | routes | closed |
 | [P-004](#p-004) | Wayfinder's output formatter collapses function arguments | routes | open |
 | [P-005](#p-005) | `withoutScopedBindings()` inside `scopeBindings()` has no effect | routes | open |
-| [P-006](#p-006) | Query strings are untyped | routes | open |
+| [P-006](#p-006) | Query strings are untyped | routes | closed |
+| [P-104](#p-104) | A query property without a default fails on a URL that leaves its key out | routes | closed |
+| [P-105](#p-105) | A query value the route function leaves out of the URL reads as a different default | routes | closed |
+| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
+| [P-116](#p-116) | A route-key brand can be put on a value that isn't its model's key | routes | closed |
+| [P-117](#p-117) | A Data class built from no single model gets no route-key brand on its key | routes | accepted gap |
 | [P-009](#p-009) | Page props are hand-written per page | page props | closed |
 | [P-010](#p-010) | Nothing ties a page name to a page component file | page props | closed |
 | [P-011](#p-011) | Pages rendered by vendor view closures have no props source | page props | closed |
 | [P-071](#p-071) | laravel-data's `#[Hidden]` is ignored by the type generator | page props | closed |
-| [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | open |
-| [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | open |
-| [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | open |
-| [P-015](#p-015) | Form control names are plain strings | form payloads | open |
-| [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | open |
-| [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | open |
-| [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | open |
-| [P-019](#p-019) | `int` is validated as `numeric` | form payloads | open |
-| [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | open |
-| [P-021](#p-021) | Typed iterables are not cast by default | form payloads | open |
-| [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | open |
+| [P-012](#p-012) | `auth.user` is typed non-null but is `null` for guests | shared props | closed |
+| [P-013](#p-013) | Shared props type has an index signature that hides typos | shared props | accepted gap |
+| [P-088](#p-088) | A prop shared beside the shared props type has no type | shared props | closed |
+| [P-089](#p-089) | A page rendered without the Inertia middleware lacks the shared props its type promises | shared props | accepted gap |
+| [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | closed |
+| [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | closed |
+| [P-100](#p-100) | A form to a route without an input brand names its payload by hand | form payloads | closed |
+| [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | open |
+| [P-015](#p-015) | Form control names are plain strings | form payloads | closed |
+| [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | closed |
+| [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | closed |
+| [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | open |
+| [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | closed |
+| [P-019](#p-019) | `int` is validated as `numeric` | form payloads | closed |
+| [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | closed |
+| [P-098](#p-098) | A boolean literal input type is validated only as a boolean | form payloads | accepted gap |
+| [P-021](#p-021) | Typed iterables are not cast by default | form payloads | closed |
+| [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | closed |
 | [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
 | [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
-| [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | open |
-| [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | open |
+| [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
+| [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
+| [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | open |
+| [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | open |
+| [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
 | [P-027](#p-027) | `FieldName` proves a name came from some `field()`, not this form's | form payloads | accepted gap |
-| [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | open |
-| [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | open |
-| [P-030](#p-030) | Validation runs before authorization | validation errors | open |
+| [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
+| [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
+| [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
+| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | open |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
 | [P-034](#p-034) | Iterating an enum's values needs a cast | enums | closed |
 | [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | closed |
 | [P-074](#p-074) | A label map typed loosely isn't tied to the enum | enums | accepted gap |
-| [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | open |
+| [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | closed |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | open |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
 | [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
-| [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | open |
+| [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | closed |
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | open |
-| [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | open |
-| [P-046](#p-046) | A nested partial reload returns only the subtree | pagination and deferred props | open |
-| [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | open |
-| [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | open |
-| [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | open |
-| [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | open |
+| [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | closed |
+| [P-046](#p-046) | A nested partial reload returns only the subtree | pagination and deferred props | closed |
+| [P-092](#p-092) | A partial reload's shared props aren't checked | pagination and deferred props | accepted gap |
+| [P-133](#p-133) | Contract Coverage doesn't look inside an infinite-scroll prop | pagination and deferred props | closed |
+| [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
+| [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
+| [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
+| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
+| [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | open |
+| [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
-| [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | open |
-| [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | open |
-| [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | open |
-| [P-055](#p-055) | Translation keys are unchecked strings | translations | open |
-| [P-056](#p-056) | Translation `:param` names are unchecked | translations | open |
-| [P-057](#p-057) | Other locales can miss keys or params | translations | open |
-| [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | open |
-| [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | open |
-| [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | open |
+| [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
+| [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | closed |
+| [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | closed |
+| [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | open |
+| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | open |
+| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
+| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
+| [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
+| [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
+| [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
+| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | open |
+| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
+| [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
+| [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
+| [P-140](#p-140) | A `VITE_*` variable `.env.example` lists can be unset when Vite builds | exposed config | closed |
+| [P-059](#p-059) | Server settings and feature flags reach React ad hoc | exposed config | closed |
+| [P-141](#p-141) | A value the root Blade template writes into the page reaches React untyped | exposed config | accepted gap |
+| [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | closed |
 | [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | closed |
 | [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
 | [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
-| [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | open |
-| [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | open |
+| [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
+| [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | closed |
+| [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | open |
+| [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
+| [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
+| [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
+| [P-076](#p-076) | An empty map is sent as `[]`, which its type doesn't allow | every Type Boundary | closed |
+| [P-080](#p-080) | An existing app silently lacks a hook a newer release adds, or one it lost | every Type Boundary | closed |
+| [P-081](#p-081) | A half-updated app runs one release's Composer package with another's npm package | every Type Boundary | closed |
+| [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
+| [P-124](#p-124) | `ci:check` fails in a fresh clone because feature tests need a Vite build | every Type Boundary | closed |
+| [P-146](#p-146) | AI coding agents are taught the untyped way | every Type Boundary | closed |
 
 ## Routes
 
@@ -134,11 +173,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §4; type-safety rule 15
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** route `/w/{workspace:slug}` to `public function show(string $workspace)` (bound model not type-hinted). Wayfinder doesn't know the parameter is bound to `Workspace` by `slug`, so the generated function has no `{ slug }` object form and `show({ workspace })` can't take a `WorkspaceData`.
 
 **Manual workaround:** always type-hint bound models in the controller action (`show(Workspace $workspace)`); a rule in type-safety.md, unenforced.
+
+**Closed by:** `strictly:generate` (the `generate` step of `ci:check`, and `build` and `types:check`, which generate first) fails on a route parameter that names a binding field (`{workspace:slug}`) when its action doesn't type-hint a model for it, listing each one as `GET w/{workspace}: {workspace:slug} in App\Http\Controllers\WorkspaceController@show` (`StrictlyLaravel\Routes\RouteKeys::untypedBindings()`). With the model type-hinted, the route takes that model's [route key](#p-003) by the field: a `WorkspaceData` (its `slug`) or the `slug`. A parameter without a binding field (`{token}`) stays a plain `string | number`; one bound by `Route::bind()` is [P-008](#p-008)'s. Scenarios: `route-binding-field-typed-passes`, `route-binding-field-untyped-fails-generate`.
 
 ### P-003
 
@@ -147,18 +188,20 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §2 and §4; type-safety rule 15
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Wayfinder types a bound parameter as `string | { key: string }`. With `show({ workspace, project })` expecting a project, `show({ workspace, project: issue })` or `show({ workspace, project: member.user })` type-checks because both have a `key`.
 
 **Manual workaround:** nominal route keys. A Wayfinder template override types parameters bound to `Project` as `RouteKey<'Project', string>` (`App\Support\Wayfinder\RouteKeys`, `RouteTypes::arguments`); the route-key property of a Data class built by `fromModel(Project $project)` is generated with the same brand (`RouteKeysDataClassTransformer`), and a property holding another model's key declares `#[RouteKeyOf(Project::class)]`. Tests check every branded value sent is an existing key of its model (`tests/Support/RouteKeyChecks.php`), with a disjoint id range per table.
+
+**Closed by:** nominal route keys ([`StrictlyLaravel\Routes\RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php)). The package's Wayfinder `function-arguments` template ([`WayfinderTemplates::functionArguments()`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types a parameter whose action type-hints a model (`show(Project $project)`) as `RouteKey<'Project', number> | { id: RouteKey<'Project', number> }`, from the npm package's [`routes` types](../packages/npm/routes/index.d.ts). A Data class built from the model (a static `from…(Project $project)` method) has each property named after a binding field the routes use for that model generated as `RouteKey<'Project', …>`, and so does a property declaring [`#[RouteKeyOf(Project::class)]`](../packages/laravel/src/Data/RouteKeyOf.php), per item for a list ([`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Input and query classes are never branded: they hold what the user sent. So `show(project)`, `show(project.id)` and `show(issue.project_id)` pass, and `show(issue)`, `show(issue.id)` or a plain number fail `tsc` with TS2345. Contracts check a route key as its plain value (`Contract<T>`), and the feature tests check it is an existing key of its model ([P-116](#p-116)). Kit Conversion types the Base Kit's passkey ids as `PasskeyData['id']`, since `destroy(passkey)` takes a passkey's key. Scenarios: `route-keys-nominal-passes`, `route-key-of-another-model-fails-tsc`, `route-key-plain-number-fails-tsc`.
 
 ### P-004
 
 **Wayfinder's output formatter collapses function arguments**
 
 - **Type Boundary:** routes
-- **Source:** overview §4; `reference/showcase/app/Support/Wayfinder/RouteTypes.php`
+- **Source:** overview §4; Tracklane's `App\Support\Wayfinder\RouteTypes`
 - **Upstream:** no upstream issue filed
 - **Status:** open
 
@@ -166,12 +209,14 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** render the whole parameters argument on one line (`RouteTypes::arguments`).
 
+The Overlay's own `function-arguments` template does the same ([`WayfinderTemplates::functionArguments()`](../packages/laravel/src/Routes/WayfinderTemplates.php)), so the route-key brands ([P-003](#p-003)) come out intact; the defect remains for any other template override.
+
 ### P-005
 
 **`withoutScopedBindings()` inside `scopeBindings()` has no effect**
 
 - **Type Boundary:** routes
-- **Source:** overview §4; `reference/showcase/app/Http/Controllers/NotificationController.php`
+- **Source:** overview §4; Tracklane's `NotificationController`
 - **Upstream:** no upstream issue filed (Laravel)
 - **Status:** open
 
@@ -186,11 +231,56 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** routes
 - **Source:** overview §2; type-safety rule 12; the Tracklane spec, [`research/showcase-spec.md`](research/showcase-spec.md) (issue list filters)
 - **Upstream:** none (missing feature: Wayfinder's `query` option is `RouteQueryOptions`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `index(workspace, { query: { statuse: ['todo'] } })` compiles, and the server reads `$request->query('status')` with nothing tying the two together. An invalid value from an old bookmark is a 422 or a 500.
 
 **Manual workaround:** a `QueryData` class type-hinted on the GET action (`index(IssueFiltersData $filters)`), parsed leniently (invalid items fall back to defaults); a Wayfinder template override types the route function's `query` option as `QueryOptions<IssueFiltersData>` (`RouteTypes::queryOptions`). The same object is sent back as a prop so the filter UI is typed by it.
+
+**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class still take any query: [P-106](#p-106). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
+
+### P-104
+
+**A query property without a default fails on a URL that leaves its key out**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-006](#p-006)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** a query class with `public ProjectSort $sort` and no default. `QueryOptions` makes every key optional, so `index()` and `index({ query: { statuses: ['active'] } })` compile, and both URLs leave `sort` out: laravel-data can't build the class, and the request is a 500. A key that fails validation is left out the same way, so it has nothing to fall back to either.
+
+**Manual workaround:** give every query property a default (the Reference Implementation's convention, unchecked).
+
+**Closed by:** the PHPStan rule `strictly.queryDefault` ([`QueryDefaultRule`](../packages/laravel/src/PHPStan/QueryDefaultRule.php)) rejects a property of a `QueryData` subclass, promoted or declared, without a default. A nullable property without one is `null` and an Optional one is Optional, as laravel-data fills them, so those pass. Scenarios: `query-filters-typed-passes`, `query-property-without-default-fails-phpstan`.
+
+### P-105
+
+**A query value the route function leaves out of the URL reads as a different default**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-006](#p-006)
+- **Upstream:** by design: Wayfinder's `queryParams()` skips a `null` value and writes nothing for an empty list
+- **Status:** closed
+
+**Reproduction:** a query class with `public ?string $search = 'launch'` and `/** @var list<ProjectStatus> */ public array $statuses = [ProjectStatus::Active]`. `index({ query: { search: null, statuses: [] } })` compiles, but the URL is `/projects`, so the server reads `search: 'launch'` and `statuses: [Active]`: not what the client sent, and nothing fails.
+
+**Manual workaround:** none.
+
+**Closed by:** the PHPStan rule `strictly.queryDefault` ([`QueryDefaultRule`](../packages/laravel/src/PHPStan/QueryDefaultRule.php)) requires a nullable query property to default to `null` and a list to `[]`, the values an absent key stands for. Scenarios: `query-filters-typed-passes`, `query-default-not-sendable-fails-phpstan`.
+
+### P-106
+
+**A route whose action takes no query class accepts any query string**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-006](#p-006)
+- **Upstream:** none (Wayfinder's `query` option is `RouteQueryOptions` on every route)
+- **Status:** open
+
+**Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). A vendor GET that reads a query string gets a query class only by declaring one in `config/strictly.php` ([P-025](#p-025)), as the Base Kit's password reset link (`email`) is. A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
+
+**Manual workaround:** take a query class on every action that reads its query string.
 
 ### P-007
 
@@ -221,6 +311,36 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 **Manual workaround:** build route-key properties only through `fromModel()`, so a key always comes from its own model.
 
 **Reasoning:** the types can prove which model a key belongs to, and the tests can prove the key exists. Proving it is the *right* row is a question about program logic, not about the type at the Type Boundary; no type can express it.
+
+### P-116
+
+**A route-key brand can be put on a value that isn't its model's key**
+
+- **Type Boundary:** routes
+- **Source:** overview §5; Tracklane's `RouteKeyChecks` test helper
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an `IssueData` declares `#[RouteKeyOf(Project::class)] public int $project_id`, but `fromModel()` fills it with the issue's `id`. The generated type says it is a project's key, so `show(issue.project_id)` type-checks and links to the wrong project, or to none. With one id sequence per table starting at 1, as a fresh test database has, the first issue's id is also the first project's, so even a test that looks the key up finds a project.
+
+**Manual workaround:** the Reference Implementation's `RouteKeyChecks`: while a test serialises a Data object, every branded value must be an existing key of its model, and every table gets its own id range in tests.
+
+**Closed by:** [`StrictlyLaravel\Testing\RouteKeyChecks`](../packages/laravel/src/Testing/RouteKeyChecks.php), started for every feature test by the installer's Pest hook (`RecordsContracts`). While a test's request is handled, laravel-data's serialisation checks every property typed as a [route key](#p-003): a value that isn't an existing key of its model fails the request with `GET /issues/4000001 sent a value typed as a model's route key that is no key of that model (Problem P-116): App\Data\IssueData.project_id is not the id of any App\Models\Project: 4000001`. A test that uses `RefreshDatabase` (or `DatabaseMigrations`) on SQLite gives every table its own range of a million ids, so ids of different models never coincide. Scenarios: `route-keys-nominal-passes` (its tests also prove the ranges are disjoint), `route-key-not-a-key-of-its-model-fails-test`. What remains, a key of the right model but the wrong row, is [P-008](#p-008).
+
+### P-117
+
+**A Data class built from no single model gets no route-key brand on its key**
+
+- **Type Boundary:** routes
+- **Source:** issue #20
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `ProjectData::from($project)` relies on laravel-data's own model normaliser, so the class has no `from…(Project $project)` method; or an `ActivityData` has both `fromIssue(Issue $issue)` and `fromComment(Comment $comment)`. Its `id` is generated as a plain `number`, so passing it to `show(project)` fails `tsc` although it is a project's key (the second class's `id` may be either model's).
+
+**Manual workaround:** give the class a `fromModel(Project $project)` method, or split it into one Data class per model; a property that holds a known model's key can declare `#[RouteKeyOf(Project::class)]`.
+
+**Reasoning:** the brand has to be derived from the PHP code, and only a `from…()` method's parameter type says which model a class's properties come from. Guessing would brand a key with the wrong model, which `tsc` would then trust; leaving it plain only refuses a call, which the developer fixes by naming the model.
 
 ## Page props
 
@@ -293,11 +413,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** shared props
 - **Source:** overview §1; eval-02 §1; eval-03 §5; ecosystem A.3
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `types/global.d.ts` declares `sharedPageProps: { auth: Auth; … }` with `Auth = { user: User }`; `HandleInertiaRequests::share()` sends `$request->user()`, which is `null` for guests. `usePage().props.auth.user.name` compiles on a guest page.
 
 **Manual workaround:** `App\Data\SharedProps` built in `share()`, generated into `InertiaConfig['sharedPageProps']`, with `auth.user: UserData | null`; `useUser()` for authenticated pages.
+
+**Closed by:** the shared props are one Data class, the app's only subclass of [`Shared`](../packages/laravel/src/Inertia/Shared.php), built in the Inertia middleware's share step; `strictly:generate` writes its type into Inertia's global config typing, `InertiaConfig['sharedPageProps']` ([`InertiaConfigProvider`](../packages/laravel/src/TypeScript/InertiaConfigProvider.php)), so `usePage().props` is typed on every page with no hand-written global type. Kit Conversion converts the Base Kit's `HandleInertiaRequests` to build `App\Data\SharedProps` (with `AuthData`, whose `user` is `?UserData`, and `UserData`, [P-036](#p-036)), removes its hand-written `sharedPageProps` from `types/global.d.ts`, and gives authenticated pages `useUser()` (`resources/js/hooks/use-user.ts`, used by the profile settings page), which returns a non-null `UserData` and throws on a page guests can see. Every page a feature test renders records the shared props it received as a Contract ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php), `export const shared = {…} satisfies Contract<SharedPageProps>`), so a guest page's `auth.user: null` is checked against the type (the Base Kit's own welcome page test records one). Scenarios: `guest-page-reads-auth-user-fails-tsc`, `use-user-on-authenticated-page-passes`.
 
 ### P-013
 
@@ -305,12 +427,44 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 - **Type Boundary:** shared props
 - **Source:** ecosystem A.3; eval-03 §5
+- **Upstream:** by design: Inertia types every page's props as `PageProps & SharedPageProps & …`, and its own `PageProps` is `{ [key: string]: unknown }` ([`packages/core/src/types.ts`](https://github.com/inertiajs/inertia/blob/master/packages/core/src/types.ts))
+- **Status:** accepted gap
+
+**Reproduction:** the Base Kit's `sharedPageProps` ends with `[key: string]: unknown`, so `usePage().props.sidebarOpne` compiles. Removing it changes nothing: Inertia's own `PageProps`, which `usePage().props` always includes, has the same index signature, so a misspelt key still reads as `unknown`.
+
+**Manual workaround:** the hand-written declaration is deleted and replaced by the generated `SharedProps`, which has no index signature (Kit Conversion does this, [P-012](#p-012)).
+
+**Reasoning:** the index signature is Inertia's, and an app can't remove it: declaration merging only adds to `PageProps`, and the Base Kit's toolchain stays as it is (ADR-0004). A misspelt key reads as `unknown`, which `tsc` rejects wherever a typed value is needed (rendered, assigned, passed as a prop, or read further); only a truthiness test or a comparison compiles. Turning on `noPropertyAccessFromIndexSignature` would reject `props.sidebarOpne`, but also every dot access on a `Record`, starting with the Base Kit's `errors.name`. Scenario guarding the reasoning: `shared-prop-typo-used-as-value-fails-tsc`.
+
+### P-088
+
+**A prop shared beside the shared props type has no type**
+
+- **Type Boundary:** shared props
+- **Source:** found while closing [P-012](#p-012)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
-**Reproduction:** the Base Kit's `sharedPageProps` ends with `[key: string]: unknown`, so `usePage().props.sidebarOpne` compiles.
+**Reproduction:** with the shared props generated from a Data class, the share step returns `'features' => ['boards' => true]` next to the Data class's props, or a controller calls `Inertia::share('features', …)`. Every page receives the key, no type declares it, and it reads as `unknown` ([P-013](#p-013)), so the app casts it.
 
-**Manual workaround:** the hand-written declaration is deleted and replaced by the generated `SharedProps`, which has no index signature.
+**Manual workaround:** add the value as a typed property of the shared props Data class.
+
+**Closed by:** every page a feature test renders records the props the share step sent, except Inertia's own `errors`, as a Contract checked against `SharedPageProps` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), so a key the Data class doesn't declare fails `tsc` with `TS2353: Object literal may only specify known properties`. A prop the page's Page class declares is the page's own and is left out (the Contract is then checked against `Omit<SharedPageProps, 'key'>`). Scenarios: `shared-prop-beside-data-class-fails-contract`, `shared-prop-in-data-class-passes-contract`.
+
+### P-089
+
+**A page rendered without the Inertia middleware lacks the shared props its type promises**
+
+- **Type Boundary:** shared props
+- **Source:** found while closing [P-088](#p-088)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a route outside the `web` middleware group renders a Page class. The Inertia middleware doesn't run, so the page receives no shared props, yet `usePage().props.auth` is typed as present.
+
+**Manual workaround:** render Inertia pages only from routes in the `web` group.
+
+**Reasoning:** Inertia needs its middleware on every page route (asset versioning, the 303 after a `PUT`/`PATCH`/`DELETE`, flash and validation errors), and the Base Kit registers it on the `web` group, where all its routes live. The Contract recorder can't tell such a page from one whose app shares nothing, so it records no shared props Contract for a page that received no shared props at all.
 
 ## Form payloads
 
@@ -321,11 +475,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; ecosystem A.3 and B.2; type-safety rules 11 and 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `<Form {...ProfileController.update.form()}>` has no generic, so its payload and `errors` are untied to the request's rules. `useForm<T>()` takes whatever `T` is named; `router.post(url, data)` and `<Link data>` accept any object.
 
 **Manual workaround:** input Data classes extending `InputData`, type-hinted on the action; Wayfinder's `.form()` is branded with the action's input class (template override, `RouteTypes::brands`), so `useRouteForm(route, defaults)`, `<TypedForm>`, `submit(route, data)` and `visit(route)` (`@/lib/requests`) take payload, error keys and target from the route. The `type-safety/typed-requests` lint rule rejects `useForm`, `useHttp`, `router.get/post/put/patch/delete`, `<Link data>` and untyped `<Form>`.
+
+**Closed by:** an action's input is a final Data class extending [`InputData`](../packages/laravel/src/Data/InputData.php), type-hinted on the action. The Wayfinder `method` template is overridden ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which renders Wayfinder's own template and brands its return types rather than copying it), so every route function of that action, `.form()` too, returns `RouteDefinition<…> & WithInput<StoreProjectData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteForm(route, defaults)`, `submit(route, data, options)` and `visit(route, options)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) take the payload from that brand: a wrong or missing field fails `tsc`, `submit()` refuses a route whose action takes no input and `visit()` one that does. The oxlint rule `strictly/typed-requests` rejects `useForm()`, `router.get/post/put/patch/delete()`, `router.visit()` with `data` or `method`, and `<Link data>` imported from Inertia; the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action taking a Data class that isn't an InputData. Kit Conversion sends the Base Kit's passkey deletion through `visit()`. Forms go through `<TypedForm>` ([P-096](#p-096)). Scenarios: `route-typed-requests-pass`, `route-form-wrong-field-fails-tsc`, `submit-wrong-field-fails-tsc`, `visit-route-that-takes-input-fails-tsc`, `inertia-use-form-fails-lint`.
 
 ### P-015
 
@@ -334,11 +490,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; eval-02 §5; ecosystem B.2; ADR-0004
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `<Input name="emial" />` inside a typed form compiles; so does `<input name={someString}>`, and a wrapper component forwarding `name`.
 
 **Manual workaround:** `field('email')` from `<TypedForm>`'s render prop returns a branded `FieldName`; the app's JSX types (`jsxImportSource: "@/types/jsx"`, `resources/js/types/jsx/jsx-runtime.d.ts`) narrow `name` on `<input>`/`<select>`/`<textarea>`/`<button>` to `FieldName`, and the Base Kit's UI components that forward `name` declare `name?: FieldName`. The `type-safety/typed-form-fields` lint rule covers third-party components inside `<TypedForm>`.
+
+**Closed by:** the narrowed JSX types ([ADR-0004](adr/0004-narrowed-jsx-types-for-field-names.md)) ship in the npm package ([`@mrsafalpiya/strictly-laravel/jsx`](../packages/npm/jsx/jsx-runtime.d.ts)): React's JSX namespace, with `name` on `<input>`, `<select>`, `<textarea>` and `<button>` accepting only a [`FieldName`](../packages/npm/routes/index.d.ts), which only `field()` in `<TypedForm>`'s render prop mints ([P-096](#p-096)). `strictly:install` points tsconfig.json's `jsxImportSource` at it ([`JsxTypes`](../packages/laravel/src/Install/JsxTypes.php)), so a plain string as a control's name fails `tsc`, and so does a component that spreads its own `name: string` onto one until it declares `name?: FieldName`. Kit Conversion makes the Base Kit's UI components that forward `name` (`Input`, `PasswordInput`, `Button`, `Checkbox`, `Select`, `InputOTP` and the sidebar's buttons) declare it as a `FieldName`. The oxlint rule `strictly/typed-form-fields` rejects a literal `name` on any element inside `<TypedForm>`, for third-party components that type `name` as a plain string. Names that reach the DOM without JSX stay open: [P-027](#p-027). Scenarios: `typed-form-passes`, `raw-control-plain-name-fails-tsc`, `component-forwarding-string-name-fails-tsc`, `literal-name-in-typed-form-fails-lint`, `jsx-types-removed-fails-install-check`.
 
 ### P-016
 
@@ -347,11 +505,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; ADR-0004
 - **Upstream:** by design since [vitejs/vite-plugin-react#726](https://github.com/vitejs/vite-plugin-react/pull/726) (the plugin respects tsconfig's `jsxImportSource`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** set `"jsxImportSource": "@/types/jsx"` in `tsconfig.json` to narrow the JSX types ([P-015](#p-015)); the Vite React plugin then imports the JSX runtime from `@/types/jsx/jsx-runtime`, which has types only, and the app fails to build or render.
 
 **Manual workaround:** pin the runtime in `vite.config.ts`: `react({ jsxImportSource: 'react' })`.
+
+**Closed by:** `strictly:install` pins the Vite React plugin's runtime in vite.config.ts (`react({ jsxImportSource: 'react' })`, [`JsxTypes`](../packages/laravel/src/Install/JsxTypes.php)), so the compiled JSX imports React's runtime and only the types differ. The JSX module has types only (its package exports have no runtime entry), so an unpinned build fails loudly (`"./jsx/jsx-runtime" is not exported`) instead of shipping a broken app, and `ci:check:install` fails on an app that lost the pin. Proved by the harness test "the build compiles JSX with React's runtime" (the build passes with the pin and fails without it) and the scenario `vite-react-runtime-unpinned-fails-install-check`.
 
 ### P-017
 
@@ -360,11 +520,26 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2 and §4; type-safety rule 11
 - **Upstream:** by design; laravel-data offers the opt-in `#[MergeValidationRules]`. No upstream issue filed.
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a Data class with `public string $slug` and `rules()` returning `['slug' => ['unique:projects']]`: the inferred `required|string` for `slug` is dropped, so a missing or non-string slug passes validation while the TypeScript type says `slug: string`.
 
 **Manual workaround:** the `InputData` base class carries `#[MergeValidationRules]`.
+
+**Closed by:** [`InputData`](../packages/laravel/src/Data/InputData.php) carries `#[MergeValidationRules]`, so an input's `rules()` are merged with the rules inferred from its types, and the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action that takes a Data class not extending it. A nested Data class inside an input still has its `rules()` replace its inferred ones: [P-099](#p-099). Scenarios: `custom-input-rules-merged-passes`, `plain-data-action-input-fails-phpstan`.
+
+### P-099
+
+**A nested Data class's `rules()` replace its inferred rules**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-017](#p-017)
+- **Upstream:** by design; laravel-data reads `#[MergeValidationRules]` from each Data class. No upstream issue filed.
+- **Status:** open
+
+**Reproduction:** an input with `public TaskData $task` (or `list<TaskData>`), where the plain Data class `TaskData` has `public string $title` and `rules()` returning `['title' => ['max:50']]`: the inferred `required|string` for `task.title` is dropped. Only the action's own parameter must extend InputData (`strictly.inputData`).
+
+**Manual workaround:** make every Data class nested in an input that has `rules()` extend InputData too.
 
 ### P-018
 
@@ -373,11 +548,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; eval-02 §1, §5 and §9; type-safety rule 11
 - **Upstream:** discussed and declined in the comments of [spatie/laravel-data#681](https://github.com/spatie/laravel-data/issues/681) (Laravel's `required` treats `[]` as missing)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public array $tags` (non-nullable) is inferred `required|array`; the TypeScript type `string[]` allows `[]`, which the server rejects with a 422.
 
 **Manual workaround:** `StrictTypesRuleInferrer` replaces `required` with `present` for arrays, lists and Data collections; `#[Min(1)]` where a list must not be empty.
+
+**Closed by:** [`PresentArrayRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/PresentArrayRuleInferrer.php) replaces the inferred `required` of a non-null array, list or Data collection with `present`: `[]` is accepted, a missing key is not. Every laravel-data workaround is applied to the app's `data` config at boot, published or not ([`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php)). Scenarios: `empty-list-input-accepted-passes`, `missing-list-input-fails-test`.
 
 ### P-019
 
@@ -386,50 +563,73 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; eval-02 §1 and §5
 - **Upstream:** [spatie/laravel-data#814](https://github.com/spatie/laravel-data/pull/814) (PR adding an `integer` option, declined; its comments note the docs claim `integer`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public int $estimate` is inferred `numeric`; `1.5` passes validation and is silently truncated to `1`, while the TypeScript type is `number` either way.
 
 **Manual workaround:** `StrictTypesRuleInferrer` replaces `numeric` with `integer` for `int` properties.
+
+**Closed by:** [`IntegerRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/IntegerRuleInferrer.php) replaces the inferred `numeric` of an `int` property with `integer`, so `1.5` gets a 422 ("The estimate field must be an integer."). Scenarios: `integer-input-rejects-a-fraction-passes`, `fraction-for-integer-input-fails-test`.
 
 ### P-020
 
 **PHPDoc literal unions are not validated**
 
 - **Type Boundary:** form payloads
-- **Source:** overview §2; type-safety rule 8; `reference/template/app/Support/Data/LiteralTypesRuleInferrer.php`
+- **Source:** overview §2; type-safety rule 8; the template's `LiteralTypesRuleInferrer`
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var 'monday'|'sunday' */ public string $weekStartsOn` generates `'monday' | 'sunday'` (once [P-032](#p-032) is worked around), but the server accepts any string.
 
 **Manual workaround:** `LiteralTypesRuleInferrer` adds `in:monday,sunday` from the PHPDoc literal union.
+
+**Closed by:** [`LiteralRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/LiteralRuleInferrer.php) adds `in:` from the PHPDoc literal union the TypeScript is generated from, read where typescript-transformer reads it ([`PropertyAnnotation`](../packages/laravel/src/TypeScript/PropertyAnnotation.php)): string, int and float literals, class constants and enum cases, optionally `|null`; a list of literals has every item validated. A `true`/`false` literal adds no rule: [P-098](#p-098). Scenarios: `literal-union-input-validated-passes`, `value-outside-literal-union-fails-test`.
+
+### P-098
+
+**A boolean literal input type is validated only as a boolean**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-020](#p-020)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `/** @param true $termsAccepted */ public bool $termsAccepted` on an input is generated as `termsAccepted: true`, but only `boolean` is inferred, so `false` passes validation.
+
+**Manual workaround:** `#[Accepted]` (or `#[Declined]`) on the property.
+
+**Reasoning:** Laravel has no rule that means exactly "this boolean": `accepted` also takes `"yes"` and `"on"`, `in:1` rejects `true` sent as JSON. A `true`-only input is the terms-checkbox pattern, which `#[Accepted]` states directly; anything else is a union `LiteralRuleInferrer` handles.
 
 ### P-021
 
 **Typed iterables are not cast by default**
 
 - **Type Boundary:** form payloads
-- **Source:** overview §4; `reference/showcase/config/data.php`; `reference/showcase/tests/Feature/Collaboration/SavedViewTest.php`
+- **Source:** overview §4; Tracklane's `config/data.php` and its saved-view tests
 - **Upstream:** by design in laravel-data 4 (the `cast_and_transform_iterables` feature is off by default and announced as default in the next major). No upstream issue filed.
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @var list<IssueStatus> */ public array $statuses` holds raw strings (`['todo']`) after `from()`, while PHPStan and TypeScript believe it holds enums.
 
 **Manual workaround:** `'features' => ['cast_and_transform_iterables' => true]` in `config/data.php`.
+
+**Closed by:** [`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php) turns `data.features.cast_and_transform_iterables` on at boot, whether or not the app published config/data.php, so a `list<IssueStatus>` holds enum cases. Scenarios: `typed-list-items-validated-passes`, `list-items-read-as-raw-values-fails-test`.
 
 ### P-022
 
 **An invalid item in a typed list is a 500**
 
 - **Type Boundary:** form payloads
-- **Source:** overview §2 and §4; `reference/template/app/Support/Data/ListItemsRule.php`
+- **Source:** overview §2 and §4; the template's `ListItemsRule`
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** posting `statuses: ['bogus']` to an action taking `/** @var list<IssueStatus> */ public array $statuses` passes validation (no per-item rule is inferred) and fails while casting: a 500 instead of a 422.
 
 **Manual workaround:** `StrictTypesRuleInferrer` adds `ListItemsRule` to lists of scalars and backed enums, validating every item.
+
+**Closed by:** [`ListItemsRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/ListItemsRuleInferrer.php) adds [`ListItemsRule`](../packages/laravel/src/Workarounds/LaravelData/ListItemsRule.php) to a typed list of scalars or backed enums, so an invalid item gets a 422 ("The statuses.1 value is invalid.") instead of failing while casting. Scenarios: `typed-list-items-validated-passes`, `invalid-list-item-for-input-fails-test`.
 
 ### P-023
 
@@ -466,11 +666,54 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; type-safety rule 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an action taking `StoreProjectData $data` also reads `$request->boolean('notify')`. The form's type has no `notify`, so the client never sends it and the server silently uses the default.
 
 **Manual workaround:** the test request records every key read (`input()`, `boolean()`, `only()`, `has()`, magic properties; `tests/Support/InputReads.php`) and the Contract `read satisfies InputKey<StoreProjectData>[]` fails on an undeclared key.
+
+**Closed by:** every feature test's request is a [`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php) ([`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) overrides the test case's `createTestRequest()`), which reports each input key the app reads by name (`input()`, `boolean()`, `string()`, `filled()`, `has()`, `hasAny()`, `only()`, `all('key')`, `query()`, `post()`, `file()`, `json()`, `$request->key`, `$request['key']`; a route parameter read as a property isn't input) to [`InputReads`](../packages/laravel/src/Testing/InputReads.php). A request to a form endpoint records the keys its action read, from the moment it reached its route, in its `form` Contract as `export const read = [...] satisfies InputKey<StoreProjectData>[]`, which fails `tsc` on a key the input type lacks: `Type '"notify"' is not assignable to type '"name" | "public"'.` Framework plumbing is ignored: keys starting with `_` (the CSRF token, `_method`) and the reads of the paginators (`page`, `cursor`) and of laravel-data (its `include`, `exclude`, `only` and `except` response partials). A read that names no key isn't seen: [P-026](#p-026). An action without an input class isn't checked: [P-112](#p-112). Scenarios: `input-reads-declared-fields-pass-contract`, `input-read-not-a-field-fails-contract`.
+
+### P-113
+
+**An input's rules can validate a key it doesn't declare**
+
+- **Type Boundary:** form payloads
+- **Source:** the Reference Implementation's validation Contract (`validated satisfies InputKey<…>[]`, overview §2); recorded while closing [P-024](#p-024)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an input with `#[Confirmed] public string $password` and no `password_confirmation` property, or whose own `rules()` add `'terms' => ['accepted']` for a key it doesn't declare. A feature test that posts the extra key passes, but the generated type has no such field, so the typed form never sends it and every real submit is refused.
+
+**Manual workaround:** the validation Contract `validated satisfies InputKey<UpdatePasswordData>[]`, fed by a validator resolver that records every rule key (and the field a `confirmed` rule compares with).
+
+**Closed by:** [`ValidatedFields`](../packages/laravel/src/Testing/ValidatedFields.php) wraps the validation factory's resolver (keeping one the app set) during feature tests and records the key of every rule a validator is made with, plus `{field}_confirmation` for `confirmed` (`confirmed:other` for `other`); a `*` segment stands for the first item (`tasks.*.title` → `tasks.0.title`). A request to a form endpoint records the fields validated since it reached its route in its `form` Contract as `export const validated = [...] satisfies InputKey<UpdatePasswordData>[]`, which fails `tsc` on a key the input type lacks: `Type '"password_confirmation"' is not assignable to type '"password"'.` A validator the action makes for data that isn't the request's (an imported file's rows) is recorded too, so validate such data outside the request's handling or declare its keys. Scenarios: `confirmed-input-declares-confirmation-passes`, `validated-key-not-an-input-field-fails-contract`.
+
+### P-112
+
+**An action without an input class has its payload checked by nothing**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-024](#p-024)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** an action taking a FormRequest, such as the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` before Kit Conversion gave it `PasswordUpdateData`, validates `current_password` and `password` and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form has no fields (naming its payload as a `<TypedForm>` type argument fails lint, [P-100](#p-100)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing. A vendor action is one of them until `config/strictly.php` declares its payload ([P-025](#p-025)); the Base Kit's Fortify actions that take no payload (logout, disabling two-factor authentication) aren't declared.
+
+**Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)); declare one for a vendor action that reads either ([P-025](#p-025)). A GET with a query class records the keys it reads as a `query` Contract checked against the class.
+
+### P-128
+
+**A model key in an input class is a plain number, so another model's key type-checks**
+
+- **Type Boundary:** form payloads
+- **Source:** found porting Tracklane's Issues area into the Testbed App (#24)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** the Testbed App's bulk action `BulkUpdateIssuesData` takes `/** @var list<int> */ array $ids`, the issues' primary keys, and is generated `ids: number[]`. In `pages/issues/index.tsx`, collecting the selection from `issue.number` (the per-project number, `RouteKey<'Issue', number>`) instead of `issue.id` still type-checks: the brand is assignable to `number`. The server only checks that each value is the id of *some* issue in the workspace, so in production, where tables share one id range, the request can update other issues than the ones selected; in feature tests the disjoint id ranges ([P-116](#p-116)) usually turn it into a validation error instead. The same holds for every key an input carries: `StoreIssueData.assigneeId`, `labelIds`, `cycleId`, `parentId`. [P-003](#p-003)'s brands don't help, for two reasons: input and query classes are never branded, because they hold what the user sent, and only a binding field a route uses gets a brand (`Issue` binds `{issue}` by `number`, so an issue's `id` has none, not even on `IssueListItemData`).
+
+**Manual workaround:** name the field after the model it belongs to and check the call sites in review; the input's `exists` rules (`App\Rules\WorkspaceRules`) at least reject keys that belong to no row of the workspace.
 
 ### P-025
 
@@ -479,11 +722,20 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; type-safety rule 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's login, register and 2FA controllers take no input Data class, so their payloads are hand-written. The Reference Implementation's declarations missed `remember` on register and `force` on enabling 2FA until the input Contracts caught them.
 
 **Manual workaround:** declare the payload per vendor action in `config/types.php` (`route_inputs`: `Controller@method => Data class`, or a `QueryData` class for a GET). Tests submit the forms; every key the vendor validates, reports an error for or reads must be a field of the declaration, and Contract Coverage fails on a declared field never validated or read.
+
+**Closed by:** vendor declarations ([`VendorDeclarations`](../packages/laravel/src/Routes/VendorDeclarations.php)) in the app's `config/strictly.php`, keyed by action: `vendor_inputs` names an input class for a vendor action (`AuthenticatedSessionController::class.'@store' => LoginData::class`) and `vendor_queries` a query class for a vendor GET. [`RouteInput`](../packages/laravel/src/Routes/RouteInput.php) and [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) read them before the action's own parameters, so the route is branded with them as an app action is (`<TypedForm {...store.form()}>`, `submit(store(), data)`, `reset(token, { query: { email } })`), and its requests are recorded and covered as a form endpoint's. The declarations are verified, not trusted:
+
+- one naming an action no route runs, or a class that doesn't exist or doesn't extend `InputData` or `QueryData`, fails `strictly:generate`;
+- every key the vendor validates, reads or reports an error for during a feature test must be a field of the declared input (the `form` Contract of [P-024](#p-024), [P-029](#p-029) and [P-113](#p-113)): `Type '"remember"' is not assignable to type '"name" | "email" | "password" | "password_confirmation"'.` That includes reads through the vendor's own FormRequest (Fortify's `LoginRequest`), which [`InputReads`](../packages/laravel/src/Testing/InputReads.php) has the container build as a subclass that reports them ([`TracksInputReads`](../packages/laravel/src/Testing/TracksInputReads.php)); a final one can't be tracked ([P-026](#p-026));
+- a GET to a route with a query class, declared or the action's own, records the query keys it validated and read as a `query` Contract (`__contracts__/_queries/`) checked against the class;
+- Contract Coverage reports a declared field no test saw the vendor use ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php)): `✗ LoginData.nickname is declared for a vendor action that never uses it (at POST /login): add a feature test that submits to POST /login with nickname, or remove it from the declaration in config/strictly.php if … doesn't validate or read it.`
+
+`strictly:install` publishes `config/strictly.php` with the Base Kit's Fortify declarations ([`stubs/strictly.php`](../packages/laravel/stubs/strictly.php); the package's merged defaults declare nothing), and Kit Conversion adds their classes under `App\Data\Auth`, with the Reference Implementation's two findings declared: `remember` on registration and `force` on enabling two-factor authentication, both `bool|Optional`. Its `tests/Feature/ContractCoverageTest.php` submits to the Fortify actions the Base Kit's tests don't (password confirmation, the two-factor challenge, enabling and confirming two-factor authentication) and opens the password reset link with its `email`. Not declared: the passkey routes, whose requests Laravel Passkeys' own client sends, and the Fortify actions that take no payload (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes), whose reads are checked by nothing like any action without an input ([P-112](#p-112)). Scenarios: `vendor-input-declared-passes`, `vendor-input-undeclared-read-fails-contract`, `vendor-input-undeclared-force-fails-contract`, `vendor-form-wrong-field-fails-tsc`, `vendor-input-field-never-used-fails-coverage`, `vendor-request-reads-declared-key-passes`, `vendor-request-reads-undeclared-key-fails-contract`, `vendor-query-declared-passes`, `vendor-query-key-misspelled-fails-tsc`, `vendor-query-undeclared-read-fails-contract`, `vendor-declaration-unknown-class-fails-generate`.
 
 ### P-026
 
@@ -494,11 +746,11 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Upstream:** none
 - **Status:** accepted gap
 
-**Reproduction:** a vendor reading the whole input (`$request->all()['x']`, `except()`) names no field, so a key read that way and missing from the declaration isn't detected. Reads in code paths no test reaches aren't seen; a `final` vendor FormRequest can't be tracked (its fields then fail as never read). Framework plumbing (`_token`-style keys, the paginator's `page`/`cursor`, laravel-data's `include`/`exclude`) is ignored.
+**Reproduction:** an action reading the whole input (`$request->all()['notify']`, `$request->input()['notify']`, `collect($request->all())`, `except('name')`, `$request->request->get('notify')`) names no field, so a key read that way and missing from the input type isn't detected; the same holds for a vendor action's declared payload ([P-025](#p-025)), where a `final` vendor FormRequest can't be tracked at all. Reads in code paths no test reaches aren't seen. Framework plumbing is ignored on purpose: keys starting with `_` (the CSRF token, `_method`), the paginators' `page` and `cursor`, and laravel-data's `include`, `exclude`, `only` and `except` response partials.
 
-**Manual workaround:** a field read that way must also be validated, or Contract Coverage reports it as never used; it can't pass silently.
+**Manual workaround:** read the input through the input class (`$data->notify`), never through the request; a vendor field read that way must also be validated, or Contract Coverage reports it as never used.
 
-**Reasoning:** reads are recorded through the request's accessors, so a read that names no key can't be attributed to a field. The remaining risk is small: such a field must still be validated or Contract Coverage fails, and it only arises in vendor code the app doesn't own.
+**Reasoning:** reads are recorded through the request's accessors ([`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php), [P-024](#p-024)), so a read that names no key can't be attributed to a field. The typed way doesn't read the request at all (the input class is the payload), so the gap only bites code that bypasses it, and in vendor code a field read that way must still be validated or Contract Coverage fails.
 
 ### P-027
 
@@ -515,6 +767,49 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Reasoning:** the narrowed JSX types (ADR-0004) can only say "this came from `field()`"; JSX types are global, so they can't know which form encloses a control. The input Contracts still catch a wrong field when a test submits the form.
 
+### P-096
+
+**Inertia's `<Form>` takes any payload and error keys**
+
+- **Type Boundary:** form payloads
+- **Source:** split from [P-014](#p-014) and [P-028](#p-028) while closing them
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** the Base Kit's `<Form {...ProfileController.update.form()}>` has no type argument, so the names of its controls and the `errors` its render prop gives (`string` per any key) are untied to the action's rules: `errors.nmae` compiles. The route-typed helpers (`useRouteForm`, `submit`, `visit`) and the `strictly/typed-requests` lint rule don't cover the component.
+
+**Manual workaround:** the Reference Implementation's headless `<TypedForm {...store.form()}>` with a `field()` render prop, and its lint rule rejecting an untyped `<Form>`.
+
+**Closed by:** [`<TypedForm {...route.form()}>`](../packages/npm/react/index.d.ts) (`@mrsafalpiya/strictly-laravel/react`), Inertia's `<Form>` typed by the input Data class the route is branded with ([P-014](#p-014)): its render prop's `field()` takes only the input's field paths (nested and list ones too) and returns a `FieldName` ([P-015](#p-015)), and its `errors`, `resetOnSuccess`, `resetOnError` and `onError` are keyed by them, so a misspelled field or error key fails `tsc`. A route whose action takes no input gets a form without fields. The oxlint rule `strictly/typed-forms` rejects importing Inertia's `<Form>`. Kit Conversion turns the Base Kit's settings actions into input classes (`ProfileUpdateData`, `ProfileDeleteData`, `PasswordUpdateData`) and every Base Kit form into a `<TypedForm>`; the Fortify-backed ones take theirs from the payloads `config/strictly.php` declares for Fortify's actions ([P-025](#p-025), [P-100](#p-100)). Scenarios: `typed-form-passes`, `typed-form-wrong-field-fails-tsc`, `typed-form-wrong-error-key-fails-tsc`, `inertia-form-fails-lint`.
+
+### P-100
+
+**A form to a route without an input brand names its payload by hand**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-096](#p-096)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** Fortify's routes have no input class ([P-025](#p-025)), and a closure route's input isn't branded ([P-097](#p-097)), so `<TypedForm {...store.form()}>` for them has no fields. Its payload can be given as a type argument instead, which nothing checks against what the server validates: `<TypedForm<LoginData> {...store.form()}>` compiles with any Data class, and so does `<TypedForm<OtherData> {...update.form()}>` on a branded route whenever `OtherData` has a subset of its input's fields. The Base Kit's auth and two-factor forms do this after Kit Conversion (`App\Data\Auth\*Data`). The validation-error Contracts don't cover such a form either: its route isn't a form endpoint.
+
+**Manual workaround:** keep each hand-named payload class next to the vendor action it describes and check it against the vendor's rules by reading them.
+
+**Closed by:** the oxlint rule `strictly/typed-forms` rejects a type argument on `<TypedForm>` or an alias of it (`` `<TypedForm>`'s payload comes from the route it submits to: drop the type argument. `` …), so a form's payload, field names and error keys always come from its route's brand. A vendor route gets its brand from the payload `config/strictly.php` declares for its action ([P-025](#p-025)), so Kit Conversion's Fortify forms (login, registration, password reset and confirmation, the two-factor challenge and setup) drop their type arguments, and their routes are form endpoints whose validation errors, validated fields and reads are Contracts. A closure route's form still has no fields until its input moves to a controller action ([P-097](#p-097)). Scenarios: `vendor-form-typed-by-declaration-passes`, `typed-form-type-argument-fails-lint`.
+
+### P-097
+
+**A closure route's input isn't on its route type**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-014](#p-014)
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** open
+
+**Reproduction:** `Route::post('projects', fn (StoreProjectData $data) => …)->name('projects.store')`: the generated `@/routes/projects` `store()` has no `WithInput` brand, so `useRouteForm(store(), …)` is refused as taking no input and `visit(store())` compiles, sending no payload. The PHPStan rule `strictly.inputData` checks controller actions only, so a plain Data class in such a closure isn't rejected either. The validation-error Contracts and the form-endpoint coverage do see the closure.
+
+**Manual workaround:** take inputs in controller actions only.
+
 ## Validation errors
 
 ### P-028
@@ -524,11 +819,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** validation errors
 - **Source:** ecosystem A.3 and C; eval-02 §5
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit reads `errors.name` from an untyped `<Form>` render prop (`string` per any key), so `errors.nmae` and `errors['tasks.0.titel']` compile.
 
 **Manual workaround:** errors keyed by the input type's fields, including nested and array keys (`errors['settings.notifications.onAssign']`, `tasks.0.title`), through `useRouteForm`/`<TypedForm>`/`submit()` ([P-014](#p-014)).
+
+**Closed by:** `useRouteForm()`'s `errors` and the `onError` of `useRouteForm().submit()` and `submit()` are `ErrorsOf<Input>`, keyed by every field path of the route's input, nested and list ones included (`settings.notifyOnAssign`, `tasks.0.title`; [`InputKey`](../packages/npm/routes/index.d.ts)), so a misspelled error key fails `tsc`. So are the errors of `<TypedForm>`'s render prop ([P-096](#p-096)). Scenarios: `route-typed-requests-pass`, `route-form-wrong-error-key-fails-tsc`.
 
 ### P-029
 
@@ -537,11 +834,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** validation errors
 - **Source:** overview §2 and §5; type-safety rule 13
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `throw ValidationException::withMessages(['project' => 'still has issues'])` from an action whose input has no `project` field: the client's typed `errors` never shows it.
 
 **Manual workaround:** the validation Contract `errors satisfies InputKey<StoreIssueData>[]` fails on any key that isn't a field; refusals that aren't about a field are error toasts (`Flash::error('…'); return back();`).
+
+**Closed by:** every request a feature test sends to a form endpoint (a route whose action takes an InputData) is recorded, and the validation errors it is refused with, flashed before a redirect or in a 422 JSON response, become a Contract, `export const errors = {…} satisfies ErrorsOf<StoreProjectData>`, which fails `tsc` on a key that isn't a field of the input ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). A refusal that isn't about a field is an error toast through the flash Data class (`FlashData::toast(ToastType::Error, …)`, [P-047](#p-047)). The same `form` Contract checks the fields the server validated and the input keys the action read ([P-113](#p-113), [P-024](#p-024)). Contract Coverage fails on a form endpoint no feature test submits to ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), scenario `form-endpoint-no-test-submits-fails-coverage`). Scenarios: `validation-errors-are-input-fields-pass-contract`, `error-key-not-an-input-field-fails-contract`.
 
 ### P-030
 
@@ -550,11 +849,26 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** validation errors
 - **Source:** overview §2 and §4; eval-02 §5; type-safety rule 11
 - **Upstream:** no upstream issue filed (laravel-data's `authorize()` hook is opt-in)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an action type-hinting an input Data class and calling `Gate::authorize()` in its body: a user without the ability submits invalid data and gets a 422 listing the fields instead of a 403.
 
 **Manual workaround:** `public static function authorize(): bool` on the input class, which laravel-data runs before validation (`AuthorizedDataPipe`).
+
+**Closed by:** laravel-data runs an input's `authorize()` before validation; the PHPStan rule `strictly.authorizeInInput` ([`AuthorizeInInputRule`](../packages/laravel/src/PHPStan/AuthorizeInInputRule.php)) rejects a controller action that takes an InputData and authorizes in its body instead (`Gate::authorize()`, `allowIf()`, `denyIf()`, `$this->authorize()`, `abort(403)`, `abort_if(…, 403)`, `abort_unless(…, 403)`). Matching is syntactic ([P-070](#p-070)). Scenarios: `unauthorized-input-gets-403-passes`, `authorize-in-action-body-fails-phpstan`.
+
+### P-126
+
+**An input's `authorize()` reads the route's models untyped**
+
+- **Type Boundary:** validation errors
+- **Source:** found porting Tracklane's Workspaces area into the Testbed App (#23)
+- **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
+- **Status:** open
+
+**Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`). Editing a comment is another: only its author may (`CommentPolicy::update`), so `UpdateCommentData::authorize()` reads `$request->route('comment')` the same way.
+
+**Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
 
 ## Enums
 
@@ -601,7 +915,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `/** @var array<value-of<Status>, int> */` generates `Partial<Record<Status, number>>` (`LiteralTypesTranspiler`); prefer a list of objects with a `status` field.
 
-**Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; checking recorded payloads against it is the Contract recorder's job ([P-065](#p-065)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
+**Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; its recorded Contract accepts the `[]` ([P-076](#p-076)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
 
 ### P-034
 
@@ -657,11 +971,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** models
 - **Source:** overview §1; ecosystem A.3; eval-02 §1; spec "Problem Statement"
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `resources/js/types/auth.ts` types `avatar` and `two_factor_enabled`, which nothing on the server sends, omits `two_factor_confirmed_at`, which is sent, and ends with `[key: string]: unknown`. The full Eloquent model is serialised as `auth.user`, so any column not `#[Hidden]` reaches the browser.
 
 **Manual workaround:** a `UserData` class is the whitelist of what is sent; models are never sent directly (type-safety rule 3).
+
+**Closed by:** Kit Conversion: the shared `auth.user` is `App\Data\UserData` (`id`, `name`, `email`, `email_verified_at`), built from the model in the share step, so only those fields reach the browser ([P-012](#p-012)). The hand-written `User` and `Auth` types are removed from `types/auth.ts`, and the components that took a `User` (`user-info`, `user-menu-content`) take the generated `UserData`; `user-info` and `app-header` no longer read the `avatar` nothing sends. Every page Contract checks `auth.user` against `UserData`. Scenarios: `user-avatar-read-fails-tsc`, `user-data-typed-passes`.
 
 ### P-037
 
@@ -728,7 +1044,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 **A generic `replaceType` target crashes generation**
 
 - **Type Boundary:** pagination and deferred props
-- **Source:** overview §2 and §4; `reference/template/app/Support/TypeScript/UnwrapInertiaPropsVisitor.php`
+- **Source:** overview §2 and §4; the template's `UnwrapInertiaPropsVisitor`
 - **Upstream:** no upstream issue filed (typescript-transformer)
 - **Status:** closed
 
@@ -736,7 +1052,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `UnwrapInertiaPropsVisitor`, a visitor hook that replaces `ScrollProp<T>`, `MergeProp<T>`, `DeferProp<T>`, `OptionalProp<T>` and `OnceProp<T>` with `T`.
 
-**Closed by:** [`InertiaPropWrappers`](../packages/laravel/src/Workarounds/TypeScriptTransformer/InertiaPropWrappers.php), a visitor that replaces `ScrollProp<T>`, `MergeProp<T>` and `OnceProp<T>` with `T`. `DeferProp<T>` and `OptionalProp<T>` are absent on the first load, so they aren't unwrapped to a required `T`: they fail generation as unmapped classes ([P-061](#p-061)), and deferred props remain [P-043](#p-043). Scenarios: `scroll-prop-typed-as-its-items-passes`, `scroll-prop-items-misused-fails-tsc`.
+**Closed by:** [`InertiaPropWrappers`](../packages/laravel/src/Workarounds/TypeScriptTransformer/InertiaPropWrappers.php), a visitor that replaces `ScrollProp<T>`, `MergeProp<T>` and `OnceProp<T>` with `T`. `DeferProp<T>` and `OptionalProp<T>` are absent on the first load, so they aren't unwrapped to a required `T`: they fail generation, pointing to the typed way ([P-043](#p-043)). Scenarios: `scroll-prop-typed-as-its-items-passes`, `scroll-prop-items-misused-fails-tsc`.
 
 ### P-042
 
@@ -764,6 +1080,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `public Lazy|ProjectStatsData $stats` with `Lazy::inertiaDeferred(fn () => …)` generates `stats?: ProjectStatsData` (type-safety rule 9).
 
+**Closed by:** a deferred or lazy page prop is declared `Lazy|ReportStatsData` and built with `Lazy::inertiaDeferred(fn () => …)` (or `Lazy::inertia()`, sent only when asked for), which is generated as `stats?: ReportStatsData`, so a page component that reads it as loaded fails `tsc` (`TS18048: 'stats' is possibly 'undefined'`). A prop typed as Inertia's raw `DeferProp` or `OptionalProp`, which carries no value type, fails generation and names the typed way ([`RawInertiaPropCheck`](../packages/laravel/src/TypeScript/RawInertiaPropCheck.php)). Contract Coverage reports a lazy page prop no feature test loads as an unexercised gap ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php)): `✗ reports › stats: no feature test loads this deferred prop: add a feature test that renders reports and loads stats (…)`; loading it (`$page->loadDeferredProps()` or a partial reload) records a partial-reload Contract that proves its type ([P-046](#p-046)). Scenarios: `deferred-prop-loaded-in-a-test-passes`, `deferred-prop-read-as-loaded-fails-tsc`, `raw-deferred-prop-fails-generation`, `deferred-prop-never-loaded-fails-coverage`.
+
 ### P-044
 
 **`Lazy::closure()` and default-included props are typed optional**
@@ -790,6 +1108,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** `const page = forPage<'projects/show'>()` (`@/lib/page`) gives typed `only`/`except`/`reset`, `<page.Deferred>`, `<page.WhenVisible>`, `<page.InfiniteScroll>` and `page.optimistic()`; the `type-safety/typed-prop-names` and `type-safety/typed-inertia-components` lint rules reject the raw forms.
 
+**Closed by:** `forPage<'reports'>()` from the npm package's React helpers ([`packages/npm/react/index.d.ts`](../packages/npm/react/index.d.ts), `@mrsafalpiya/strictly-laravel/react`), whose page names and props `@/generated` registers ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php)). It returns `only`, `except` and `reset` (a prop name of the page, a shared prop's or a dotted path such as `report.stats`), `page.optimistic()` (the callback receives and returns the page's props), and Inertia's `Deferred`, `WhenVisible` and `InfiniteScroll` with `data` narrowed to the page's prop names. A renamed prop fails `tsc` wherever it is named: `TS2345: Argument of type '"statistics"' is not assignable to parameter of type …`. Three oxlint rules the installer turns on reject the untyped forms ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)): `strictly/typed-prop-names` (an `only`, `except` or `reset` that isn't `page.<key>(…)`), `strictly/typed-inertia-components` (importing Inertia's `Deferred`, `WhenVisible` or `InfiniteScroll`) and `strictly/typed-optimistic-updates` (`router.optimistic()`, or an `optimistic` that isn't `page.optimistic(…)`). The rules are syntactic ([P-070](#p-070)). Scenarios: `typed-prop-names-pass`, `renamed-prop-in-reload-fails-tsc`, `renamed-prop-in-deferred-fails-tsc`, `renamed-prop-in-infinite-scroll-fails-tsc`, `raw-only-list-fails-lint`, `untyped-deferred-fails-lint`, `router-optimistic-fails-lint`.
+
 ### P-046
 
 **A nested partial reload returns only the subtree**
@@ -803,6 +1123,38 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** partial-reload Contracts are checked as `PartialPageContract<'issues/show', 'comments'>` (`DeepPartial` of the page props), and the requested keys must be present.
 
+**Closed by:** the Contract recorder ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)) records a partial reload of a page (Inertia's `X-Inertia-Partial-Component` names it) as `export const props = {…} satisfies Contract<PartialReload<PageProps<'reports'>, 'stats'>>`. `PartialReload` ([`packages/npm/contracts/index.d.ts`](../packages/npm/contracts/index.d.ts)) requires every requested prop, even one the page's type marks optional, allows any other prop, and follows a dotted request (`report.stats`) into the subtree Inertia returns; a reload with only `except` requires nothing. A requested prop missing from the response fails `tsc` (`Property 'stats' is missing in type '{}' but required in type …`), and so does a requested name the page doesn't have (`TS2344`). Requested shared props aren't checked: [P-092](#p-092). Scenarios: `partial-reload-of-nested-prop-passes-contract`, `partial-reload-missing-requested-key-fails-contract`.
+
+### P-092
+
+**A partial reload's shared props aren't checked**
+
+- **Type Boundary:** pagination and deferred props (partial reloads)
+- **Source:** found while closing [P-046](#p-046)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `router.reload({ only: page.only('auth') })` reloads a shared prop. The partial reload's Contract checks only the page's own props, so neither the value of `auth` nor its presence in the response is checked for that request.
+
+**Manual workaround:** none needed in practice; see the reasoning.
+
+**Reasoning:** the shared props come from one share step, which runs the same way for a partial reload as for a full render, and every full render records them as a Contract checked against `SharedPageProps` ([P-088](#p-088)). A partial reload sends a subset of the same values, so checking it again would prove little. The Overlay leaves them out of the partial reload's Contract rather than check them against a second, partial type.
+
+### P-133
+
+**Contract Coverage doesn't look inside an infinite-scroll prop**
+
+- **Type Boundary:** pagination and deferred props
+- **Source:** found porting Tracklane's activity feed into the Testbed App (#25)
+- **Upstream:** none (laravel-data describes a `ScrollProp` property as an object it knows nothing about)
+- **Status:** closed
+
+**Reproduction:** the activity feed page sends `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, ActivityData>> */ public ScrollProp $activity`, generated as the paginated collection it wraps ([P-041](#p-041)). Contract Coverage reads a property's shape from laravel-data's description, which sees a `ScrollProp` and no Data class inside it, so it never walks the items: a test that renders the feed with only one kind of entry, or with only an empty feed, passes `strictly:coverage --strict`, and so does an item field only ever `null`, although `tsc` never saw the other shapes.
+
+**Manual workaround:** none; render the same Data class in a prop Contract Coverage does walk.
+
+**Closed by:** [`WrappedProp`](../packages/laravel/src/Coverage/WrappedProp.php) reads the Data class inside a `ScrollProp`, `MergeProp` or `OnceProp` prop from its PHPDoc type, the one its TypeScript type is generated from, and [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php) walks the prop as what Inertia sends: a paginated collection's `data`, a list, or one Data object. An infinite-scroll prop only ever empty, or an item field only ever `null`, is now a gap: `✗ EntryData.note is only ever null (at feed › entries[].note): …`. Scenarios: `scroll-prop-every-item-shape-passes-coverage`, `scroll-prop-item-only-null-fails-coverage`. The Testbed App's activity feed is such a prop.
+
 ## Flash messages
 
 ### P-047
@@ -812,11 +1164,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** flash messages
 - **Source:** ecosystem A.3, B.2 and C; eval-01 S4
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit sends `Inertia::flash('toast', ['type' => 'success', 'message' => …])` and reads it in `use-flash-toast.ts` as `(event as CustomEvent).detail?.flash?.toast as FlashToast | undefined`; `flashDataType` is never set, so a changed toast shape compiles.
 
 **Manual workaround:** `App\Support\Inertia\Flash::success()` backed by `App\Data\FlashData`, generated into `InertiaConfig['flashDataType']`; flash is recorded as a Contract, including on redirects.
+
+**Closed by:** flash data is one Data class, the app's only subclass of [`Flash`](../packages/laravel/src/Inertia/Flash.php), whose `flash()` is the typed helper; `strictly:generate` writes its type into `InertiaConfig['flashDataType']` with every key optional, because a response carries only what was flashed for it ([`InertiaConfigProvider`](../packages/laravel/src/TypeScript/InertiaConfigProvider.php)), so `usePage().flash` and the router's `flash` event are typed without a cast. The PHPStan rule `strictly.inertiaFlash` ([`InertiaFlashRule`](../packages/laravel/src/PHPStan/InertiaFlashRule.php)) rejects `Inertia::flash()`, `ResponseFactory::flash()` and `Response::flash()`. Every feature test records what was flashed as a Contract checked against `FlashData` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)): with the page when a page renders it, and on its own (`__contracts__/_flash/`) when a redirect flashes it. Kit Conversion adds `App\Data\FlashData`, `ToastData` and the `App\Enums\ToastType` enum, flashes the Base Kit's toasts through `FlashData::toast()`, removes its hand-written `FlashToast` type and reads the toast in `use-flash-toast` without a cast. Scenarios: `inertia-flash-with-array-fails-phpstan`, `flash-toast-misread-fails-tsc`, `flash-around-the-data-class-fails-contract`, `flash-through-data-class-passes`.
 
 ## JSON endpoints
 
@@ -827,24 +1181,54 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** JSON endpoints
 - **Source:** overview §2; ecosystem A.3 and B.2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `useHttp<{ q: string }, SearchResults>()` takes whatever types are named; the Base Kit's `use-two-factor-auth.ts` calls `useHttp` for JSON with hand-written shapes. Nothing ties them to the controller.
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
+
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); nor is a closure route's response: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
 **`useHttp` resolves `undefined` on a 422 despite `Promise<T>`**
 
 - **Type Boundary:** JSON endpoints
-- **Source:** overview §4; `reference/showcase/resources/js/components/search/use-search.ts`
+- **Source:** overview §4; Tracklane's `use-search` hook
 - **Upstream:** behaviour introduced by [inertiajs/inertia#3142](https://github.com/inertiajs/inertia/pull/3142) (`return undefined as TResponse`); no upstream issue filed for the return type
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `const results = await http.submit()` with a query the server rejects: `results` is `undefined` while typed `SearchResultsData`.
 
 **Manual workaround:** read results from `http.response` and errors from `http.errors`, never from the resolved value.
+
+**Closed by:** `useRouteHttp(route, init).submit()` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.js)) resolves with `{ ok: true, response }` or, on a 422, with `{ ok: false, errors }`, the validation errors keyed by the route's input (`ErrorsOf<SearchQueryData>`), which Inertia reports through `onError` before it resolves `undefined`; any other failure still rejects. Reading `result.response` before checking `result.ok` fails `tsc`, and so does an error key the input doesn't have. The npm package's tests (`packages/npm/tests/http.test.ts`) send it a 201, a 422 and a 500. Scenarios: `json-refusal-read-as-errors-passes`, `json-refusal-read-as-response-fails-tsc`, `json-refusal-wrong-error-key-fails-tsc`.
+
+### P-108
+
+**A JSON endpoint that returns a list of Data objects has no response type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-048](#p-048)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `public function recent(): array` with `@return list<ProjectData>`, or a `DataCollection` / `PaginatedDataCollection` return type: the PHP return type doesn't name a Data class, so the route isn't branded, `useRouteHttp(recent())` types the result `unknown`, no Contract records its responses and Contract Coverage doesn't list it. The same holds for a nullable or union return type (`?ProjectData`).
+
+**Manual workaround:** return one Data class that holds the list (`RecentProjectsData` with `@param list<ProjectData> $projects`).
+
+### P-109
+
+**A closure route's response isn't on its route type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-048](#p-048), like [P-097](#p-097) for inputs
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** open
+
+**Reproduction:** `Route::get('stats', fn (): StatsData => …)->name('stats')`: the generated `@/routes` `stats()` has no `WithResponse` brand, so `useRouteHttp(stats())` types the result `unknown`. The JSON Contracts and the JSON-endpoint coverage do see the closure.
+
+**Manual workaround:** return JSON from controller actions only.
 
 ### P-050
 
@@ -853,11 +1237,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** JSON endpoints
 - **Source:** overview §2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Fortify's 2FA QR code, secret key and recovery-code endpoints return JSON from controllers the app doesn't own; the Base Kit types them by hand (`TwoFactorSetupData`).
 
 **Manual workaround:** declare the response per vendor action in `config/types.php` (`route_responses`: a Data class, or a TypeScript type such as `'{ svg: string; url: string } | []'`); tests check every response against it, and Contract Coverage fails on a declared endpoint never called.
+
+**Closed by:** `vendor_responses` in `config/strictly.php` declares a vendor JSON endpoint's response per action, a Data class or, for JSON that isn't one object, a TypeScript type (`TwoFactorQrCodeController::class.'@show' => '{ svg: string; url: string } | []'`). [`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php) reads the declaration before the action's return type, so the route is branded `WithResponse<…>` and `useRouteHttp(qrCode())` types its result: reading `svg` before ruling out `[]` fails `tsc`. Every successful response a feature test gets is recorded as a JSON Contract checked against the declaration, `satisfies Contract<{ svg: string; url: string } | []>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), so a declaration that doesn't match what the vendor sends fails `tsc`; Contract Coverage fails on a declared endpoint no test calls and observes the shapes of a Data class response (a TypeScript type's it can't: [P-051](#p-051)). A declared class that doesn't exist, or isn't a Data class, fails `strictly:generate`. The Base Kit's two-factor endpoints are declared (`App\Data\Auth\TwoFactorSecretKeyData` for the secret key, which Fortify always sends as one object, TypeScript types for the QR code and the recovery codes), and Kit Conversion moves `use-two-factor-auth.ts` from `useHttp()` and its casts to `useRouteHttp()`. Scenarios: `vendor-json-response-declared-passes`, `vendor-json-response-mismatch-fails-contract`, `vendor-json-typescript-response-mismatch-fails-contract`, `vendor-json-union-response-misread-fails-tsc`, `vendor-json-endpoint-no-test-calls-fails-coverage`.
 
 ### P-051
 
@@ -868,7 +1254,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Upstream:** none
 - **Status:** accepted gap
 
-**Reproduction:** `'{ svg: string; url: string } | []'` for the QR code endpoint: each recorded response is checked by `tsc`, but nothing reports a union member no test produced.
+**Reproduction:** `'{ svg: string; url: string } | []'` for the QR code endpoint, as the Base Kit's `config/strictly.php` declares it ([P-050](#p-050)): each recorded response is checked by `tsc`, but nothing reports a union member no test produced (no test sees the `[]`).
 
 **Manual workaround:** none; prefer declaring a Data class where the JSON is one object.
 
@@ -876,7 +1262,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 ## Broadcasting
 
-The Reference Implementation never exercised this Type Boundary, so these Problems have no recorded workaround beyond hand-typing. The Testbed App will exercise them (spec user stories 44–46 and 76).
+The Reference Implementation never exercised this Type Boundary, so these Problems had no recorded workaround beyond hand-typing. The Overlay builds on Laravel's own client, `@laravel/echo-react`, which `php artisan install:broadcasting` installs and configures for a React app; the Testbed App's real-time comments exercise it (spec user stories 44–46 and 76).
+
+**The convention.** A broadcast event uses `StrictlyLaravel\Broadcasting\BroadcastsData` and returns its payload from `broadcastData()`, declaring the payload's Data class as the return type. `strictly:generate` writes `@/generated/broadcasting`: `BroadcastEvents` maps each event, by the name Echo listens for it (`CommentPosted` for `App\Events\CommentPosted`, `.comment.posted` for one whose `broadcastAs()` is `comment.posted`), to that Data class, and `BroadcastChannels` holds each channel `routes/channels.php` defines with its parameters. React listens with `useChannelEvent(channel('issues.{issue}', { issue }), 'CommentPosted', (comment) => …)`, both imported from that module.
 
 ### P-052
 
@@ -884,12 +1272,14 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 - **Type Boundary:** broadcasting
 - **Source:** spec user stories 44 and 46; ecosystem C ("Broadcast / env")
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: `@laravel/echo-react` types a payload from a global `Events` interface the app writes by hand, and its `useEcho()` takes any type argument
+- **Status:** closed
 
 **Reproduction:** an event `CommentPosted implements ShouldBroadcast` returns `['id' => …, 'body' => …]` from `broadcastWith()`; the listener's payload is typed by hand, `useEcho(channel, 'CommentPosted', (e: { id: number; text: string }) => …)`, and compiles after the PHP keys change.
 
 **Manual workaround:** hand-write the payload type next to the listener and keep it in sync.
+
+**Closed by:** an event's payload is a Data class: it uses [`BroadcastsData`](../packages/laravel/src/Broadcasting/BroadcastsData.php), whose `broadcastWith()` sends what `broadcastData(): CommentData` returns. The PHPStan rule `strictly.broadcastData` ([`BroadcastDataRule`](../packages/laravel/src/PHPStan/BroadcastDataRule.php)) rejects a broadcast event that sends its payload any other way (public properties, its own `broadcastWith()` array, a `broadcastData()` that declares no single Data class): `Broadcast event App\Events\ProjectUpdated sends a payload that has no generated type.` `@/generated/broadcasting` maps the event to the Data class's generated type ([`BroadcastingModule`](../packages/laravel/src/Broadcasting/BroadcastingModule.php)), and `useChannelEvent()` ([`@mrsafalpiya/strictly-laravel/echo`](../packages/npm/echo/index.d.ts), a wrapper around `@laravel/echo-react`'s `useEcho()`) types the callback's payload with it, so reading a field it lacks fails `tsc`. The oxlint rule `strictly/typed-broadcasts` rejects Echo's untyped `useEcho()`, `useEchoPresence()` and `useEchoPublic()`. Every broadcast a feature test makes, from a request or not, is recorded as a Contract, `export const payload = {…} satisfies Contract<BroadcastEvents['ProjectUpdated']>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on an event no test broadcasts and observes the payloads' shapes ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `broadcast ProjectUpdated › description`). Broadcast notifications and model broadcasts aren't covered: [P-142](#p-142). ADR-0008. Scenarios: `broadcast-payload-typed-passes`, `broadcast-payload-field-misread-fails-tsc`, `broadcast-payload-without-data-class-fails-phpstan`, `broadcast-payload-around-the-data-class-fails-contract`, `broadcast-event-never-broadcast-fails-coverage`.
 
 ### P-053
 
@@ -897,12 +1287,14 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 - **Type Boundary:** broadcasting
 - **Source:** spec user story 45
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: `useEcho()` has an overload that takes any string ([`@laravel/echo-react`](https://github.com/laravel/echo/tree/2.x/packages/react))
+- **Status:** closed
 
 **Reproduction:** `useEcho(channel, 'CommentPostd', cb)` or a stale name after `broadcastAs()` changes compiles and silently never fires.
 
 **Manual workaround:** none; names are typed by hand.
+
+**Closed by:** `BroadcastEvents` in `@/generated/broadcasting` is keyed by the name Echo listens for each event under its default namespace ([`BroadcastEvents`](../packages/laravel/src/Broadcasting/BroadcastEvents.php)): relative to `App\Events`, with dots (`ProjectUpdated`, `Projects.ProjectArchived`), or a dot and the `broadcastAs()` name (`.project.renamed`). Generation reads `broadcastAs()` on an instance whose constructor never ran; a name that depends on the event's state fails `strictly:generate`, and so do two events with one name. `useChannelEvent()` takes only those keys, so a misspelled or stale name fails `tsc`: `error TS2345: Argument of type '"ProjectUpdatd"' is not assignable to parameter of type '"ProjectUpdated"'.` At runtime it listens for the full name (`.App\Events\ProjectUpdated`), whatever namespace Echo is configured with. A broadcast Contract is checked under the name the event really broadcast, so a name generation got wrong fails `tsc` too. The oxlint rule `strictly/typed-broadcasts` rejects `useEcho()`. ADR-0008. Scenarios: `broadcast-event-names-typed-passes`, `broadcast-event-name-misspelled-fails-tsc`, `use-echo-fails-lint`.
 
 ### P-054
 
@@ -911,11 +1303,65 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** spec user story 45
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Broadcast::channel('workspace.{workspace}', …)` in `routes/channels.php`; the client subscribes with `` `workspace.${workspace.slug}` `` while the channel binds by id. Both compile; the subscription is refused or joins the wrong channel.
 
 **Manual workaround:** none; channel strings are built by hand.
+
+**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so its name stays unchecked: [P-143](#p-143). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
+
+### P-142
+
+**Broadcast notifications and model broadcasts have no generated payload type**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-052](#p-052)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** a notification with `via(): ['broadcast']` whose `toBroadcast()` returns `new BroadcastMessage([...])`, read with `useEchoNotification(channel, (n: { title: string }) => …)`; or a model using `BroadcastsEvents`, read with `useEchoModel()`. Both payloads are typed by hand, no Contract records them, and `strictly/typed-broadcasts` leaves those hooks alone.
+
+**Manual workaround:** broadcast an event of the app's own with a `BroadcastsData` payload alongside the notification or model change, and listen for that.
+
+### P-143
+
+**A public channel's name is hand-written**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-054](#p-054)
+- **Upstream:** none (Laravel needs no definition for a public channel)
+- **Status:** open
+
+**Reproduction:** an event broadcasts on `new Channel('status')`; the client listens with `useChannelEvent(publicChannel('statuss'), …)`. Both compile, since nothing in `routes/channels.php` names the channel, and the broadcast Contract checks only private and presence channels.
+
+**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it.
+
+### P-144
+
+**An event can be listened for on a channel it is never broadcast on**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-053](#p-053) and [P-054](#p-054)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `CommentPosted` broadcasts on `issues.{issue}`; the client calls `useChannelEvent(channel('projects.{project}', { project }), 'CommentPosted', cb)`. The pattern and the event name are each checked, but not that the event goes to that channel, so the callback never fires.
+
+**Manual workaround:** none; check each listener's channel against the event's `broadcastOn()` by hand.
+
+### P-145
+
+**A presence channel's member data is untyped**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-054](#p-054)
+- **Upstream:** by design: `@laravel/echo-react`'s presence callbacks take `any`
+- **Status:** open
+
+**Reproduction:** `Broadcast::channel('issues.{issue}.viewers', fn (User $user, Issue $issue): array => ['id' => $user->id, 'name' => $user->name])`; the client reads the members through `here()`, `joining()` and `leaving()` on `usePresenceChannel()`'s channel, typed by hand.
+
+**Manual workaround:** type the member data by hand next to the listener.
 
 ## Translations
 
@@ -928,11 +1374,13 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** spec user story 47; ADR-0006
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `lang/en/auth.php` defines `'throttle' => 'Too many login attempts. Please try again in :seconds seconds.'`; the client calls `t('auth.throtle')` and compiles, rendering the raw key.
 
 **Manual workaround:** none; keys are copied by hand.
+
+**Closed by:** `strictly:generate` reads the default locale's lang files (`app.locale`: every PHP file under `lang/<locale>/`, nested groups and directories flattened to the keys `__()` takes, plus `lang/<locale>.json`; [`Translations`](../packages/laravel/src/Translations/Translations.php)) and writes `@/generated/translations` ([`TranslationsModule`](../packages/laravel/src/Translations/TranslationsModule.php)): a `TranslationKeys` type, and the `t()` the npm package's [`createTranslator()`](../packages/npm/translations/index.d.ts) binds to each locale's messages, written as generated JSON that Vite bundles (no shared props, no request). `t()` takes only those keys, template-literal keys included, so a misspelled one fails `tsc`: `error TS2345: Argument of type '"auth.throtle"' is not assignable to parameter of type 'keyof TranslationKeys'.` The Vite plugin regenerates when a lang file changes. ADR-0006. Scenarios: `translation-keys-typed-passes`, `translation-key-misspelled-fails-tsc`.
 
 ### P-056
 
@@ -941,11 +1389,13 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** spec user story 47; ADR-0006
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `t('auth.throttle', { second: 5 })` compiles; the message renders with the literal `:seconds`.
 
 **Manual workaround:** none.
+
+**Closed by:** `TranslationKeys` maps each key to the `:params` its default-locale message takes, named as Laravel's translator fills them (`:seconds`, `:Seconds` and `:SECONDS` are all the param `seconds`; a placeholder starts with a letter, so `10:30` is none), and `t(key, params)` takes exactly those: a misspelled param fails with `error TS2561: Object literal may only specify known properties, but 'second' does not exist in type 'TranslationParams<"seconds">'. Did you mean to write 'seconds'?`, a missing one with `error TS2554: Expected 2 arguments, but got 1.`, and a message without params takes none. At runtime `t()` fills them as Laravel does (`packages/npm/tests/translations.test.ts`). Scenarios: `translation-params-typed-passes`, `translation-param-misspelled-fails-tsc`, `translation-param-missing-fails-tsc`.
 
 ### P-057
 
@@ -954,15 +1404,63 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** spec user story 48; ADR-0006
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** add a key to `lang/en/` but not `lang/de/`, or drop `:seconds` from the German message: nothing fails; German users see the fallback or a message missing its value.
 
 **Manual workaround:** none.
 
+**Closed by:** `strictly:install` publishes `tests/Feature/LocaleParityTest.php` (a hook, so a deleted one is restored and `ci:check:install` fails without it), which runs [`LocaleParity::assert()`](../packages/laravel/src/Testing/LocaleParity.php): every locale other than the default must have exactly its keys, each with the same params. One line per gap: `de: auth.password is missing`, `de: auth.throttle lacks :seconds`, a param the default message doesn't take (`t()` never fills it) and a key the default locale doesn't have. The Testbed App's Projects area is translated into German and covered by it. Scenarios: `locales-match-passes`, `locale-missing-key-fails-test`, `locale-missing-param-fails-test`.
+
+### P-136
+
+**A pluralised message has no typed `choice()` on the client**
+
+- **Type Boundary:** translations
+- **Source:** found building the translations boundary (#28)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `lang/en/issues.php` defines `'count' => '{0} No issues|{1} One issue|[2,*] :count issues'`; the client calls `t('issues.count', { count: 3 })`, which compiles and renders the whole message, pipes and ranges included. `trans_choice()` selects the variant on the server; nothing does on the client.
+
+**Manual workaround:** one key per variant (`issues.count_none`, `issues.count_one`, `issues.count_many`), chosen in TypeScript.
+
+### P-137
+
+**Translation keys used in PHP are unchecked**
+
+- **Type Boundary:** translations
+- **Source:** found translating the Testbed App's flash messages (#28)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `FlashData::success(__('projects.flash.saevd', ['key' => $project->key]))` passes PHPStan and the tests; the toast shows the raw key. A param misspelled in `__()`'s replacements leaves the `:key` placeholder unfilled the same way.
+
+**Manual workaround:** a feature test that asserts the flashed message's text.
+
+### P-138
+
+**Translations outside the app's lang files have no keys on the client**
+
+- **Type Boundary:** translations
+- **Source:** found building the translations boundary (#28)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `t('pagination.next')` or `t('validation.required')` fails `tsc` in an app that hasn't published Laravel's lang files, though `__()` finds them on the server; a package's namespaced keys (`lang/vendor/<package>/`, `__('package::file.key')`) are never generated.
+
+**Manual workaround:** `php artisan lang:publish` copies Laravel's own files into `lang/`, after which their keys are generated like the app's.
+
+**Reasoning:** the client only gets the messages the app owns, so its bundle doesn't carry every package's translations, and every key `t()` takes is one the app's own locales are checked for (P-057). Validation messages need no client-side key: the server sends them translated with the errors (P-028).
+
 ## Exposed config
 
 The Reference Implementation never exercised this Type Boundary beyond `config()->string('app.name')` in shared props (spec user stories 50–51).
+
+**The convention.** Config the frontend sees comes from one of two places, and both are typed:
+
+- **Server settings and feature flags** are properties of the shared props Data class (`App\Data\SharedProps`, [P-012](#p-012)), usually a nested Data class such as `FeaturesData`, built in the share step from `config()`'s typed accessors (`config()->boolean('tracklane.features.cycles')`). React reads them from `usePage().props`, typed from the Data class; nothing else carries them ([P-059](#p-059), [P-060](#p-060), [P-088](#p-088)).
+- **Build-time values** are `VITE_*` variables listed in `.env.example`, read as `import.meta.env.VITE_*`, typed from `.env.example` ([P-058](#p-058)) and set wherever Vite builds ([P-140](#p-140)). They are public: they end up in the bundle.
 
 ### P-058
 
@@ -970,12 +1468,29 @@ The Reference Implementation never exercised this Type Boundary beyond `config()
 
 - **Type Boundary:** exposed config
 - **Source:** spec user story 51; ecosystem C ("Broadcast / env")
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: Vite's `ImportMetaEnv` has an index signature unless an app sets the `strictImportMetaEnv` type option ([`types/importMeta.d.ts`](https://github.com/vitejs/vite/blob/main/packages/vite/types/importMeta.d.ts))
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `vite-env.d.ts` only references `vite/client`, whose `ImportMetaEnv` has an index signature; `import.meta.env.VITE_APP_NAM` compiles and is `undefined` at runtime (`resources/js/app.tsx` reads `VITE_APP_NAME`).
 
 **Manual workaround:** hand-write `ImportMetaEnv` keys for the variables in `.env.example`.
+
+**Closed by:** `strictly:generate` types `import.meta.env` from the `VITE_*` variables `.env.example` lists ([`ViteEnvTypes`](../packages/laravel/src/TypeScript/ViteEnvTypes.php)): `@/generated` sets Vite's `strictImportMetaEnv` type option, which removes the index signature, and declares each listed variable `readonly VITE_…: string`. A variable `.env.example` doesn't list fails `tsc` where it is read: `error TS2339: Property 'VITE_SENTRY_DSN' does not exist on type 'ImportMetaEnv'.` The Vite plugin regenerates the types when `.env.example` is saved. Only Vite's default `VITE_` prefix is typed; with another `envPrefix` the app's variables fail `tsc` until it reverts. Scenarios: `vite-env-variable-in-env-example-passes`, `vite-env-variable-not-in-env-example-fails-tsc`; harness test (`harness/tests/vite-plugin.test.ts`): "saving .env.example regenerates too".
+
+### P-140
+
+**A `VITE_*` variable `.env.example` lists can be unset when Vite builds**
+
+- **Type Boundary:** exposed config
+- **Source:** found while closing [P-058](#p-058)
+- **Upstream:** none (Vite inlines whatever the environment has, and `undefined` for the rest)
+- **Status:** closed
+
+**Reproduction:** `.env.example` lists `VITE_SENTRY_DSN`, so `import.meta.env.VITE_SENTRY_DSN` is typed `string` ([P-058](#p-058)), but the `.env` of a deployment written before the variable was added doesn't set it. `vite build` succeeds and the bundle reads `undefined`.
+
+**Manual workaround:** compare `.env` with `.env.example` before each build.
+
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js)) compares the `VITE_*` variables `.env.example` lists with the environment Vite loaded (its `.env` files and the process environment). A build fails on each one that isn't set (`[strictly] .env.example lists VITE_APP_NAME, but the environment Vite runs with doesn't set it, so import.meta.env.VITE_APP_NAME is undefined although its type is string. …`), and the dev server warns. An empty value counts as set. `ci:check` doesn't build, so it doesn't run this check. Harness tests: "the build fails when the environment lacks a VITE_* variable .env.example lists, which import.meta.env types as a string (P-140)" (`harness/tests/overlay.test.ts`), and the dev server's warning (`harness/tests/vite-plugin.test.ts`).
 
 ### P-059
 
@@ -983,12 +1498,29 @@ The Reference Implementation never exercised this Type Boundary beyond `config()
 
 - **Type Boundary:** exposed config
 - **Source:** spec user story 50
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: Inertia's `usePage<TPageProps>()` trusts the type argument it is given ([`usePage.ts`](https://github.com/inertiajs/inertia/blob/master/packages/react/src/usePage.ts))
+- **Status:** closed
 
-**Reproduction:** a feature flag is added to `share()` as `'features' => ['boards' => Feature::active('boards')]` or passed as an inline prop; its type is written by hand, or hidden by the shared props index signature ([P-013](#p-013)).
+**Reproduction:** a feature flag is added to `share()` as `'features' => ['boards' => Feature::active('boards')]` or passed as an inline prop; its type is written by hand (`usePage<{ features: { boards: boolean } }>().props.features`), or hidden by the shared props index signature ([P-013](#p-013)).
 
 **Manual workaround:** add the setting as a typed property of the shared props Data class.
+
+**Closed by:** the shared props Data class is the one way in ([P-012](#p-012)): a setting or flag is a property of it, generated into `usePage().props`. A value shared beside it fails its Contract ([P-088](#p-088)). The oxlint rule `strictly/typed-page-props` ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)) rejects a type argument on Inertia's `usePage()` other than a generated `PageProps<'component'>`, so a flag's type can't be written by hand: `` `usePage()` takes its props' type from the generated shared props and Page classes: drop the type argument. `` The Testbed App's feature flags (`App\Data\FeaturesData`, from `config/tracklane.php`) go this way, and its tests render pages with each flag on and off. A value the root Blade template writes into the page bypasses it: [P-141](#p-141). Scenarios: `feature-flags-through-shared-props-pass`, `feature-flag-typed-by-hand-fails-lint`.
+
+### P-141
+
+**A value the root Blade template writes into the page reaches React untyped**
+
+- **Type Boundary:** exposed config
+- **Source:** found while closing [P-059](#p-059)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `resources/views/app.blade.php` writes `<script>window.tracklane = @json(['boards' => config('tracklane.features.boards')])</script>` and a hand-written `declare global { interface Window { tracklane: { boards: boolean } } }` types it. Nothing compares the declaration with what the template writes.
+
+**Manual workaround:** share the value through the shared props Data class instead.
+
+**Reasoning:** the template's output isn't an Inertia response, so no Contract records it, and a `Window` declaration is a hand-written type like any other the app may write. The convention (above) sends every server value through the shared props, which are checked; rejecting every `Window` augmentation would also reject legitimate ones for third-party scripts.
 
 ### P-060
 
@@ -997,11 +1529,13 @@ The Reference Implementation never exercised this Type Boundary beyond `config()
 - **Type Boundary:** exposed config
 - **Source:** eval-01 S2; eval-03 §9
 - **Upstream:** none (by design: config is untyped)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `'name' => config('app.name')` is `mixed`, so nothing proves the value is the string the TypeScript type promises (Wayfinder `next` generates `name: unknown`; PHPStan max reports it).
 
 **Manual workaround:** typed accessors, `config()->string('app.name')`, enforced by PHPStan max.
+
+**Closed by:** the shared props are a Data class with typed properties ([P-012](#p-012)), and the app's PHPStan runs at max level, so a `config()` value passed to one fails the `test` step (`Parameter $name of class App\Data\SharedProps constructor expects string, mixed given.`) until it is read with a typed accessor (`config()->string()`, `config()->boolean()`, `config()->integer()`), which throws when the value isn't of that type. Kit Conversion's `HandleInertiaRequests` reads the app name that way. Scenarios: `config-value-typed-accessor-passes`, `config-value-mixed-fails-phpstan`.
 
 ## Every Type Boundary
 
@@ -1012,7 +1546,7 @@ Problems in generation or verification that affect every Type Boundary.
 **Unmapped PHP classes become `undefined`**
 
 - **Type Boundary:** every Type Boundary (seen in form payloads and page props)
-- **Source:** overview §2 and §4; eval-02 §3 and §9; `reference/showcase/app/Data/Attachments/StoreAttachmentData.php`
+- **Source:** overview §2 and §4; eval-02 §3 and §9; Tracklane's `StoreAttachmentData`
 - **Upstream:** no upstream issue filed (typescript-transformer)
 - **Status:** closed
 
@@ -1061,7 +1595,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** a Vite plugin (`vite-plugins/php-types.ts`) that regenerates on PHP changes under `app/`, plus `File::ensureDirectoryExists()` before generating; build, typecheck and CI regenerate first.
 
-**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010), or `.env.example` is saved, [P-058](#p-058)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
 
 ### P-065
 
@@ -1070,11 +1604,13 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §1 and §2; eval-02 §3; eval-01 §3
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a generator that lies gives types `tsc` trusts. eval-02's Contract test found 7 mismatches no other check caught, among them [P-040](#p-040), [P-043](#p-043) and [P-071](#p-071); the Base Kit's hand-written types were wrong the same way ([P-012](#p-012), [P-036](#p-036)).
 
 **Manual workaround:** the Contract recorder: every page, partial reload, flash and JSON response seen by any feature test is written as a `satisfies` file checked by `tsc` (`tests/Support/InertiaContracts.php`).
+
+**Closed by:** the Contract recorder ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)). `strictly:install` applies [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) to the app's feature tests in `tests/Pest.php` (Kit Conversion writes it into the file it converts, [`PestContractsHook`](../packages/laravel/src/Install/PestContractsHook.php) adds it to one the app edited), so every page any feature test renders is written, with no per-test code, to the gitignored `resources/js/__contracts__/<page component>/<hash>.ts` as `export const props = {…} satisfies Contract<PageProps<'settings/profile'>>`: the page's own props exactly as the browser receives them, checked against the generated type (`Contract<T>` only lets an empty map arrive as `[]`, [P-076](#p-076)). `ci:check` runs `tsc` after the tests, so a wrong value, a missing prop or a key the generated type doesn't have fails it. Each Contract has a `.json` sidecar for Contract Coverage ([P-066](#p-066)). The other Type Boundaries' payloads are recorded with the Problems that type them: shared props ([P-012](#p-012), [P-088](#p-088): recorded with the page as `shared`), partial reloads ([P-046](#p-046): recorded as `PartialReload` of the page props), flash ([P-047](#p-047): recorded with the page as `flash`, and on its own for a redirect), JSON responses ([P-048](#p-048), [P-050](#p-050)), validation errors and input reads ([P-024](#p-024), [P-029](#p-029)) and broadcasts ([P-052](#p-052)). Scenarios: `page-props-sent-through-data-class-pass-contract`, `hand-built-page-prop-fails-contract`; harness test: "feature tests record Contracts when Kit Conversion skipped an edited tests/Pest.php".
 
 ### P-066
 
@@ -1083,11 +1619,73 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §2; type-safety "What checks what"
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a nullable field only ever `null` in tests, a list only ever empty, a union variant never produced, or a page, deferred prop or endpoint no test hits: its Contracts pass while `tsc` never saw the other shape.
 
 **Manual workaround:** Contract Coverage, `php artisan types:coverage --strict`, fails CI on each unverified shape; close it with a test that produces it (`tests/Feature/ShapeCoverageTest.php`).
+
+**Closed by:** Contract Coverage, `php artisan strictly:coverage --strict` ([`CoverageCommand`](../packages/laravel/src/Console/CoverageCommand.php)), which `ci:check` runs as `ci:check:coverage`, after the tests and before `tsc`. It reads the sidecars of the Contracts the tests recorded ([P-065](#p-065)) and compares them with the Page classes and the Data classes they hold ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php)). It fails on a page no test renders, and, at any depth and per Data class property, on a nullable field only ever `null`, an Optional field never sent, a list or map only ever empty, a union of Data classes never sent as one of its variants and a scalar union (`int|string`) never sent as one of its members. Each gap is one line that names the page or field, where it was looked for and the test to add: `✗ ProjectData.lead is only ever null (at projects/show › project.lead): add a feature test that renders projects/show with project.lead not null.` The shared props and the flash data are proven the same way against their Data classes ([P-012](#p-012), [P-047](#p-047)): every page's shared props (`at shared props › …`, and a gap when no test renders a page through the Inertia middleware) and everything flashed, so a flash key no test flashes is a gap (`at flash data › …`). Run without `--strict`, only unrendered pages fail. A fresh install has no gaps: Kit Conversion adds `tests/Feature/ContractCoverageTest.php` with `tests/Pest.php`, which renders the Base Kit's pages with a status message, with passkeys and the appearance page. The other dimensions report into the same Contract Coverage with the Problems that record their Contracts: deferred props ([P-043](#p-043): a lazy page prop no test loads), JSON endpoints ([P-048](#p-048), [P-050](#p-050)), form endpoints and declared vendor fields ([P-024](#p-024), [P-025](#p-025)) and broadcasts ([P-052](#p-052)). Shapes laravel-data doesn't describe stay unchecked ([P-084](#p-084)). Scenarios: `every-shape-exercised-passes-coverage`, `page-no-test-renders-fails-coverage`, `nullable-prop-only-null-fails-coverage`, `optional-prop-only-absent-fails-coverage`, `list-prop-only-empty-fails-coverage`, `union-variant-never-seen-fails-coverage`, `scalar-union-member-never-seen-fails-coverage`, `coverage-without-recorded-contracts-fails`, `shared-prop-only-null-fails-coverage`, `flash-key-never-flashed-fails-coverage`; harness test: "make:page creates a Page class and its page component, already in sync".
+
+### P-084
+
+**Contract Coverage can't see shapes laravel-data doesn't describe**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-066](#p-066)
+- **Upstream:** none (laravel-data's `DataConfig` describes one item class per collection, by design)
+- **Status:** open
+
+**Reproduction:** Contract Coverage reads a property's shapes from laravel-data's description of its Data class, which knows one item type per collection and nothing inside a PHPDoc array shape. So these pass `strictly:coverage --strict` although `tsc` never saw the other shape: a page prop `/** @param list<array{lead: ?string}> $projects */` whose `lead` every test sends as `null`; `/** @param list<int|string> $estimates */` only ever sent strings; `/** @param list<IssueData|MilestoneData> $focus */` only ever sent issues (laravel-data reads every item as an `IssueData`); and a nested list `list<list<MemberData>>`.
+
+**Manual workaround:** model the item as a Data class (a `ProjectSummaryData` with `public ?string $lead`, or a Data class wrapping the union), whose shapes Contract Coverage does check.
+
+The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<IssueStatus>, array<int, IssueListItemData>>`, a map of lists), whose issues' shapes go unchecked. Its tests send an assigned, labelled, estimated issue with a due date anyway, so the gap closes as soon as this one does.
+
+### P-125
+
+**A form's empty defaults are a Contract Coverage gap no test can close**
+
+- **Type Boundary:** every Type Boundary (seen in form payloads)
+- **Source:** found porting Tracklane's Projects area into the Testbed App (#23); the Reference Implementation exempted input classes from its coverage check (`types:coverage`, "Input classes only appear as form defaults/filters, which are empty by design")
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** a create page sends its input class as the form's initial state, `new CreatePage(defaults: new StoreProjectData(key: '', description: null, leadId: null, …))`, which every render sends with `description` and `leadId` null by design. Contract Coverage reports `✗ StoreProjectData.description is only ever null (at projects/create › defaults.description): add a feature test that renders projects/create with defaults.description not null.`, which no test can do, so `ci:check` can't pass without changing the page.
+
+**Manual workaround:** none that keeps the convention: send the defaults as a different class, or drop the nullable fields from them.
+
+**Closed by:** an input class is the type of what the form sends back as well, so a value the server accepted shows the same states. The Contract recorder keeps what each form request sent when the server accepted it (validated without errors, below 400) in its `form` record ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and [`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php) feeds it to [`ShapeCoverage::observeAccepted()`](../packages/laravel/src/Coverage/ShapeCoverage.php): a test that creates a project with a description closes the gap. Accepted values only mark states as seen; a field no test submits filled in is no gap of its own, since every form endpoint's input is already checked by its `form` Contracts. A gap on an input class now names both ways to close it: `…: add a feature test that renders projects/create with defaults.description not null, or one whose request a form endpoint accepts with StoreProjectData's description not null.` Scenarios: `form-defaults-empty-by-design-pass-coverage`, `form-field-never-sent-fails-coverage`.
+
+### P-127
+
+**Contract Coverage depends on the random data factories produce**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found porting Tracklane into the Testbed App (#23)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `ProjectFactory` fills `description` with `fake()->optional()->sentence()`, and the only test that renders the project edit page leaves it to the factory. Contract Coverage passes or fails `UpdateProjectData.description is only ever null` from one run to the next.
+
+**Manual workaround:** in the tests Contract Coverage relies on, set every nullable, optional or list field explicitly, once filled in and once empty.
+
+**Reasoning:** Contract Coverage reports what the tests produced, and only the app's tests decide what that is; the Overlay can't tell a value a test chose from one a factory drew. Each gap already names the test to add, and once a test sets the field explicitly the result is stable. The Testbed App's tests set every such field and run its Contract Coverage repeatedly without a gap.
+
+### P-132
+
+**Contract Coverage counts every variant of a discriminated union as seen when one is**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found porting Tracklane's Board area into the Testbed App (#25)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** the activity feed's `ActivityData.payload` is `IssueCreatedPayload|StatusChangedPayload|PriorityChangedPayload|AssigneeChangedPayload|CommentedPayload|MemberJoinedPayload`, a discriminated union on a literal `type` (`/** @var ActivityType::StatusChanged */`). Three of its variants send the same keys (`from`, `to`, `type`). Contract Coverage told union variants apart by their keys only, so a test that only ever records a status change passes `strictly:coverage --strict` as if it had sent a priority change and an assignee change too, although `tsc` never saw those variants (an `IssuePriority` where an `IssueStatus` was, a `UserSummaryData | null` `to`).
+
+**Manual workaround:** none; a gap that isn't reported can't be noticed. Exercise every variant anyway.
+
+**Closed by:** a value is a union variant only if, for each of the variant's properties typed as a literal, it sends one of the literal's values, as `tsc` narrows a discriminated union ([`ShapeCoverage::isVariant()`](../packages/laravel/src/Coverage/ShapeCoverage.php)). The literals come from the same PHPDoc type the TypeScript literal is generated from ([`LiteralValues`](../packages/laravel/src/TypeScript/LiteralValues.php), shared with the `in:` rule inferred for a literal input, [P-020](#p-020)): string, int and float literals, class constants and enum cases. A test that only records a status change now fails with `✗ ActivityData.payload is never seen as PriorityChangedPayload (…)`. Scenarios: `discriminated-union-every-variant-passes-coverage`, `discriminated-union-variant-never-seen-fails-coverage`. The Testbed App's activity feed test sends every variant.
 
 ### P-067
 
@@ -1175,6 +1773,96 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** none; finish the edit and the next save regenerates the type.
 
+### P-076
+
+**An empty map is sent as `[]`, which its type doesn't allow**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-065](#p-065)
+- **Upstream:** by design: PHP has one array type, and [`json_encode()`](https://www.php.net/manual/en/function.json-encode.php) encodes an empty array as `[]` whatever its keys would have been
+- **Status:** closed
+
+**Reproduction:** a page prop typed `array<value-of<ProjectStatus>, int>` (generated as `Partial<Record<ProjectStatus, number>>`, [P-033](#p-033)) or `array<string, int>` (`{ [x: string]: number }`) is sent as `[]` when it is empty, and so is a Data object whose props are all optional and absent. Its recorded Contract fails `tsc`: `error TS2559: Type 'never[]' has no properties in common with type 'Partial<Record<ProjectStatus, number>>'`. The payload is harmless (reading `[]` by key gives `undefined`, as the type allows), but every test that renders an empty map fails `ci:check`.
+
+**Manual workaround:** none in the Reference Implementation, whose Contracts compared against the plain generated type.
+
+**Closed by:** Contracts are checked against `Contract<T>` ([`@mrsafalpiya/strictly-laravel/contracts`](../packages/npm/contracts/index.d.ts)), which is T except that an object type with no required property may also be `[]`, at any depth. Nothing else is relaxed: a non-empty list sent for a map, or `[]` for an object with a required property, still fails. Scenarios: `empty-map-page-prop-passes-contract`, `list-sent-for-map-page-prop-fails-contract`.
+
+### P-080
+
+**An existing app silently lacks a hook a newer release adds, or one it lost**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 68 and 69
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app installed with an earlier release runs `composer update` and `npm update`, but the installer hooks it got at install time are the only ones it has. A hook a newer release adds (a tsconfig flag, a lint rule, a `ci:check` step) never reaches it. The same happens when an app loses a hook by accident, for example a merge that drops `"noUncheckedIndexedAccess": true` from `tsconfig.json`: `text.split(' ')[0].toUpperCase()` then compiles, and `ci:check` passes.
+
+**Manual workaround:** diff the app against a fresh install by hand after every update.
+
+**Closed by:** `strictly:install` is safe to run again ([`InstallCommand`](../packages/laravel/src/Console/InstallCommand.php)). It applies every hook that is missing, never touches converted or user files, and changes nothing on an app that is fully installed. `strictly:install --check` applies everything to a scratch copy of the app ([`ScratchCopy`](../packages/laravel/src/Install/ScratchCopy.php)). It fails, naming each hook, when the installer would change something. `ci:check` runs it as its first step (`ci:check:install`). The [upgrade guide](../packages/laravel/UPGRADE.md) tells an app to run the installer after every update. Scenarios: `hook-removed-fails-install-check`, `hook-removed-restored-by-reinstall-passes`, `hook-removed-restored-by-reinstall-catches-unchecked-index`. Harness tests: "strictly:install is idempotent: running it again on a fully installed app is a no-op" and "re-running strictly:install restores a missing hook and reports one it can't apply, leaving that file alone".
+
+### P-081
+
+**A half-updated app runs one release's Composer package with another's npm package**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user story 71; ADR-0001 (one version for both packages)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `composer update` brings `mrsafalpiya/strictly-laravel` 0.2.0 while `@mrsafalpiya/strictly-laravel` stays at 0.1.0, or the other way round. One release then generates the types, and the other release's React helpers, JSX types and lint rules check them. Nothing tells the developer.
+
+**Manual workaround:** compare `composer show mrsafalpiya/strictly-laravel` with `npm ls @mrsafalpiya/strictly-laravel` after every update.
+
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js)) compares its own version with the Composer package's version in `vendor/composer/installed.json`. When they differ it prints a `[strictly]` warning in the dev server and in every build, naming both versions and pointing to the upgrade guide. A Composer dev version (`dev-main`) carries no release number, so it isn't compared. Harness tests: "the dev server and the build warn when the Composer and npm package versions differ", which first checks that a build with matching versions prints no warning, and "Vite plugin: Composer and npm package versions" (`harness/tests/vite-plugin.test.ts`).
+
+### P-082
+
+**A release's app-side change the installer can't make goes unnoticed**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 69 and 70
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app's `vite.config.ts` builds its plugin list in a function (`plugins: lazyPlugins(plugins)`), which the installer can't patch. The installer reports the Strictly Laravel Vite plugin as `not applied` once, and then nothing else does. `ci:check` passes, and the dev server never regenerates the types. A release that needs any change only the app's developer can make (one the installer can't apply) has the same gap.
+
+**Manual workaround:** read the installer's output and the release notes carefully.
+
+**Closed by:** `ci:check:install` (`strictly:install --check`, [P-080](#p-080)) fails while any hook is `not applied`, and the error says what to do by hand. A hook the developer applied by hand counts as applied. The [upgrade guide](../packages/laravel/UPGRADE.md) lists each release's app-side changes and documents the release-check convention: every such change is applied by a hook, or detected by a hook that fails until it's made, or checked by a rule in the earliest tool that can express it, or marked as having no check, with the reason. Scenarios: `vite-plugin-unpatchable-fails-install-check`, `vite-plugin-registered-by-hand-passes`.
+
+### P-124
+
+**`ci:check` fails in a fresh clone because feature tests need a Vite build**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user story 58; found porting Tracklane into the Testbed App (#23)
+- **Upstream:** none (the Base Kit builds before its tests in its own CI)
+- **Status:** closed
+
+**Reproduction:** clone an installed app and run `composer ci:check`. `public/build` is gitignored and nothing in `ci:check` builds, so every feature test that renders a page fails with `Vite manifest not found at: …/public/build/manifest.json` (16 of the Base Kit's own tests). In a working copy that was built once, a new page fails the same way (`Unable to locate file in Vite manifest: resources/js/pages/projects/index.tsx`) until the next build. No Contract is recorded for those pages.
+
+**Manual workaround:** run `pnpm run build` before `ci:check`, or call `$this->withoutVite()` in the test case (the Reference Implementation's `tests/TestCase.php` did).
+
+**Closed by:** [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php), which the installer applies to every feature test, renders pages without the Vite build: Contracts check payloads, not asset tags. A test that needs the real tags calls `$this->withVite()`. Scenarios: `fresh-clone-without-build-passes-test`, `vite-assets-without-build-fails-test`.
+
+### P-146
+
+**AI coding agents are taught the untyped way**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user stories 65 to 67; issue #30
+- **Upstream:** by design: Laravel Boost's guidance is written for any Inertia app ([`inertia-laravel/core`](https://github.com/laravel/boost/blob/main/.ai/inertia-laravel/core.blade.php), [`inertia-react-development`](https://github.com/laravel/boost/tree/main/.ai/inertia-react))
+- **Status:** closed
+
+**Reproduction:** the Base Kit is generated with `--no-boost`, so an AI coding agent working in an installed app gets no guidance at all. Add Boost the usual way (`composer require laravel/boost --dev`, `php artisan boost:install`) and the agent files it writes (`CLAUDE.md` or `AGENTS.md`, `.claude/skills`) say "Use `Inertia::render()` for server-side routing", and its `inertia-react-development` skill shows `<Link href="/users">`, `router.visit('/users')`, `useForm` and `<Form>`. Nothing mentions Page classes, input classes, `<TypedForm>`, `useRouteHttp()`, `forPage()`, Contracts or Contract Coverage. An agent that follows the guidance writes code `ci:check` rejects (`strictly.inertiaRender`, `strictly/typed-requests`, `strictly/no-hardcoded-urls`), or hand-types the props `ci:check` would have generated, and then works around the checks.
+
+**Manual workaround:** paste the type-safety standard (the Reference Implementation's `docs/type-safety.md`, kept as [`research/type-safety.md`][type-safety]) into the app's `CLAUDE.md` and keep it in step with each release by hand.
+
+**Closed by:** the Composer package requires `laravel/boost` and ships a Boost core guideline (`resources/boost/guidelines/core.md`: the condensed standard, what checks what, and that it overrides Boost's generic Inertia guidance) and one skill per workflow (`resources/boost/skills/strictly-*/SKILL.md`), which Boost reads from the installed package, so they update with it. Boost installs a third-party package's guidance only when the app's `boost.json` lists it, and the Base Kit gitignores `boost.json` along with every agent file Boost writes; [`BoostGuidance`](../packages/laravel/src/Boost/BoostGuidance.php) adds the package to `boost.json` before `boost:install` and `boost:update` run, so no guidance is selected or committed by hand. The installer hook `Composer scripts: boost:update after composer update` ([`BoostUpdateScript`](../packages/laravel/src/Install/BoostUpdateScript.php)) runs `boost:update` after `composer update`, as `laravel new` does for an app it installs Boost in. Each skill's worked example is a scenario that passes the full `ci:check`, and `harness/tests/boost-guidance.test.ts` fails when a skill's code drifts from its scenario, quotes a diagnostic no breaking scenario produces, or names a lint rule or PHPStan identifier that doesn't exist. Scenarios: `skill-add-page-example-passes`, `skill-add-form-example-passes`, `skill-add-query-filters-example-passes`, `skill-add-json-endpoint-example-passes`, `skill-add-deferred-props-example-passes`, `skill-add-broadcast-event-example-passes`, `skill-add-translation-example-passes`, `skill-close-coverage-gap-example-passes`, `skill-close-coverage-gap-example-gap-fails-coverage`. Harness tests: "Boost installs the package's core guideline and every skill, and nothing it writes is committed (P-146)" and "composer update runs boost:update; an app that lost that script fails ci:check:install until strictly:install restores it (P-146)".
+
 ## Findings not registered
 
 Findings from the sources that are not ways a type can be wrong at a Type Boundary of Base Kit + Overlay:
@@ -1192,5 +1880,5 @@ Findings from the sources that are not ways a type can be wrong at a Type Bounda
 [eval-02]: research/evaluations/02-laravel-data-ts.md
 [eval-03]: research/evaluations/03-other-tools.md
 [ecosystem]: research/ecosystem.md
-[type-safety]: ../reference/template/docs/type-safety.md
+[type-safety]: research/type-safety.md
 [spec]: https://github.com/mrsafalpiya/strictly-laravel/issues/1

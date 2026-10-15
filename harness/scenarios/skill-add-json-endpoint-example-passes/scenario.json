@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-json-endpoint Boost skill: an action takes an input class and returns a Data class, a component calls it with useRouteHttp() and reads the typed result, feature tests call it for every response shape and a 422, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

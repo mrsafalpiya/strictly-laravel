@@ -2,7 +2,8 @@
 /**
  * The Strictly Laravel Vite plugin. `strictly:install` registers it in the app's vite.config.ts. While the dev server
  * runs (`composer dev`), it regenerates the TypeScript types (`@/generated`) whenever a PHP file under app/ is saved,
- * so the editor sees a changed Data class or enum without a command (Problem P-064), and whenever a page component
+ * so the editor sees a changed Data class or enum without a command (Problem P-064), whenever a lang file changes, so
+ * `t()` takes the new keys and params (Problems P-055, P-056), and whenever a page component
  * file is created or deleted under resources/js/pages, so the generated checks that tie each one to its Page class
  * list the files there are (Problem P-010):
  *
@@ -13,13 +14,24 @@
  * Builds, typecheck and `ci:check` don't need it: their scripts run `php artisan strictly:generate` first. Wayfinder's
  * own Vite plugin regenerates the routes, so this one generates only the types.
  *
+ * It regenerates on a saved .env.example too, from which `strictly:generate` types `import.meta.env` (Problem P-058).
+ * And because those types promise every `VITE_*` variable .env.example lists, a build fails when the environment it
+ * runs with doesn't set one, and the dev server warns (Problem P-140).
+ *
+ * In dev and in builds it also warns when the installed Composer package's version differs from this npm package's
+ * (Problem P-081).
+ *
  * @import { Logger, Plugin } from 'vite'
  */
 import { execFile } from 'node:child_process';
-import { relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 
 /** How long to wait after a save for more saves before regenerating. */
 const debounceMs = 150;
+
+const composerPackage = 'mrsafalpiya/strictly-laravel';
+const npmPackage = '@mrsafalpiya/strictly-laravel';
 
 /**
  * @typedef {object} StrictlyLaravelOptions
@@ -37,7 +49,26 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
 
     return {
         name: '@mrsafalpiya/strictly-laravel',
-        apply: 'serve',
+        configResolved(config) {
+            const mismatch = versionMismatch(config.root);
+
+            if (mismatch !== null) {
+                config.logger.warn(`[strictly] ${mismatch}`, { timestamp: config.command === 'serve' });
+            }
+
+            for (const variable of unsetEnvVariables(config.root, config.env)) {
+                const message =
+                    `.env.example lists ${variable}, but the environment Vite runs with doesn't set it, so ` +
+                    `import.meta.env.${variable} is undefined although its type is string. Set it in .env or the ` +
+                    'environment (an empty value counts), or remove it from .env.example if nothing reads it.';
+
+                if (config.command === 'build') {
+                    throw new Error(`[strictly] ${message}`);
+                }
+
+                config.logger.warn(`[strictly] ${message}`, { timestamp: true });
+            }
+        },
         configureServer(server) {
             const root = server.config.root;
             const regenerate = serialised(() => generate(command, root, server.config.logger));
@@ -68,15 +99,88 @@ export function strictlyLaravel({ command = ['php', 'artisan', 'strictly:generat
 }
 
 /**
- * Whether a file event changes the types: any PHP file under app/, and a page component file created or deleted (its
- * contents aren't generated from, so saving one changes nothing).
+ * Problem P-081: the Composer and npm packages are released together under one version, and a project where only one
+ * was updated generates types with one release and checks them with the other's helpers, rules and JSX types. Returns
+ * the warning when the Composer package installed in the project (vendor/composer/installed.json) has a different
+ * version than this npm package, or null when they match or either is unknown (no vendor/ yet, or a Composer dev
+ * version such as `dev-main`, which carries no release number).
+ *
+ * @param {string} root the project root
+ * @returns {string | null}
+ */
+function versionMismatch(root) {
+    const npmVersion = /** @type {{ version: string }} */ (readJson(new URL('../package.json', import.meta.url))).version;
+    const installed = readJson(join(root, 'vendor', 'composer', 'installed.json'));
+    // Composer 2 writes { packages: [...] }; Composer 1 wrote the list itself.
+    const packages = Array.isArray(installed) ? installed : installed?.packages;
+    const entry = Array.isArray(packages) ? packages.find((candidate) => candidate?.name === composerPackage) : undefined;
+    const composerVersion = typeof entry?.version === 'string' ? entry.version.replace(/^v/, '') : null;
+
+    if (composerVersion === null || composerVersion.startsWith('dev-') || composerVersion.endsWith('-dev') || composerVersion === npmVersion) {
+        return null;
+    }
+
+    return (
+        `the Composer package ${composerPackage} is ${composerVersion} but the npm package ${npmPackage} is ${npmVersion}. ` +
+        'They are released together: update both to the same version, then run `php artisan strictly:install` ' +
+        `(vendor/${composerPackage}/UPGRADE.md lists what each release needs).`
+    );
+}
+
+/**
+ * Problem P-140: `strictly:generate` types every `VITE_*` variable .env.example lists as a string on `import.meta.env`
+ * (P-058). Returns the listed ones the environment Vite loaded (`.env` files and the process environment) lacks, which
+ * Vite would leave `undefined` in the bundle. Commented-out lines aren't listed; the same pattern as the generator's.
+ *
+ * @param {string} root the project root
+ * @param {Record<string, unknown>} env the variables Vite exposes to the client (`config.env`)
+ * @returns {string[]}
+ */
+function unsetEnvVariables(root, env) {
+    let envExample;
+
+    try {
+        envExample = readFileSync(join(root, '.env.example'), 'utf8');
+    } catch {
+        return [];
+    }
+
+    const listed = [...envExample.matchAll(/^[ \t]*(?:export[ \t]+)?(VITE_[A-Za-z0-9_]*)[ \t]*=/gm)].map((match) => match[1] ?? '');
+
+    return [...new Set(listed)].filter((variable) => env[variable] === undefined);
+}
+
+/**
+ * @param {string | URL} file
+ * @returns {any} the parsed JSON, or undefined when the file doesn't exist or isn't JSON
+ */
+function readJson(file) {
+    try {
+        return JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Whether a file event changes the types: any PHP file under app/, .env.example (`import.meta.env`), any lang file
+ * (the app's own, not lang/vendor/'s), routes/channels.php (the broadcast channels), and a page component file created
+ * or deleted (its contents aren't generated from, so saving one changes nothing).
  *
  * @param {'add' | 'change' | 'unlink'} event
  * @param {string} path relative to the project root, with forward slashes
  */
 function regeneratesTypes(event, path) {
+    if (path === '.env.example' || path === 'routes/channels.php') {
+        return true;
+    }
+
     if (path.startsWith('app/')) {
         return path.endsWith('.php');
+    }
+
+    if (path.startsWith('lang/')) {
+        return !path.startsWith('lang/vendor/') && (path.endsWith('.php') || path.endsWith('.json'));
     }
 
     return event !== 'change' && path.startsWith('resources/js/pages/');

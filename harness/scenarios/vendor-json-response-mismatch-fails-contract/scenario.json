@@ -1,0 +1,8 @@
+{
+    "problem": "P-050",
+    "description": "A Data class declared as the response of Fortify's password confirmation status endpoint that names its field differently from what Fortify sends fails the JSON Contract the feature test records.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2353: Object literal may only specify known properties, and '\"confirmed\"' does not exist in type '{ isConfirmed: boolean; }'."
+    }
+}

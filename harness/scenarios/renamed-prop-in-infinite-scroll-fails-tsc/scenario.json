@@ -1,0 +1,9 @@
+{
+    "problem": "P-045",
+    "description": "forPage<'reports'>().InfiniteScroll takes only the page's prop names in `data`, so a renamed scroll prop fails tsc instead of silently loading no more pages.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type '\"snapshots\"' is not assignable to type 'PropName<\"reports\">'."
+    }
+}

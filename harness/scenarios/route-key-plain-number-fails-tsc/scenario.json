@@ -1,0 +1,9 @@
+{
+    "problem": "P-003",
+    "description": "Passing a plain number property (another model's key not declared #[RouteKeyOf] that model) where the route takes a project fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "show.tsx(9,37): error TS2345: Argument of type 'number' is not assignable to parameter of type '(string & { readonly [routeKeyOf]: \"Project\"; })"
+    }
+}

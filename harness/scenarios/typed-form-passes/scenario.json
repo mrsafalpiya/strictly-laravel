@@ -1,0 +1,5 @@
+{
+    "problem": "P-096",
+    "description": "<TypedForm {...route.form()}> takes its payload from the route: field() names nested and list fields as FieldNames for raw controls, the Base Kit's converted Input, Checkbox and Button, and a component forwarding name as FieldName; errors and resetOnSuccess are keyed by the input; a route whose action takes no input gets a form without fields; the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,6 @@
+{
+    "problem": "P-060",
+    "description": "Config values read with Laravel's typed accessors (config()->boolean(), config()->string()) into the shared props Data class pass PHPStan and the feature tests.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

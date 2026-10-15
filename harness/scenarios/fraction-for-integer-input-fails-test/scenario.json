@@ -1,0 +1,9 @@
+{
+    "problem": "P-019",
+    "description": "A test that sends a fraction for an int input property and expects it accepted fails with the inferred integer rule's message.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "The estimate field must be an integer."
+    }
+}

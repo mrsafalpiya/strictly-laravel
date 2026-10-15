@@ -1,0 +1,5 @@
+{
+    "problem": "P-003",
+    "description": "A route parameter bound to a model takes only that model's key: a Data object built from the model, its key, or a property declared #[RouteKeyOf] that model; the feature tests prove every branded key sent is an existing key of its model, with each table in its own id range, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

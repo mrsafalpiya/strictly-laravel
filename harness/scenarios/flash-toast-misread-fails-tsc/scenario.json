@@ -1,0 +1,9 @@
+{
+    "problem": "P-047",
+    "description": "A flash handler that misspells a field of the toast fails tsc, because the router's flash event is typed by the generated flash data with no cast.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2551: Property 'mesage' does not exist on type 'ToastData'. Did you mean 'message'?"
+    }
+}

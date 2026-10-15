@@ -1,0 +1,6 @@
+{
+    "problem": "P-030",
+    "description": "An input Data class's authorize() runs before validation, so a user who may not submit gets a 403 even with an invalid payload, and one who may gets the validation errors.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

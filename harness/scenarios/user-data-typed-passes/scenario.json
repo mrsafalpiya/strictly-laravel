@@ -1,0 +1,6 @@
+{
+    "problem": "P-036",
+    "description": "A component reads the fields the generated UserData declares, the ones the server sends for the signed-in user, and passes tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

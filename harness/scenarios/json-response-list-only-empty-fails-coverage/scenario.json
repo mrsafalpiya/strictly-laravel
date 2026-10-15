@@ -1,0 +1,8 @@
+{
+    "problem": "P-048",
+    "description": "A list in a JSON endpoint's response that every recorded response sends empty is a Contract Coverage gap, since the type of its items was never checked.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ SearchResultsData.hits is only ever empty (at POST /search › hits): add a feature test that calls POST /search with at least one item in hits."
+    }
+}

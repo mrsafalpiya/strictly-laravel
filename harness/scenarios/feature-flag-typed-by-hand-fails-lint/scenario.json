@@ -1,0 +1,9 @@
+{
+    "problem": "P-059",
+    "description": "A feature flag read through a hand-written usePage<…>() type argument, which nothing checks against what the server shares, fails the lint step through the strictly/typed-page-props rule, which points to the shared props Data class.",
+    "step": "lint",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "`usePage()` takes its props' type from the generated shared props and Page classes: drop the type argument."
+    }
+}

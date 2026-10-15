@@ -119,6 +119,29 @@ error: Formatting issues found
         ]);
     });
 
+    test('ci:check:install: hooks strictly:install would still apply', () => {
+        const output = `  config/strictly.php .............................................. unchanged
+  Composer scripts: ci:check and its steps (using pnpm) ............ unchanged
+  tsconfig.json: strictness flags .................................... missing
+  vite.config.ts: Strictly Laravel Vite plugin ................. not applied
+
+   ERROR  vite.config.ts has no \`plugins: [\` array written over several lines; add it by hand.
+
+  routes/web.php ............................................... not converted
+  PHPStan extension included in phpstan.neon ....................... unchanged
+
+   ERROR  Strictly Laravel is not fully applied to this app: tsconfig.json: strictness flags (missing). Run \`php artisan strictly:install\`.
+
+Script @php artisan strictly:install --check handling the ci:check:install event returned with error code 1
+`;
+
+        assert.deepEqual(failureReport('ci:check:install', output).diagnostics, [
+            { message: 'tsconfig.json: strictness flags: missing' },
+            { message: 'vite.config.ts: Strictly Laravel Vite plugin: not applied: vite.config.ts has no `plugins: [` array written over several lines; add it by hand.' },
+            { file: 'routes/web.php', message: 'not converted' },
+        ]);
+    });
+
     test('Pint', () => {
         const output = `
   ................⨯.........⨯...............................
@@ -191,6 +214,24 @@ Script phpstan analyse handling the types:check event returned with error code 1
 
         assert.deepEqual(failureReport('ci:check:test', output).diagnostics, [
             { file: 'tests/Feature/BrokenTest.php', line: 4, message: 'Tests\\Feature\\BrokenTest > broken: Failed asserting that 1 is identical to 2.' },
+        ]);
+    });
+
+    test('Contract Coverage', () => {
+        const output = `> @php artisan strictly:coverage --strict
+Contract Coverage: 2 gaps in the 13 recorded Contracts (✗ fails):
+
+ ✗ settings/appearance: no feature test renders this page: add a feature test that requests a route returning App\\Pages\\Settings\\AppearancePage.
+ ✗ LoginPage.status is only ever null (at auth/login › status): add a feature test that renders auth/login with status not null.
+Script @php artisan strictly:coverage --strict handling the ci:check:coverage event returned with error code 1
+`;
+
+        assert.deepEqual(failureReport('ci:check:coverage', output).diagnostics, [
+            {
+                message:
+                    'Contract Coverage: settings/appearance: no feature test renders this page: add a feature test that requests a route returning App\\Pages\\Settings\\AppearancePage.',
+            },
+            { message: 'Contract Coverage: LoginPage.status is only ever null (at auth/login › status): add a feature test that renders auth/login with status not null.' },
         ]);
     });
 });

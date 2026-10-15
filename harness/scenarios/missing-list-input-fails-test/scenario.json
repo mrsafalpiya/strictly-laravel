@@ -1,0 +1,9 @@
+{
+    "problem": "P-018",
+    "description": "A non-null list input property is inferred `present`, not dropped: a test that omits it and expects the request accepted fails with the presence message.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "The labels field must be present."
+    }
+}

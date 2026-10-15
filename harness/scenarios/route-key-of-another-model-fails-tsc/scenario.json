@@ -1,0 +1,9 @@
+{
+    "problem": "P-003",
+    "description": "Passing an issue's Data object where the route takes a project fails tsc, although both have an id.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Type 'number & { readonly [routeKeyOf]: \"Issue\"; }' is not assignable to type 'number & { readonly [routeKeyOf]: \"Project\"; }'."
+    }
+}

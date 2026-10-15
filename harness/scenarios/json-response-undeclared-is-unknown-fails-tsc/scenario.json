@@ -1,0 +1,6 @@
+{
+    "problem": "P-048",
+    "description": "A JSON endpoint whose action declares no response Data class types the useRouteHttp result as unknown, so reading a field from it unchecked fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS18046: 'result.response' is of type 'unknown'." }
+}

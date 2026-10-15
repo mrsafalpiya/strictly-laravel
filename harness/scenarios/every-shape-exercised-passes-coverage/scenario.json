@@ -1,0 +1,5 @@
+{
+    "problem": "P-066",
+    "description": "Feature tests that render a page with every state its props' types permit (a nullable field set and null, a list with items, each variant of a Data union, each member of int|string, an Optional prop sent): Contract Coverage finds no gaps and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

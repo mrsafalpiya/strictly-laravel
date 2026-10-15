@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Data\FlashData;
+use App\Data\ProfileDeleteData;
+use App\Data\ProfileUpdateData;
+use App\Enums\ToastType;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\ProfileDeleteRequest;
-use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Pages\Settings\ProfilePage;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -12,7 +14,6 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
@@ -32,9 +33,9 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user): RedirectResponse
+    public function update(ProfileUpdateData $data, #[CurrentUser] User $user): RedirectResponse
     {
-        $user->fill($request->validated());
+        $user->fill(['name' => $data->name, 'email' => $data->email]);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -42,7 +43,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
+        FlashData::toast(ToastType::Success, __('Profile updated.'));
 
         return to_route('profile.edit');
     }
@@ -50,7 +51,7 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user): RedirectResponse
+    public function destroy(ProfileDeleteData $data, Request $request, #[CurrentUser] User $user): RedirectResponse
     {
         Auth::logout();
 

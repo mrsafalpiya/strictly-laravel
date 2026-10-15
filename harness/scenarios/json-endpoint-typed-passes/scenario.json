@@ -1,0 +1,5 @@
+{
+    "problem": "P-048",
+    "description": "useRouteHttp takes the request from the route's input and the response from the Data class its action returns (unknown when it declares none), the feature tests record each JSON response as a Contract, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

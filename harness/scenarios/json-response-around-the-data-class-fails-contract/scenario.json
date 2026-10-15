@@ -1,0 +1,8 @@
+{
+    "problem": "P-048",
+    "description": "A JSON endpoint that sends a value around its response Data class's type (cached counts asserted to the declared shape) sends keys the generated type doesn't have, and its recorded Contract fails tsc in ci:check.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2353: Object literal may only specify known properties, and '\"users\"' does not exist in type '{ documents: number; projects: number; }'."
+    }
+}
