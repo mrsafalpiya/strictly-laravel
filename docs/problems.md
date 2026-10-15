@@ -85,7 +85,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
-| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | open |
+| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | closed |
+| [P-155](#p-155) | An input whose `rules()` take a route model is validated only through its route | validation errors | accepted gap |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
@@ -117,7 +118,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | closed |
 | [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | closed |
 | [P-147](#p-147) | A broadcast notification or model broadcast needs an app event alongside it | broadcasting | accepted gap |
-| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | open |
+| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
+| [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
@@ -903,11 +905,28 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** validation errors
 - **Source:** found porting Tracklane's Workspaces area into the Testbed App (#23)
 - **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`). Editing a comment is another: only its author may (`CommentPolicy::update`), so `UpdateCommentData::authorize()` reads `$request->route('comment')` the same way.
 
 **Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
+
+**Closed by:** an InputData's `authorize()` and `rules()` (a nested InputData's `rules()` too) receive, for each parameter typed as a model (any `UrlRoutable`), the model the current route binds to the parameter of the same name; every other parameter still resolves through the container ([`RouteModelArguments`](../packages/laravel/src/Workarounds/LaravelData/RouteModelArguments.php), called by InputData's pipeline in place of laravel-data's `AuthorizedDataPipe` and by the `DataValidationRulesResolver` the service provider binds). It never falls back to an empty model: a parameter the route has no parameter of that name for, a route parameter left unbound (the action doesn't take the model, so it stays the raw key), or a call outside a request's route (`validate()` from a command or a unit test, [P-155](#p-155)) throws a `LogicException` naming the parameter and the route; a nullable parameter receives `null` for an optional route parameter the URL left out. The PHPStan rule `strictly.routeModelParameter` ([`RouteModelParameterRule`](../packages/laravel/src/PHPStan/RouteModelParameterRule.php)) rejects a model parameter of `authorize()` or `rules()` on any other Data class (a query class, a plain Data class), where it would still be a new, empty model. The Testbed App's `UpdateMemberData`, `UpdateCommentData`, `UpdateIssueData` and `UpdateLabelData` take the models as parameters. Scenarios: `bound-models-in-input-authorize-and-rules-passes`, `input-model-parameter-not-on-route-fails-test`, `model-parameter-in-query-rules-fails-phpstan`.
+
+### P-155
+
+**An input whose `rules()` take a route model is validated only through its route**
+
+- **Type Boundary:** validation errors
+- **Source:** found while closing [P-126](#p-126)
+- **Upstream:** by design (laravel-data's `validate()` and `validateAndCreate()` take only the payload)
+- **Status:** accepted gap
+
+**Reproduction:** `UpdateLabelData::rules(Label $label)` gets the route's `{label}`. Validating that input outside a request to its route, with `UpdateLabelData::validate($payload)` from a command, a queued job or a unit test, has no route to take the label from, so it throws `…::rules() takes App\Models\Label $label, the model the current route binds to {label}, but there is no current route.` An input without model parameters validates anywhere, as before.
+
+**Manual workaround:** validate the input through a request to its route (a feature test). Where the same rules are needed elsewhere, put them in a static method that takes the model and call it from both `rules()` and the other caller.
+
+**Reasoning:** laravel-data gives `validate()` no way to pass the model, and falling back to an empty one is what P-126 removed. Inputs are validated by the request that carries them, and that path has the route.
 
 ## Enums
 
@@ -1352,7 +1371,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Manual workaround:** none; channel strings are built by hand.
 
-**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so its name stays unchecked: [P-143](#p-143). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
+**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so `config/strictly.php` declares it instead ([P-143](#p-143)). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
 
 ### P-142
 
@@ -1391,11 +1410,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-054](#p-054)
 - **Upstream:** none (Laravel needs no definition for a public channel)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an event broadcasts on `new Channel('status')`; the client listens with `useChannelEvent(publicChannel('statuss'), …)`. Both compile, since nothing in `routes/channels.php` names the channel, and the broadcast Contract checks only private and presence channels.
 
-**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it.
+**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it. That isn't equivalent: a private channel needs an authenticated user, so guests, whom public channels exist for, can't listen.
+
+**Closed by:** the app declares its public channels in `config/strictly.php`'s `public_channels`, next to the vendor declarations, since Laravel defines them nowhere: a name (`'status'`), or a pattern keyed by itself with the models its parameters hold the route key of (`'projects.{project}.public' => ['project' => Project::class]`), which the installer publishes empty for new apps and the package's defaults give existing ones ([`PublicChannels`](../packages/laravel/src/Broadcasting/PublicChannels.php)). `BroadcastChannels::of()` returns them next to the channels `routes/channels.php` defines, with the visibility `public`, so `BroadcastChannels` in `@/generated/broadcasting` covers all three kinds. `publicChannel(pattern, params)` takes only the declared patterns, with their parameters typed as `channel()` types them (a bound one takes the model's route key or its Data object), and `channel()` takes only private and presence ones: a misspelled name fails `tsc` (`error TS2345: Argument of type '"statuss"' is not assignable to parameter of type '"status" | "projects.{project}.public"'.`), and so does any public channel in an app that declares none (`… parameter of type 'never'.`). Each broadcast Contract now checks every channel the event was broadcast on, public ones included, so broadcasting on an undeclared one fails `tsc` (`error TS2820: Type '"statuss"' is not assignable to type 'BroadcastChannelName'. Did you mean '"status"'?`). A declaration that isn't a name, binds a parameter its pattern doesn't have or a class that isn't a model, names a `private-` or `presence-` channel, or repeats a pattern `routes/channels.php` defines fails `strictly:generate`. Scenarios: `broadcast-public-channels-declared-passes`, `broadcast-public-channel-misspelled-fails-tsc`, `broadcast-on-undeclared-public-channel-fails-contract`, `broadcast-public-channel-declaration-invalid-fails-generate`.
+
+### P-153
+
+**A misspelled channel pattern with parameters fails `tsc` on the argument count**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-143](#p-143)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app whose channels take different parameters (`projects.{project}`, `App.Models.User.{id}`) calls `channel('project.{project}', { project })`. `tsc` fails with `error TS2554: Expected 1 arguments, but got 2.` at the parameters instead of naming the pattern: it falls back to every pattern for the one it can't match, and the parameters of every pattern at once are none. The same holds for `publicChannel()`.
+
+**Manual workaround:** none needed for safety, since the call fails `tsc`; read the pattern instead of the reported argument.
+
+**Closed by:** `ChannelArgs` ([`echo/index.d.ts`](../packages/npm/echo/index.d.ts)) lets a pattern `tsc` couldn't match take its parameters or not, so the pattern is what fails: `error TS2345: Argument of type '"project.{project}.public"' is not assignable to parameter of type '"status" | "projects.{project}.public"'.` A pattern typed as a union of several takes no parameters. Scenarios: `broadcast-public-channels-declared-passes`, `broadcast-public-channel-with-params-misspelled-fails-tsc`.
 
 ### P-144
 

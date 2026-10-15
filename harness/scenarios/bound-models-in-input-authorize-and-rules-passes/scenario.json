@@ -1,0 +1,6 @@
+{
+    "problem": "P-126",
+    "description": "An input's authorize(User $user) and rules(User $user) receive the model the route binds to {user}, so only that user may change their email and keeping it isn't rejected as taken.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

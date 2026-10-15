@@ -11,37 +11,44 @@ import { useEcho as echoReactUseEcho } from '@laravel/echo-react';
 const echoNamespace = 'App\\Events\\';
 
 /**
- * @param {Record<string, { visibility: 'private' | 'presence', keys: Record<string, string | null> }>} definitions
+ * @param {Record<string, { visibility: 'public' | 'private' | 'presence', keys: Record<string, string | null> }>} definitions
  * @param {UseEcho} [useEcho]
  */
 export function createBroadcasting(definitions, useEcho = /** @type {UseEcho} */ (/** @type {unknown} */ (echoReactUseEcho))) {
+    /**
+     * @param {string} pattern
+     * @param {Record<string, unknown>} params
+     * @param {boolean} isPublic
+     * @returns {BroadcastChannel}
+     */
+    const name = (pattern, params, isPublic) => {
+        const definition = definitions[pattern];
+
+        if (definition === undefined || (definition.visibility === 'public') !== isPublic) {
+            throw new Error(isPublic ? `config/strictly.php declares no public channel ${pattern}.` : `routes/channels.php defines no channel ${pattern}.`);
+        }
+
+        const filled = pattern.replace(/\{(.*?)\}/g, (_, /** @type {string} */ param) => {
+            const value = params[param];
+            const field = definition.keys[param] ?? null;
+
+            return String(field !== null && typeof value === 'object' && value !== null ? /** @type {Record<string, unknown>} */ (value)[field] : value);
+        });
+
+        return { name: filled, visibility: definition.visibility };
+    };
+
     return {
         /**
          * @param {string} pattern
          * @param {Record<string, unknown>} [params]
-         * @returns {BroadcastChannel}
          */
-        channel: (pattern, params = {}) => {
-            const definition = definitions[pattern];
-
-            if (definition === undefined) {
-                throw new Error(`routes/channels.php defines no channel ${pattern}.`);
-            }
-
-            const name = pattern.replace(/\{(.*?)\}/g, (_, /** @type {string} */ param) => {
-                const value = params[param];
-                const field = definition.keys[param] ?? null;
-
-                return String(field !== null && typeof value === 'object' && value !== null ? /** @type {Record<string, unknown>} */ (value)[field] : value);
-            });
-
-            return { name, visibility: definition.visibility };
-        },
+        channel: (pattern, params = {}) => name(pattern, params, false),
         /**
-         * @param {string} name
-         * @returns {BroadcastChannel}
+         * @param {string} pattern
+         * @param {Record<string, unknown>} [params]
          */
-        publicChannel: (name) => ({ name, visibility: 'public' }),
+        publicChannel: (pattern, params = {}) => name(pattern, params, true),
         /**
          * @param {BroadcastChannel} channel
          * @param {string} event
