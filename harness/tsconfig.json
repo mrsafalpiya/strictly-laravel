@@ -20,6 +20,7 @@
     "include": [
         "src/**/*.ts",
         "tests/**/*.ts",
+        "../packages/npm/echo/**/*.js",
         "../packages/npm/oxlint/**/*.js",
         "../packages/npm/react/**/*.js",
         "../packages/npm/tests/**/*.ts",

@@ -1,0 +1,6 @@
+{
+    "problem": "P-053",
+    "description": "Listening for a misspelled event name, which Echo would wait for forever, fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2345: Argument of type '\"ProjectUpdatd\"' is not assignable to parameter of type '\"ProjectUpdated\"'." }
+}

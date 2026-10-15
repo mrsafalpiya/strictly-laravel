@@ -12,6 +12,10 @@
         "./contracts": {
             "types": "./contracts/index.d.ts"
         },
+        "./echo": {
+            "types": "./echo/index.d.ts",
+            "default": "./echo/index.js"
+        },
         "./jsx/jsx-runtime": {
             "types": "./jsx/jsx-runtime.d.ts"
         },
@@ -39,6 +43,7 @@
         "index.js",
         "index.d.ts",
         "contracts",
+        "echo",
         "jsx",
         "oxlint",
         "react",
@@ -49,14 +54,22 @@
     "peerDependencies": {
         "@inertiajs/core": "^3.0.0",
         "@inertiajs/react": "^3.0.0",
+        "@laravel/echo-react": "^2.6.0",
         "react": "^19.2.0",
         "vite": ">=8"
+    },
+    "peerDependenciesMeta": {
+        "@laravel/echo-react": {
+            "optional": true
+        }
     },
     "devDependencies": {
         "@inertiajs/core": "^3.9.1",
         "@inertiajs/react": "^3.9.1",
+        "@laravel/echo-react": "^2.6.1",
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
+        "pusher-js": "^8.6.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0"
     },

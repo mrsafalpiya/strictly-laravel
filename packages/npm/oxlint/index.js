@@ -681,12 +681,76 @@ const requireSuppressionReason = {
     },
 };
 
+/** Echo's React hooks that listen for an event by any name, with a payload type the caller names. */
+const untypedEchoHooks = new Set(['useEcho', 'useEchoPresence', 'useEchoPublic']);
+
+/**
+ * P-052, P-053: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
+ * `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data
+ * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type, so
+ * calling them when imported from `@laravel/echo-react` (by name, renamed or through a namespace import) is rejected.
+ * Its other hooks stay allowed: channels, presence members and connection state carry no event payload, and broadcast
+ * notifications and model broadcasts have no generated type yet (P-142).
+ *
+ * @type {Rule}
+ */
+const typedBroadcasts = {
+    meta: {
+        type: 'problem',
+        docs: { description: "Listen for broadcast events through useChannelEvent() instead of Echo's untyped hooks." },
+    },
+    create(context) {
+        /** Local name → imported name, for the hooks imported from `@laravel/echo-react`. */
+        const imported = new Map();
+        /** Local names of namespace imports of `@laravel/echo-react`. */
+        const namespaces = new Set();
+
+        return {
+            ImportDeclaration(node) {
+                if (node.source.value !== '@laravel/echo-react') {
+                    return;
+                }
+
+                for (const specifier of node.specifiers) {
+                    if (specifier.type === 'ImportNamespaceSpecifier') {
+                        namespaces.add(specifier.local.name);
+                    } else if (specifier.type === 'ImportSpecifier') {
+                        const name = nameOf(specifier.imported) ?? (specifier.imported.type === 'Literal' ? String(specifier.imported.value) : null);
+
+                        if (name !== null) {
+                            imported.set(specifier.local.name, name);
+                        }
+                    }
+                }
+            },
+            CallExpression(node) {
+                const callee = node.callee;
+                const local = nameOf(callee);
+                const hook =
+                    local !== null
+                        ? imported.get(local)
+                        : callee.type === 'MemberExpression' && !callee.computed && namespaces.has(nameOf(callee.object) ?? '')
+                          ? nameOf(callee.property)
+                          : null;
+
+                if (hook !== null && hook !== undefined && untypedEchoHooks.has(hook)) {
+                    context.report({
+                        node,
+                        message: `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
+                    });
+                }
+            },
+        };
+    },
+};
+
 /** @type {Plugin} */
 export default {
     meta: { name: 'strictly' },
     rules: {
         'no-hardcoded-urls': noHardcodedUrls,
         'require-suppression-reason': requireSuppressionReason,
+        'typed-broadcasts': typedBroadcasts,
         'typed-form-fields': typedFormFields,
         'typed-forms': typedForms,
         'typed-inertia-components': typedInertiaComponents,
