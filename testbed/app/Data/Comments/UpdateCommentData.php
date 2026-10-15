@@ -17,11 +17,8 @@ final class UpdateCommentData extends InputData
     ) {}
 
     /** Runs before validation: only the author edits a comment (CommentPolicy::update). */
-    public static function authorize(Request $request): bool
+    public static function authorize(Request $request, Comment $comment): bool
     {
-        // authorize() can't take the route's bound models (P-126): read the comment from the current route.
-        $comment = $request->route('comment');
-
-        return $comment instanceof Comment && $request->user()?->can('update', $comment) === true;
+        return $request->user()?->can('update', $comment) === true;
     }
 }

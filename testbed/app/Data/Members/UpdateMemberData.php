@@ -21,15 +21,11 @@ final class UpdateMemberData extends InputData
      * instead of validation errors that would leak information. The same check decides whether the members page
      * offers the role picker for this row.
      */
-    public static function authorize(CurrentWorkspace $current, Request $request): bool
+    public static function authorize(CurrentWorkspace $current, Request $request, Membership $membership): bool
     {
-        // authorize() can't take the route's bound models: read the membership from the current route.
-        $membership = $request->route('membership');
         $viewer = $request->user();
 
-        return $membership instanceof Membership
-            && $viewer instanceof User
-            && MemberAbilitiesData::ofViewer($viewer, $current, $membership)->updateRole;
+        return $viewer instanceof User && MemberAbilitiesData::ofViewer($viewer, $current, $membership)->updateRole;
     }
 
     /**
