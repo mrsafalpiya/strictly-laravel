@@ -7,7 +7,7 @@ export type WorkspaceNavItem = NavItem & {
     order: number;
 };
 
-/** What one Tracklane area adds to the sidebar of a workspace, from the workspace and the other shared props. */
+/** What one Tracklane area adds to the sidebar of a workspace, given the shared props (features, unread count). */
 export type WorkspaceNav = (
     workspace: CurrentWorkspaceData,
     shared: SharedProps,

@@ -1,0 +1,6 @@
+{
+    "problem": "P-058",
+    "description": "A VITE_* variable that .env.example lists is a string on import.meta.env, so reading it passes tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}
