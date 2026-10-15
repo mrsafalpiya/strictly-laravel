@@ -44,7 +44,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-006](#p-006) | Query strings are untyped | routes | closed |
 | [P-104](#p-104) | A query property without a default fails on a URL that leaves its key out | routes | closed |
 | [P-105](#p-105) | A query value the route function leaves out of the URL reads as a different default | routes | closed |
-| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | open |
+| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | closed |
+| [P-151](#p-151) | A closure route's query class doesn't type its route function | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
 | [P-116](#p-116) | A route-key brand can be put on a value that isn't its model's key | routes | closed |
@@ -237,7 +238,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a `QueryData` class type-hinted on the GET action (`index(IssueFiltersData $filters)`), parsed leniently (invalid items fall back to defaults); a Wayfinder template override types the route function's `query` option as `QueryOptions<IssueFiltersData>` (`RouteTypes::queryOptions`). The same object is sent back as a prop so the filter UI is typed by it.
 
-**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class still take any query: [P-106](#p-106). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
+**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class take none ([P-106](#p-106)). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
 
 ### P-104
 
@@ -276,11 +277,26 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** routes
 - **Source:** found while closing [P-006](#p-006)
 - **Upstream:** none (Wayfinder's `query` option is `RouteQueryOptions` on every route)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). A vendor GET that reads a query string gets a query class only by declaring one in `config/strictly.php` ([P-025](#p-025)), as the Base Kit's password reset link (`email`) is. A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
 
 **Manual workaround:** take a query class on every action that reads its query string.
+
+**Closed by:** the Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types the `options` of every route function whose action has no query class ([`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) finds none: a controller action without one, a closure route, a vendor action `config/strictly.php` declares none for) as `NoQueryOptions` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)), whose `query` and `mergeQuery` are `NoQueryClass`, a type no value fits. Passing a query string to such a route fails `tsc`: `error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'.` On the server, the PHPStan rule `strictly.queryRead` ([`QueryReadRule`](../packages/laravel/src/PHPStan/QueryReadRule.php)) rejects reading the query string from the request in a controller (`$request->query(…)`, `$request->query->…`, `request()->query(…)`, `Request::query(…)`), with or without a query class: keys are read from the query class. Pagination needs no query class: `<Pagination>` follows the links the paginator builds, Inertia's `<InfiniteScroll>` asks for the next page itself, and the paginator reads `page` and `cursor` outside the controller, so neither goes through a route function's `query`. A closure route with a query class takes no query string through its route function either: [P-151](#p-151). Scenarios: `route-query-typed-with-and-without-query-class-passes`, `query-on-route-without-query-class-fails-tsc`, `merge-query-on-closure-route-fails-tsc`, `query-read-without-query-class-fails-phpstan`; pagination keeps working in `paginators-typed-as-laravel-sends-them-passes` and the Testbed App.
+
+### P-151
+
+**A closure route's query class doesn't type its route function**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-106](#p-106)
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** open
+
+**Reproduction:** `Route::get('projects', fn (ProjectFiltersData $filters): IndexPage => …)->name('projects.index')` parses its query string leniently, but its route function can't tell it takes a query class, so `index()` from `@/routes/projects` takes `NoQueryOptions` and `index({ query: { sort: 'name' } })` fails `tsc` although `sort` is a property of the class. Nothing says why, and nothing rejects the closure. A closure route that reads `$request->query('tab')` isn't rejected either: `strictly.queryRead` checks controllers only. It fails safe: no route function can send such a route an untyped query string.
+
+**Manual workaround:** take query classes, and read query strings, in controller actions only (as for inputs, [P-097](#p-097), and responses, [P-109](#p-109)).
 
 ### P-007
 
