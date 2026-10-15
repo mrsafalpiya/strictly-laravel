@@ -30,6 +30,14 @@ export function ProjectFeed({
         rename,
     );
     useChannelEvent(channel('announcements'), 'ProjectUpdated', rename);
+    // A channel that is one of two takes an event sent on both.
+    useChannelEvent(
+        userId === project.id
+            ? channel('announcements')
+            : channel('projects.{project}', { project }),
+        'ProjectUpdated',
+        rename,
+    );
 
     return <h1>{name}</h1>;
 }

@@ -7,7 +7,9 @@ use App\Models\Project;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use StrictlyLaravel\Broadcasting\BroadcastsData;
+use StrictlyLaravel\Broadcasting\BroadcastsOn;
 
+#[BroadcastsOn('projects.{project}')]
 final class ProjectArchived implements ShouldBroadcast
 {
     use BroadcastsData;

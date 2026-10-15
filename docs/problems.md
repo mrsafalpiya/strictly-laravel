@@ -119,7 +119,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-147](#p-147) | A broadcast notification or model broadcast needs an app event alongside it | broadcasting | accepted gap |
 | [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
 | [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
-| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
+| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
@@ -1423,11 +1423,13 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-053](#p-053) and [P-054](#p-054)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `CommentPosted` broadcasts on `issues.{issue}`; the client calls `useChannelEvent(channel('projects.{project}', { project }), 'CommentPosted', cb)`. The pattern and the event name are each checked, but not that the event goes to that channel, so the callback never fires.
 
 **Manual workaround:** none; check each listener's channel against the event's `broadcastOn()` by hand.
+
+**Closed by:** each broadcast event names the channel patterns it is sent on with a repeatable `#[BroadcastsOn('issues.{issue}')]` ([`BroadcastsOn`](../packages/laravel/src/Broadcasting/BroadcastsOn.php), ADR-0010), and the PHPStan rule `strictly.broadcastsOn` requires one (`Broadcast event App\Events\ProjectUpdated declares no channel it is sent on.`). A pattern must name a channel the app knows, private or presence from `routes/channels.php` or public from `config/strictly.php`'s `public_channels`, or `strictly:generate` fails (`App\Events\ProjectUpdated: #[BroadcastsOn('project.{project}')] names no channel.`). `@/generated/broadcasting` maps each channel's pattern to the events declared on it (`ChannelEvents`); `channel()` and `publicChannel()` return a handle that carries its pattern, and `useChannelEvent(handle, event, cb)` takes only that pattern's events, or for a handle whose pattern is one of several, the events sent on every one of them: `error TS2345: Argument of type '"ProjectUpdated"' is not assignable to parameter of type '"ProjectShared"'.` The declaration duplicates `broadcastOn()`, which builds the names at runtime, so it is verified both ways. Each broadcast Contract records the pattern of every channel the event went to, matched as Laravel's broadcaster matches it, and checks it against the event's declaration, so a `broadcastOn()` that sends the event elsewhere fails `tsc` (`error TS2322: Type '"App.Models.User.{id}"' is not assignable to type '"projects.{project}"'.`). Contract Coverage reports a declared pattern no feature test broadcasts the event on, a stale declaration (`✗ ProjectUpdated on App.Models.User.{id}: no feature test broadcasts this event on this channel: …`), unless the event's Contracts already fail on a channel it doesn't declare, and a public channel no event declares, which listeners would hear nothing on (`✗ maintenance: no event's #[BroadcastsOn] names this public channel: …`). Scenarios: `broadcast-event-on-undeclared-channel-fails-tsc`, `broadcast-on-channel-not-declared-fails-contract`, `broadcast-declared-channel-never-broadcast-fails-coverage`, `broadcast-public-channel-no-event-declares-fails-coverage`, `broadcast-on-unknown-channel-pattern-fails-generate`, `broadcast-event-without-broadcasts-on-fails-phpstan`, and the passing `broadcast-channels-typed-passes`, `broadcast-event-names-typed-passes`, `broadcast-payload-typed-passes`, `broadcast-public-channels-declared-passes`.
 
 ### P-145
 
