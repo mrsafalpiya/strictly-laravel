@@ -1,0 +1,6 @@
+{
+    "problem": "P-137",
+    "description": "A replacement that doesn't match the message's :params fails PHPStan: __('projects.flash.saved', ['kye' => …]) leaves the message's :key unfilled.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Translation 'projects.flash.saved' needs the param 'key'." }
+}
