@@ -1,0 +1,9 @@
+{
+    "problem": "P-084",
+    "description": "A page prop typed with a PHPDoc array shape (list<array{name: string, lead: ?string}>), whose lead every test sends as null, which Contract Coverage can't see inside: PHPStan fails, naming the property and telling it to model the item as a Data class.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "App\\Pages\\Projects\\IndexPage::$projects has an array shape"
+    }
+}
