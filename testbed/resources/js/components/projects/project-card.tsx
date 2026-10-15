@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { colors } from '@/lib/domain';
 import { cn } from '@/lib/utils';
+import { index as issuesIndex } from '@/routes/issues';
 import { archive, destroy, edit } from '@/routes/projects';
 import type { ProjectData } from '@/generated';
 import { visit } from '@mrsafalpiya/strictly-laravel/react';
@@ -31,8 +32,14 @@ export function ProjectCard({ project }: { project: ProjectData }) {
                     )}
                 />
                 <div className="min-w-0 flex-1">
-                    {/* The Issues area links the name to the project's issues. */}
-                    <span className="font-medium">{project.name}</span>
+                    <Link
+                        href={issuesIndex(workspace, {
+                            query: { projectKey: project.key },
+                        })}
+                        className="font-medium hover:underline"
+                    >
+                        {project.name}
+                    </Link>
                     <div className="font-mono text-xs text-muted-foreground">
                         {project.key} · {project.issuesCount} issues
                     </div>
