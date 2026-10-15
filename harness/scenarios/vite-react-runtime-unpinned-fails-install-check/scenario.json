@@ -1,0 +1,9 @@
+{
+    "problem": "P-016",
+    "description": "An app whose vite.config.ts lost the React JSX runtime pin, so its build would import the types-only narrowed JSX runtime, fails ci:check until strictly:install pins it again.",
+    "step": "install",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Strictly Laravel is not fully applied to this app: vite.config.ts: React plugin keeps React's JSX runtime (missing)."
+    }
+}

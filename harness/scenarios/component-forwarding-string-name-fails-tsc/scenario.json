@@ -1,0 +1,6 @@
+{
+    "problem": "P-015",
+    "description": "A component that forwards a plain string name to a raw <input> fails tsc until it declares name as FieldName.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "Type 'string' is not assignable to type 'FieldName'." }
+}

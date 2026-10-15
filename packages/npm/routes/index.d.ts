@@ -50,6 +50,17 @@ export type InputKey<TInput> = FieldPaths<DeepRequired<TInput>>;
 /** The validation errors of a request with the given input, one message per field. */
 export type ErrorsOf<TInput> = Partial<Record<InputKey<TInput>, string>>;
 
+declare const fieldName: unique symbol;
+
+/**
+ * The name of a form control (`<input name>`, and a component's `name` it forwards to one): a field path of a form's
+ * input, minted only by `field()` in `<TypedForm>`'s render prop (`@mrsafalpiya/strictly-laravel/react`). The app's
+ * JSX types (`@mrsafalpiya/strictly-laravel/jsx`, ADR-0004) accept nothing else as the `name` of `<input>`, `<select>`,
+ * `<textarea>` and `<button>`, so a plain string, or a misspelled field, fails `tsc`. It proves the name is a field of
+ * some form's input, not of the enclosing form's (P-027).
+ */
+export type FieldName = string & { readonly [fieldName]: true };
+
 /** The form state of an input: a file field is empty (`null`) until a file is picked; the server still requires it. */
 export type FormState<TInput> = {
     [K in keyof TInput]: TInput[K] extends File ? TInput[K] | null : TInput[K];

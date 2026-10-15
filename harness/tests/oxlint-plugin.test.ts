@@ -210,3 +210,47 @@ describe('oxlint plugin: strictly/typed-requests', () => {
         ],
     });
 });
+
+describe('oxlint plugin: strictly/typed-forms', () => {
+    tester.run('typed-forms', rule('typed-forms'), {
+        valid: [
+            "import { TypedForm } from '@mrsafalpiya/strictly-laravel/react'; <TypedForm {...store.form()}>x</TypedForm>;",
+            "import { Head, Link } from '@inertiajs/react'; <Head title=\"x\" />;",
+            "import * as Inertia from '@inertiajs/react'; <Inertia.Link href={dashboard()} />;",
+            "import { Form } from 'react-final-form'; <Form />;",
+            '<form action={store.url()} />;',
+        ],
+        invalid: [
+            {
+                code: "import { Form, Head } from '@inertiajs/react'; <Form {...store.form()}>x</Form>;",
+                errors: [{ message: /Inertia's `<Form>` is untyped: use `<TypedForm \{\.\.\.route\.form\(\)\}>`/ }],
+            },
+            { code: "import { Form as InertiaForm } from '@inertiajs/react'; <InertiaForm />;", errors: 1 },
+            { code: "export { Form } from '@inertiajs/react';", errors: 1 },
+            { code: "import * as Inertia from '@inertiajs/react'; <Inertia.Form {...store.form()} />;", errors: 1 },
+        ],
+    });
+});
+
+describe('oxlint plugin: strictly/typed-form-fields', () => {
+    tester.run('typed-form-fields', rule('typed-form-fields'), {
+        valid: [
+            "<TypedForm {...store.form()}>{({ field }) => <Select name={field('status')} />}</TypedForm>;",
+            '<TypedForm {...store.form()} name="project">{() => <button type="submit">Save</button>}</TypedForm>;',
+            '<Select name="status" />;',
+            '<form><input name={name} /></form>;',
+        ],
+        invalid: [
+            {
+                code: '<TypedForm {...store.form()}>{() => <Select name="status" />}</TypedForm>;',
+                errors: [{ message: /Untyped field name "status": use `name=\{field\('…'\)\}` from `<TypedForm>`'s render prop/ }],
+            },
+            { code: "<TypedForm {...store.form()}><div><Select name={'status'} /></div></TypedForm>;", errors: 1 },
+            { code: '<TypedForm {...store.form()}>{() => <Select name={`tasks.${i}.title`} />}</TypedForm>;', errors: 1 },
+            {
+                code: "import { TypedForm as Form } from '@mrsafalpiya/strictly-laravel/react'; <Form {...store.form()}>{() => <input name=\"title\" />}</Form>;",
+                errors: 1,
+            },
+        ],
+    });
+});

@@ -1,6 +1,6 @@
 // @ts-check
 // React helpers of the Overlay. Plain JS (no build step), typed by index.d.ts next to it.
-import { Deferred, InfiniteScroll, Link, router, useForm, WhenVisible } from '@inertiajs/react';
+import { Deferred, Form, InfiniteScroll, Link, router, useForm, WhenVisible } from '@inertiajs/react';
 import { createElement } from 'react';
 
 /**
@@ -40,6 +40,27 @@ export function useRouteForm(route, defaults) {
         /** @param {Record<string, unknown>} [options] */
         submit: (options) => form.submit({ url: route.url, method: route.method }, options),
     };
+}
+
+/**
+ * A field's control name. The FieldName brand exists only in the types (index.d.ts), where `field()` mints it from the
+ * route's input; at runtime the name is the field path itself.
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+const field = (name) => name;
+
+/**
+ * Inertia's `<Form>` with `field()` added to its render prop. The route's `.form()` (`action` and `method`) is passed
+ * through as it is; its input brand exists only in the types.
+ *
+ * @param {{ children: import('react').ReactNode | ((slot: Record<string, unknown>) => import('react').ReactNode) } & Record<string, unknown>} props
+ */
+export function TypedForm({ children, ...props }) {
+    const render = typeof children === 'function' ? (/** @type {Record<string, unknown>} */ slot) => children({ ...slot, field }) : children;
+
+    return createElement(Form, /** @type {any} */ (props), /** @type {any} */ (render));
 }
 
 /**

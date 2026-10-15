@@ -18,7 +18,7 @@ const plugins = () => [
         ],
     }),
     inertia(),
-    react(),
+    react({ jsxImportSource: 'react' }),
     babel({
         presets: [reactCompilerPreset()],
     }),
@@ -46,6 +46,8 @@ export default defineConfig({
         rules: {
             'strictly/no-hardcoded-urls': 'error',
             'strictly/require-suppression-reason': 'error',
+            'strictly/typed-form-fields': 'error',
+            'strictly/typed-forms': 'error',
             'strictly/typed-inertia-components': 'error',
             'strictly/typed-optimistic-updates': 'error',
             'strictly/typed-prop-names': 'error',

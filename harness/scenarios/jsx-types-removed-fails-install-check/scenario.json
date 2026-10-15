@@ -1,0 +1,9 @@
+{
+    "problem": "P-015",
+    "description": "An app whose tsconfig.json compiles JSX against React's own types again, so a plain string can name a form control, fails ci:check until strictly:install points jsxImportSource back at the narrowed JSX types.",
+    "step": "install",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Strictly Laravel is not fully applied to this app: tsconfig.json: narrowed JSX types (missing)."
+    }
+}

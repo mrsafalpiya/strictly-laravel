@@ -56,10 +56,11 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-088](#p-088) | A prop shared beside the shared props type has no type | shared props | closed |
 | [P-089](#p-089) | A page rendered without the Inertia middleware lacks the shared props its type promises | shared props | accepted gap |
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | closed |
-| [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | open |
+| [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | closed |
+| [P-100](#p-100) | A form to a route without an input brand names its payload by hand | form payloads | open |
 | [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | open |
-| [P-015](#p-015) | Form control names are plain strings | form payloads | open |
-| [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | open |
+| [P-015](#p-015) | Form control names are plain strings | form payloads | closed |
+| [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | closed |
 | [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | closed |
 | [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | open |
 | [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | closed |
@@ -421,7 +422,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** input Data classes extending `InputData`, type-hinted on the action; Wayfinder's `.form()` is branded with the action's input class (template override, `RouteTypes::brands`), so `useRouteForm(route, defaults)`, `<TypedForm>`, `submit(route, data)` and `visit(route)` (`@/lib/requests`) take payload, error keys and target from the route. The `type-safety/typed-requests` lint rule rejects `useForm`, `useHttp`, `router.get/post/put/patch/delete`, `<Link data>` and untyped `<Form>`.
 
-**Closed by:** an action's input is a final Data class extending [`InputData`](../packages/laravel/src/Data/InputData.php), type-hinted on the action. The Wayfinder `method` template is overridden ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which renders Wayfinder's own template and brands its return types rather than copying it), so every route function of that action, `.form()` too, returns `RouteDefinition<…> & WithInput<StoreProjectData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteForm(route, defaults)`, `submit(route, data, options)` and `visit(route, options)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) take the payload from that brand: a wrong or missing field fails `tsc`, `submit()` refuses a route whose action takes no input and `visit()` one that does. The oxlint rule `strictly/typed-requests` rejects `useForm()`, `router.get/post/put/patch/delete()`, `router.visit()` with `data` or `method`, and `<Link data>` imported from Inertia; the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action taking a Data class that isn't an InputData. Kit Conversion sends the Base Kit's passkey deletion through `visit()`. Inertia's `<Form>` is still untyped: [P-096](#p-096). Scenarios: `route-typed-requests-pass`, `route-form-wrong-field-fails-tsc`, `submit-wrong-field-fails-tsc`, `visit-route-that-takes-input-fails-tsc`, `inertia-use-form-fails-lint`.
+**Closed by:** an action's input is a final Data class extending [`InputData`](../packages/laravel/src/Data/InputData.php), type-hinted on the action. The Wayfinder `method` template is overridden ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which renders Wayfinder's own template and brands its return types rather than copying it), so every route function of that action, `.form()` too, returns `RouteDefinition<…> & WithInput<StoreProjectData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteForm(route, defaults)`, `submit(route, data, options)` and `visit(route, options)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) take the payload from that brand: a wrong or missing field fails `tsc`, `submit()` refuses a route whose action takes no input and `visit()` one that does. The oxlint rule `strictly/typed-requests` rejects `useForm()`, `router.get/post/put/patch/delete()`, `router.visit()` with `data` or `method`, and `<Link data>` imported from Inertia; the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action taking a Data class that isn't an InputData. Kit Conversion sends the Base Kit's passkey deletion through `visit()`. Forms go through `<TypedForm>` ([P-096](#p-096)). Scenarios: `route-typed-requests-pass`, `route-form-wrong-field-fails-tsc`, `submit-wrong-field-fails-tsc`, `visit-route-that-takes-input-fails-tsc`, `inertia-use-form-fails-lint`.
 
 ### P-015
 
@@ -430,11 +431,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §2; eval-02 §5; ecosystem B.2; ADR-0004
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `<Input name="emial" />` inside a typed form compiles; so does `<input name={someString}>`, and a wrapper component forwarding `name`.
 
 **Manual workaround:** `field('email')` from `<TypedForm>`'s render prop returns a branded `FieldName`; the app's JSX types (`jsxImportSource: "@/types/jsx"`, `resources/js/types/jsx/jsx-runtime.d.ts`) narrow `name` on `<input>`/`<select>`/`<textarea>`/`<button>` to `FieldName`, and the Base Kit's UI components that forward `name` declare `name?: FieldName`. The `type-safety/typed-form-fields` lint rule covers third-party components inside `<TypedForm>`.
+
+**Closed by:** the narrowed JSX types ([ADR-0004](adr/0004-narrowed-jsx-types-for-field-names.md)) ship in the npm package ([`@mrsafalpiya/strictly-laravel/jsx`](../packages/npm/jsx/jsx-runtime.d.ts)): React's JSX namespace, with `name` on `<input>`, `<select>`, `<textarea>` and `<button>` accepting only a [`FieldName`](../packages/npm/routes/index.d.ts), which only `field()` in `<TypedForm>`'s render prop mints ([P-096](#p-096)). `strictly:install` points tsconfig.json's `jsxImportSource` at it ([`JsxTypes`](../packages/laravel/src/Install/JsxTypes.php)), so a plain string as a control's name fails `tsc`, and so does a component that spreads its own `name: string` onto one until it declares `name?: FieldName`. Kit Conversion makes the Base Kit's UI components that forward `name` (`Input`, `PasswordInput`, `Button`, `Checkbox`, `Select`, `InputOTP` and the sidebar's buttons) declare it as a `FieldName`. The oxlint rule `strictly/typed-form-fields` rejects a literal `name` on any element inside `<TypedForm>`, for third-party components that type `name` as a plain string. Names that reach the DOM without JSX stay open: [P-027](#p-027). Scenarios: `typed-form-passes`, `raw-control-plain-name-fails-tsc`, `component-forwarding-string-name-fails-tsc`, `literal-name-in-typed-form-fails-lint`, `jsx-types-removed-fails-install-check`.
 
 ### P-016
 
@@ -443,11 +446,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** overview §4; ADR-0004
 - **Upstream:** by design since [vitejs/vite-plugin-react#726](https://github.com/vitejs/vite-plugin-react/pull/726) (the plugin respects tsconfig's `jsxImportSource`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** set `"jsxImportSource": "@/types/jsx"` in `tsconfig.json` to narrow the JSX types ([P-015](#p-015)); the Vite React plugin then imports the JSX runtime from `@/types/jsx/jsx-runtime`, which has types only, and the app fails to build or render.
 
 **Manual workaround:** pin the runtime in `vite.config.ts`: `react({ jsxImportSource: 'react' })`.
+
+**Closed by:** `strictly:install` pins the Vite React plugin's runtime in vite.config.ts (`react({ jsxImportSource: 'react' })`, [`JsxTypes`](../packages/laravel/src/Install/JsxTypes.php)), so the compiled JSX imports React's runtime and only the types differ. The JSX module has types only (its package exports have no runtime entry), so an unpinned build fails loudly (`"./jsx/jsx-runtime" is not exported`) instead of shipping a broken app, and `ci:check:install` fails on an app that lost the pin. Proved by the harness test "the build compiles JSX with React's runtime" (the build passes with the pin and fails without it) and the scenario `vite-react-runtime-unpinned-fails-install-check`.
 
 ### P-017
 
@@ -658,11 +663,26 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **Type Boundary:** form payloads
 - **Source:** split from [P-014](#p-014) and [P-028](#p-028) while closing them
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Base Kit's `<Form {...ProfileController.update.form()}>` has no type argument, so the names of its controls and the `errors` its render prop gives (`string` per any key) are untied to the action's rules: `errors.nmae` compiles. The route-typed helpers (`useRouteForm`, `submit`, `visit`) and the `strictly/typed-requests` lint rule don't cover the component.
 
 **Manual workaround:** the Reference Implementation's headless `<TypedForm {...store.form()}>` with a `field()` render prop, and its lint rule rejecting an untyped `<Form>`.
+
+**Closed by:** [`<TypedForm {...route.form()}>`](../packages/npm/react/index.d.ts) (`@mrsafalpiya/strictly-laravel/react`), Inertia's `<Form>` typed by the input Data class the route is branded with ([P-014](#p-014)): its render prop's `field()` takes only the input's field paths (nested and list ones too) and returns a `FieldName` ([P-015](#p-015)), and its `errors`, `resetOnSuccess`, `resetOnError` and `onError` are keyed by them, so a misspelled field or error key fails `tsc`. A route whose action takes no input gets a form without fields. The oxlint rule `strictly/typed-forms` rejects importing Inertia's `<Form>`. Kit Conversion turns the Base Kit's settings actions into input classes (`ProfileUpdateData`, `ProfileDeleteData`, `PasswordUpdateData`) and every Base Kit form into a `<TypedForm>`; the Fortify-backed ones name their payload by hand until vendor payloads are declared ([P-100](#p-100)). Scenarios: `typed-form-passes`, `typed-form-wrong-field-fails-tsc`, `typed-form-wrong-error-key-fails-tsc`, `inertia-form-fails-lint`.
+
+### P-100
+
+**A form to a route without an input brand names its payload by hand**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-096](#p-096)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** Fortify's routes have no input class ([P-025](#p-025)), and a closure route's input isn't branded ([P-097](#p-097)), so `<TypedForm {...store.form()}>` for them has no fields. Its payload can be given as a type argument instead, which nothing checks against what the server validates: `<TypedForm<LoginData> {...store.form()}>` compiles with any Data class, and so does `<TypedForm<OtherData> {...update.form()}>` on a branded route whenever `OtherData` has a subset of its input's fields. The Base Kit's auth and two-factor forms do this after Kit Conversion (`App\Data\Auth\*Data`). The validation-error Contracts don't cover such a form either: its route isn't a form endpoint.
+
+**Manual workaround:** keep each hand-named payload class next to the vendor action it describes and check it against the vendor's rules by reading them.
 
 ### P-097
 
@@ -692,7 +712,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** errors keyed by the input type's fields, including nested and array keys (`errors['settings.notifications.onAssign']`, `tasks.0.title`), through `useRouteForm`/`<TypedForm>`/`submit()` ([P-014](#p-014)).
 
-**Closed by:** `useRouteForm()`'s `errors` and the `onError` of `useRouteForm().submit()` and `submit()` are `ErrorsOf<Input>`, keyed by every field path of the route's input, nested and list ones included (`settings.notifyOnAssign`, `tasks.0.title`; [`InputKey`](../packages/npm/routes/index.d.ts)), so a misspelled error key fails `tsc`. The errors of Inertia's `<Form>` are still untyped: [P-096](#p-096). Scenarios: `route-typed-requests-pass`, `route-form-wrong-error-key-fails-tsc`.
+**Closed by:** `useRouteForm()`'s `errors` and the `onError` of `useRouteForm().submit()` and `submit()` are `ErrorsOf<Input>`, keyed by every field path of the route's input, nested and list ones included (`settings.notifyOnAssign`, `tasks.0.title`; [`InputKey`](../packages/npm/routes/index.d.ts)), so a misspelled error key fails `tsc`. So are the errors of `<TypedForm>`'s render prop ([P-096](#p-096)). Scenarios: `route-typed-requests-pass`, `route-form-wrong-error-key-fails-tsc`.
 
 ### P-029
 
