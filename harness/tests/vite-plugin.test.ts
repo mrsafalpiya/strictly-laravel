@@ -179,6 +179,14 @@ describe('Vite plugin: live regeneration', () => {
         await until('a run after the saved channels file finished', () => finishedRuns(dev) === 3);
     });
 
+    test('config/strictly.php saved regenerates the public channels and vendor declarations', async () => {
+        const dev = await startDevServer();
+        await until('the first run finished', () => finishedRuns(dev) === 1);
+
+        dev.save('config/strictly.php');
+        await until('a run after the saved config file finished', () => finishedRuns(dev) === 2);
+    });
+
     test('saving .env.example regenerates too, since import.meta.env is typed from it', async () => {
         const dev = await startDevServer();
         await until('the first run finished', () => finishedRuns(dev) === 1);
