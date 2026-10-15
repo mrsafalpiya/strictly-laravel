@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { before, describe, test } from 'node:test';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -244,7 +244,8 @@ enum ProjectStatus: string
 }
 `,
         );
-        // A page and its Page class, so the build bundles it and fails if `@/generated` doesn't resolve.
+        // A page and its Page class, so the build bundles it and fails if `@/generated` or `@/generated/translations`
+        // doesn't resolve.
         mkdirSync(join(app.dir, 'app', 'Pages'), { recursive: true });
         writeFileSync(
             join(app.dir, 'app', 'Pages', 'ProjectStatusesPage.php'),
@@ -277,19 +278,23 @@ test('the project statuses page renders', function () {
         writeFileSync(
             join(app.dir, 'resources', 'js', 'pages', 'project-statuses.tsx'),
             `import { enumValues } from '@/generated';
+import { t } from '@/generated/translations';
 
 export default function ProjectStatuses() {
     return (
         <ul>
             {enumValues.ProjectStatus.map((status) => (
-                <li key={status}>{status}</li>
+                <li key={status}>{t(\`statuses.\${status}\`)}</li>
             ))}
         </ul>
     );
 }
 `,
         );
-        await app.commitAll('an enum and a page that imports its generated values');
+        // Its labels, translated by the generated t() and bundled by the build as generated JSON.
+        mkdirSync(join(app.dir, 'lang', 'en'), { recursive: true });
+        writeFileSync(join(app.dir, 'lang', 'en', 'statuses.php'), "<?php\n\nreturn [\n    'active' => 'Active',\n    'archived' => 'Archived',\n];\n");
+        await app.commitAll('an enum, its labels and a page that imports its generated values and translations');
 
         // What a fresh clone lacks: every generated directory, ours and Wayfinder's.
         const generated = ['generated', 'wayfinder', 'routes', 'actions'].map((dir) => join(app.dir, 'resources', 'js', dir));
@@ -304,6 +309,11 @@ export default function ProjectStatuses() {
 
         freshClone();
         assertOutcome(await app.run('pnpm', ['run', 'build']), { outcome: 'pass' });
+        const assets = join(app.dir, 'public', 'build', 'assets');
+        assert.ok(
+            readdirSync(assets).some((file) => file.endsWith('.js') && readFileSync(join(assets, file), 'utf8').includes('Archived')),
+            'the build does not bundle the translations',
+        );
     });
 
     test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types', async () => {

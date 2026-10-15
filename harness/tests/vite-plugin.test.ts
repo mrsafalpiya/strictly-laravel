@@ -146,6 +146,20 @@ describe('Vite plugin: live regeneration', () => {
         await until('a run after the deleted page file finished', () => finishedRuns(dev) === 3);
     });
 
+    test('a lang file saved, created or deleted regenerates the translations', async () => {
+        const dev = await startDevServer();
+        await until('the first run finished', () => finishedRuns(dev) === 1);
+
+        dev.save('lang/en/auth.php');
+        await until('a run after the saved PHP lang file finished', () => finishedRuns(dev) === 2);
+
+        dev.create('lang/de.json');
+        await until('a run after the new JSON lang file finished', () => finishedRuns(dev) === 3);
+
+        dev.remove('lang/de/auth.php');
+        await until('a run after the deleted lang file finished', () => finishedRuns(dev) === 4);
+    });
+
     test('files that are not PHP under app/ are ignored, and so are saves to page component files', async () => {
         const dev = await startDevServer();
         await until('the first run finished', () => finishedRuns(dev) === 1);
@@ -155,6 +169,8 @@ describe('Vite plugin: live regeneration', () => {
         dev.save('app/Data/README.md');
         dev.save('vendor/acme/app/Thing.php');
         dev.save('application/Thing.php');
+        dev.save('lang/README.md');
+        dev.save('lang/vendor/acme/en/messages.php');
         await sleep(500);
 
         assert.equal(finishedRuns(dev), 1);
