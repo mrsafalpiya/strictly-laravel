@@ -44,3 +44,5 @@ yarn-error.log
 /opencode.jsonc
 /resources/js/generated
 /resources/js/__contracts__
+/tests/Browser/Screenshots
+/tests/Browser/Traces
