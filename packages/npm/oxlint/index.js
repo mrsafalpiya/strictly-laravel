@@ -685,12 +685,23 @@ const requireSuppressionReason = {
 const untypedEchoHooks = new Set(['useEcho', 'useEchoPresence', 'useEchoPublic']);
 
 /**
- * P-052, P-053: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
+ * P-142: Echo's React hooks that read a framework broadcast (a notification's `toBroadcast()`, a model's
+ * `BroadcastsEvents`), whose payload no Data class types, keyed by what the app broadcasts alongside instead.
+ */
+const frameworkBroadcastHooks = new Map([
+    ['useEchoNotification', { reads: "a broadcast notification's", alongside: 'the notification' }],
+    ['useEchoModel', { reads: "a model broadcast's", alongside: 'the model change' }],
+]);
+
+/**
+ * P-052, P-053, P-142: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
  * `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data
- * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type, so
- * calling them when imported from `@laravel/echo-react` (by name, renamed or through a namespace import) is rejected.
- * Its other hooks stay allowed: channels, presence members and connection state carry no event payload, and broadcast
- * notifications and model broadcasts have no generated type yet (P-142).
+ * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type,
+ * and its `useEchoNotification()` and `useEchoModel()` read broadcast notifications and model broadcasts, whose
+ * payloads have no generated type, so calling any of them when imported from `@laravel/echo-react` (by name, renamed or
+ * through a namespace import) is rejected: a notification or model change broadcasts an app event with a
+ * `BroadcastsData` payload alongside. Its other hooks stay allowed: channels, presence members and connection state
+ * carry no event payload.
  *
  * @type {Rule}
  */
@@ -733,10 +744,21 @@ const typedBroadcasts = {
                           ? nameOf(callee.property)
                           : null;
 
-                if (hook !== null && hook !== undefined && untypedEchoHooks.has(hook)) {
+                if (hook === null || hook === undefined) {
+                    return;
+                }
+
+                const framework = frameworkBroadcastHooks.get(hook);
+
+                if (untypedEchoHooks.has(hook)) {
                     context.report({
                         node,
                         message: `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
+                    });
+                } else if (framework !== undefined) {
+                    context.report({
+                        node,
+                        message: `Echo's \`${hook}()\` reads ${framework.reads} hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside ${framework.alongside}, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`,
                     });
                 }
             },

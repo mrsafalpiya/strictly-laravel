@@ -113,10 +113,12 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
 | [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | closed |
 | [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | closed |
-| [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | open |
+| [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | closed |
+| [P-147](#p-147) | A broadcast notification or model broadcast needs an app event alongside it | broadcasting | accepted gap |
 | [P-143](#p-143) | A public channel's name is hand-written | broadcasting | open |
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
+| [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
@@ -1283,7 +1285,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Manual workaround:** hand-write the payload type next to the listener and keep it in sync.
 
-**Closed by:** an event's payload is a Data class: it uses [`BroadcastsData`](../packages/laravel/src/Broadcasting/BroadcastsData.php), whose `broadcastWith()` sends what `broadcastData(): CommentData` returns. The PHPStan rule `strictly.broadcastData` ([`BroadcastDataRule`](../packages/laravel/src/PHPStan/BroadcastDataRule.php)) rejects a broadcast event that sends its payload any other way (public properties, its own `broadcastWith()` array, a `broadcastData()` that declares no single Data class): `Broadcast event App\Events\ProjectUpdated sends a payload that has no generated type.` `@/generated/broadcasting` maps the event to the Data class's generated type ([`BroadcastingModule`](../packages/laravel/src/Broadcasting/BroadcastingModule.php)), and `useChannelEvent()` ([`@mrsafalpiya/strictly-laravel/echo`](../packages/npm/echo/index.d.ts), a wrapper around `@laravel/echo-react`'s `useEcho()`) types the callback's payload with it, so reading a field it lacks fails `tsc`. The oxlint rule `strictly/typed-broadcasts` rejects Echo's untyped `useEcho()`, `useEchoPresence()` and `useEchoPublic()`. Every broadcast a feature test makes, from a request or not, is recorded as a Contract, `export const payload = {…} satisfies Contract<BroadcastEvents['ProjectUpdated']>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on an event no test broadcasts and observes the payloads' shapes ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `broadcast ProjectUpdated › description`). Broadcast notifications and model broadcasts aren't covered: [P-142](#p-142). ADR-0008. Scenarios: `broadcast-payload-typed-passes`, `broadcast-payload-field-misread-fails-tsc`, `broadcast-payload-without-data-class-fails-phpstan`, `broadcast-payload-around-the-data-class-fails-contract`, `broadcast-event-never-broadcast-fails-coverage`.
+**Closed by:** an event's payload is a Data class: it uses [`BroadcastsData`](../packages/laravel/src/Broadcasting/BroadcastsData.php), whose `broadcastWith()` sends what `broadcastData(): CommentData` returns. The PHPStan rule `strictly.broadcastData` ([`BroadcastDataRule`](../packages/laravel/src/PHPStan/BroadcastDataRule.php)) rejects a broadcast event that sends its payload any other way (public properties, its own `broadcastWith()` array, a `broadcastData()` that declares no single Data class): `Broadcast event App\Events\ProjectUpdated sends a payload that has no generated type.` `@/generated/broadcasting` maps the event to the Data class's generated type ([`BroadcastingModule`](../packages/laravel/src/Broadcasting/BroadcastingModule.php)), and `useChannelEvent()` ([`@mrsafalpiya/strictly-laravel/echo`](../packages/npm/echo/index.d.ts), a wrapper around `@laravel/echo-react`'s `useEcho()`) types the callback's payload with it, so reading a field it lacks fails `tsc`. The oxlint rule `strictly/typed-broadcasts` rejects Echo's untyped `useEcho()`, `useEchoPresence()` and `useEchoPublic()`. Every broadcast a feature test makes, from a request or not, is recorded as a Contract, `export const payload = {…} satisfies Contract<BroadcastEvents['ProjectUpdated']>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on an event no test broadcasts and observes the payloads' shapes ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `broadcast ProjectUpdated › description`). Broadcast notifications and model broadcasts are read through an app event: [P-142](#p-142). ADR-0008. Scenarios: `broadcast-payload-typed-passes`, `broadcast-payload-field-misread-fails-tsc`, `broadcast-payload-without-data-class-fails-phpstan`, `broadcast-payload-around-the-data-class-fails-contract`, `broadcast-event-never-broadcast-fails-coverage`.
 
 ### P-053
 
@@ -1322,11 +1324,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-052](#p-052)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a notification with `via(): ['broadcast']` whose `toBroadcast()` returns `new BroadcastMessage([...])`, read with `useEchoNotification(channel, (n: { title: string }) => …)`; or a model using `BroadcastsEvents`, read with `useEchoModel()`. Both payloads are typed by hand, no Contract records them, and `strictly/typed-broadcasts` leaves those hooks alone.
 
 **Manual workaround:** broadcast an event of the app's own with a `BroadcastsData` payload alongside the notification or model change, and listen for that.
+
+**Closed by:** the oxlint rule `strictly/typed-broadcasts` ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)) also rejects Echo's `useEchoNotification()` and `useEchoModel()`, imported from `@laravel/echo-react` by name, renamed or through a namespace import: ``Echo's `useEchoNotification()` reads a broadcast notification's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the notification, and listen for it with `useChannelEvent(channel, event, callback)` from `@/generated/broadcasting`, which types its payload from the event's Data class.`` (and "a model broadcast's" / "the model change" for `useEchoModel()`). The workaround becomes the only way to read one: the app event's payload is typed, recorded as a Contract and covered like any other (P-052). What that leaves is [P-147](#p-147). Scenarios: `broadcast-notification-through-app-event-passes`, `use-echo-notification-fails-lint`.
+
+### P-147
+
+**A broadcast notification or model broadcast needs an app event alongside it**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-142](#p-142)
+- **Upstream:** none (Laravel Wayfinder's `next` branch and Laravel Ranger collect only `ShouldBroadcast` events)
+- **Status:** accepted gap
+
+**Reproduction:** a notification with `via(): ['broadcast']` and a `toBroadcast()`, or a model using `BroadcastsEvents`, has no client type for its own broadcast, and `strictly/typed-broadcasts` rejects the hooks that read it. To react to it in the browser the app broadcasts a second event of its own, so each change goes over the socket twice while the notification still broadcasts.
+
+**Manual workaround:** broadcast an app event with a `BroadcastsData` payload alongside the notification or model change and listen for it with `useChannelEvent()`; drop `'broadcast'` from the notification's `via()` (or `BroadcastsEvents` from the model) when nothing else reads it.
+
+**Reasoning:** a notification's `toBroadcast()` returns a `BroadcastMessage` around an untyped array, and a model broadcast sends the model's attributes (or its own `broadcastWith()` array) under event names derived at runtime, so typing them would need a second payload convention beside `BroadcastsData`, plus recording Laravel's `BroadcastNotificationCreated` and `BroadcastableModelEventOccurred` as Contracts. An app event already gets all of that, and the extra broadcast is cheap next to a payload nothing checks.
 
 ### P-143
 
@@ -1366,6 +1385,19 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 **Reproduction:** `Broadcast::channel('issues.{issue}.viewers', fn (User $user, Issue $issue): array => ['id' => $user->id, 'name' => $user->name])`; the client reads the members through `here()`, `joining()` and `leaving()` on `usePresenceChannel()`'s channel, typed by hand.
 
 **Manual workaround:** type the member data by hand next to the listener.
+
+### P-148
+
+**A channel object from Echo listens for any event with an untyped payload**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-142](#p-142)
+- **Upstream:** by design: `@laravel/echo-react`'s `useChannel()` returns Echo's channel, whose `listen()` and `notification()` take any name and callback
+- **Status:** open
+
+**Reproduction:** `useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => …)`, or `.notification((n: { title: string }) => …)` on it, or the same on `echo().private(…)`, compiles and passes lint: `strictly/typed-broadcasts` rejects only Echo's listening hooks, not the channel objects its other hooks and `echo()` return.
+
+**Manual workaround:** listen through `useChannelEvent()` only, and leave Echo's channel objects to joining, leaving and presence members.
 
 ## Translations
 
