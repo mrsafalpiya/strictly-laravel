@@ -53,8 +53,11 @@ final readonly class SmokeData
         $workspace->members()->attach(User::factory()->create()->id, ['role' => WorkspaceRole::Member]);
         $workspace->members()->attach(User::factory()->create()->id, ['role' => WorkspaceRole::Guest]);
 
-        $labels = collect(['bug', 'feature', 'design'])
-            ->map(fn (string $name): Label => Label::factory()->create(['workspace_id' => $workspace->id, 'name' => $name]));
+        $labels = [
+            Label::factory()->create(['workspace_id' => $workspace->id, 'name' => 'bug']),
+            Label::factory()->create(['workspace_id' => $workspace->id, 'name' => 'feature']),
+            Label::factory()->create(['workspace_id' => $workspace->id, 'name' => 'design']),
+        ];
         $cycle = Cycle::factory()->create([
             'workspace_id' => $workspace->id,
             'name' => 'Cycle 1',
@@ -78,7 +81,7 @@ final readonly class SmokeData
                 'assignee_id' => $i % 2 === 0 ? $user->id : null,
                 'cycle_id' => $i % 3 === 0 ? $cycle->id : null,
             ]);
-            $issue->labels()->attach($labels[$i % $labels->count()]->id);
+            $issue->labels()->attach($labels[$i % 3]->id);
             $record->handle($workspace, $teammate, $issue, new IssueCreatedPayload);
             $issues[] = $issue;
         }

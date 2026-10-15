@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Pest\Browser\Api\PendingAwaitablePage;
-use Pest\Browser\Support\ComputeUrl;
 use PHPUnit\Framework\Assert;
 use Throwable;
 
@@ -17,15 +16,15 @@ use Throwable;
  * that failed or answered 4xx/5xx), every request the app answered with a 4xx or 5xx, and the Inertia page components
  * the app served.
  *
- * Pest's browser plugin serves the app in the test's own process, so the server side is watched through Laravel's
- * RequestHandled event. The browser side is watched by a script added to the browser context before any page loads:
- * the plugin's own console capture sees only console.log and uncaught errors.
+ * Pest's browser plugin serves the app in the test's own process, so both sides are watched through Laravel's
+ * RequestHandled event: it records the response, and puts a probe script first in every HTML page's head, which records
+ * what the browser reports. The plugin's own console capture sees only console.log and uncaught errors.
  */
 final class Smoke
 {
     /**
-     * Runs in every document before the app's scripts. A WebSocket that can't connect (a broadcasting client with no
-     * server running) is reported by the browser itself, not through console.*, so it isn't a problem here.
+     * Runs in every page before the app's scripts. A WebSocket that can't connect (Echo, with no Reverb server running)
+     * is reported by the browser itself, not through console.*, so it isn't a problem here.
      */
     private const string PROBE = <<<'JS'
         (() => {
@@ -97,8 +96,6 @@ final class Smoke
     /** How long the page must make no request to count as settled, as Playwright's `networkidle`. */
     private const int QUIET_MS = 500;
 
-    private const int LOAD_TIMEOUT_MS = 30_000;
-
     /** @var list<string> */
     private array $serverProblems = [];
 
@@ -117,16 +114,21 @@ final class Smoke
             app()->forgetScopedInstances();
 
             $response = $event->response;
+            $content = (string) $response->getContent();
 
             if ($response->getStatusCode() >= 400) {
-                $exception = property_exists($response, 'exception') && $response->exception instanceof Throwable
-                    ? ' ('.$response->exception::class.': '.$response->exception->getMessage().')'
-                    : '';
+                // Read from the object: a Symfony response (a file download) has no `exception`, unlike Laravel's.
+                $exception = get_object_vars($response)['exception'] ?? null;
 
-                $this->serverProblems[] = "HTTP {$response->getStatusCode()} from {$event->request->method()} {$event->request->getRequestUri()}{$exception}";
+                $this->serverProblems[] = "HTTP {$response->getStatusCode()} from {$event->request->method()} {$event->request->getRequestUri()}"
+                    .($exception instanceof Throwable ? ' ('.$exception::class.': '.$exception->getMessage().')' : '');
             }
 
-            $component = self::componentOf((string) $response->getContent());
+            if (str_starts_with((string) $response->headers->get('Content-Type'), 'text/html')) {
+                $response->setContent(Str::replaceFirst('<head>', '<head><script>'.self::PROBE.'</script>', $content));
+            }
+
+            $component = self::componentOf($content);
 
             if ($component !== null) {
                 $this->components[$component] = true;
@@ -140,27 +142,16 @@ final class Smoke
         return new self;
     }
 
-    /**
-     * Opens a browser at the given app path, with the probe installed. Each call is a fresh browser context: no
-     * cookies, so a guest.
-     */
+    /** Opens a browser at the given app path. Each call is a fresh browser context: no cookies, so a guest. */
     public function open(string $path): PendingAwaitablePage
     {
-        // The plugin creates the browser context on the first visit, and the probe must be in it before the app's
-        // first page loads: start on a static file, which runs no app code.
-        $page = visit('/robots.txt');
-        $page->page()->context()->addInitScript(self::PROBE);
-
-        return $this->go($page, $path);
+        return visit($path);
     }
 
-    /**
-     * Loads the given app path in the page, a full page load. Through Playwright's page itself: the plugin's
-     * navigate() gives a page load one second.
-     */
+    /** Loads the given app path in the page, a full page load. */
     public function go(PendingAwaitablePage $page, string $path): PendingAwaitablePage
     {
-        $page->page()->goto(ComputeUrl::from($path), ['timeout' => self::LOAD_TIMEOUT_MS]);
+        $page->navigate($path);
 
         return $page;
     }
@@ -183,25 +174,20 @@ final class Smoke
 
     /**
      * Waits until the page has made no request for a moment, then fails with every problem the browser and the server
-     * reported since the last check, under the given step's name, and saves a screenshot of the page.
+     * reported since the last check, under the given step's name.
      */
     public function assertClean(PendingAwaitablePage $page, string $step): void
     {
-        $problems = $this->problems($page);
-
-        if ($problems !== []) {
-            $page->screenshot(filename: Str::slug($step));
-        }
-
-        Assert::assertSame([], $problems, "{$step} wasn't clean.");
+        Assert::assertSame([], $this->problems($page, $step), "{$step} wasn't clean.");
     }
 
     /**
-     * Every problem since the last check, once the page has made no request for a moment.
+     * Every problem since the last check, once the page has made no request for a moment. When there is one, a
+     * screenshot named after the step is saved in tests/Browser/Screenshots.
      *
      * @return list<string>
      */
-    public function problems(PendingAwaitablePage $page): array
+    public function problems(PendingAwaitablePage $page, string $step): array
     {
         $page->assertScript('window.__smoke.inflight === 0 && performance.now() - window.__smoke.lastRequest > '.self::QUIET_MS, true);
 
@@ -211,6 +197,10 @@ final class Smoke
             ...array_map(fn (string $problem): string => "server: {$problem}", $this->serverProblems),
         ];
         $this->serverProblems = [];
+
+        if ($problems !== []) {
+            $page->screenshot(filename: Str::slug($step));
+        }
 
         return $problems;
     }

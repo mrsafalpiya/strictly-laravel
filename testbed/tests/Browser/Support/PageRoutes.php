@@ -22,6 +22,7 @@ final class PageRoutes
         '_inertia/devtools/entries' => "Inertia's dev tools",
         '_inertia/devtools/entries/{id}' => "Inertia's dev tools",
         'attachments.show' => 'a file download',
+        'broadcasting/auth' => 'the private channel authorisation Echo requests',
         'passkey.confirm-options' => 'JSON the passkey dialogs fetch',
         'passkey.login-options' => 'JSON the passkey dialogs fetch',
         'passkey.registration-options' => 'JSON the passkey dialogs fetch',
@@ -38,7 +39,7 @@ final class PageRoutes
      */
     public static function forGuests(): array
     {
-        return self::all()->reject(self::needsUser(...))->values()->all();
+        return array_values(self::all()->reject(self::needsUser(...))->all());
     }
 
     /**
@@ -48,7 +49,7 @@ final class PageRoutes
      */
     public static function forUsers(): array
     {
-        return self::all()->filter(self::needsUser(...))->values()->all();
+        return array_values(self::all()->filter(self::needsUser(...))->all());
     }
 
     /**
@@ -61,7 +62,7 @@ final class PageRoutes
     {
         $parameters = [];
 
-        foreach ($route->parameterNames() as $name) {
+        foreach (array_filter($route->parameterNames(), is_string(...)) as $name) {
             Assert::assertArrayHasKey($name, $values, "The smoke test has no value for {{$name}} in GET /{$route->uri()}: add one to the values it loads pages with.");
             $parameters[$name] = $values[$name];
         }

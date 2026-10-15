@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\Label;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Pest\Browser\Api\PendingAwaitablePage;
 use StrictlyLaravel\Inertia\PageLocations;
 use Tests\Browser\Support\PageRoutes;
 use Tests\Browser\Support\Smoke;
@@ -34,12 +36,13 @@ test('every page renders without a console error or a failed request', function 
         'token' => $data->invitation->token,
     ];
     $problems = [];
-    $load = function (Pest\Browser\Api\PendingAwaitablePage $page, string $url, string $as) use ($smoke, &$problems): void {
+    // Loads every page before failing, to report all the pages that weren't clean at once.
+    $load = function (PendingAwaitablePage $page, string $url, string $as) use ($smoke, &$problems): void {
         $smoke->go($page, $url);
-        $found = $smoke->problems($page);
+        $found = $smoke->problems($page, $step = "GET {$url} as {$as}");
 
         if ($found !== []) {
-            $problems["GET {$url} as {$as}"] = $found;
+            $problems[$step] = $found;
         }
     };
 
@@ -186,9 +189,8 @@ test('the activity feed loads more as it scrolls', function () {
     $total = $data->workspace->activities()->count();
 
     $smoke->go($page, "/w/{$data->workspace->slug}/activity");
-    $page->assertScript('window.history.state.page.props.activity.data.length', App\Http\Controllers\ActivityController::PER_PAGE);
+    $page->assertScript('window.history.state.page.props.activity.data.length', ActivityController::PER_PAGE);
 
-    $page->script("document.querySelector('main [data-infinite-scroll], main').scrollIntoView({ block: 'end' })");
     $page->script('window.scrollTo(0, document.documentElement.scrollHeight)');
     $page->assertScript('window.history.state.page.props.activity.data.length', $total)
         ->assertSee("That's everything.");
