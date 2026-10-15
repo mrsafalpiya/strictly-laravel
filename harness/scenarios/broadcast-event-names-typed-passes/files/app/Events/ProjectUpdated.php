@@ -9,7 +9,9 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use StrictlyLaravel\Broadcasting\BroadcastsData;
+use StrictlyLaravel\Broadcasting\BroadcastsOn;
 
+#[BroadcastsOn('projects.{project}')]
 final class ProjectUpdated implements ShouldBroadcast
 {
     use BroadcastsData, Dispatchable, InteractsWithSockets;
