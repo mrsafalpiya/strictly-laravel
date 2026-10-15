@@ -120,7 +120,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
 | [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
-| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
+| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | closed |
+| [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
@@ -1437,11 +1438,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-054](#p-054)
 - **Upstream:** by design: `@laravel/echo-react`'s presence callbacks take `any`
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Broadcast::channel('issues.{issue}.viewers', fn (User $user, Issue $issue): array => ['id' => $user->id, 'name' => $user->name])`; the client reads the members through `here()`, `joining()` and `leaving()` on `usePresenceChannel()`'s channel, typed by hand.
 
 **Manual workaround:** type the member data by hand next to the listener.
+
+**Closed by:** a presence channel's callback returns a Data class of what each member shares, declared as its return type (`fn (User $user, Issue $issue): ?ViewerData => …`, `null` refusing the user; a channel class's `join()` the same). `BroadcastChannels` reads the declared return type: a Data class makes the channel a presence one and is generated as its `member` in `BroadcastChannels` (`@/generated/broadcasting`). `usePresence(channel, { here, joining, leaving })` from there ([`echo/index.d.ts`](../packages/npm/echo/index.d.ts)) takes only a presence channel's handle, with its parameters typed as `channel()` types them, joins it through `@laravel/echo-react`'s `useChannel()` (ADR-0008), and types each callback's members as that Data class, so reading a field it lacks fails `tsc` (`error TS2339: Property 'email' does not exist on type 'ViewerData'.`). The PHPStan rule `strictly.presenceData` ([`PresenceDataRule`](../packages/laravel/src/PHPStan/PresenceDataRule.php)) rejects a channel callback that returns an array (`Presence channel issues.{issue}.viewers returns its members' data as an array.`), and one that returns a Data class without declaring it, which generation would take for a private channel; a callback returning `bool` is untouched. The oxlint rule `strictly/typed-broadcasts` also rejects Echo's `usePresenceChannel()` (``Echo's `usePresenceChannel()` hands out a presence channel whose members are typed by hand: …``). What that leaves is [P-165](#p-165). Scenarios: `presence-members-typed-passes`, `presence-member-field-misread-fails-tsc`, `presence-channel-returns-array-fails-phpstan`, `use-presence-channel-fails-lint`, and the passing `broadcast-channels-typed-passes`, `skill-add-broadcast-event-example-passes`.
+
+### P-165
+
+**A presence channel's member data isn't checked by a Contract**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-145](#p-145)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a presence channel's `ViewerData` gains a `#[WithTransformer]` (or a `toArray()` override) that changes what it serialises to. Its members reach the browser in the `channel_data` of the `/broadcasting/auth` response, which no feature test records, so the difference from the generated `ViewerData` type fails nothing, and Contract Coverage doesn't ask for a test that joins the channel.
+
+**Manual workaround:** a feature test that authorizes the presence channel through a Pusher-protocol broadcaster (switch the test to the Reverb connection, as the Testbed App's `CommentBroadcastTest` does for its private channel) and asserts the `user_info` in the response's `channel_data`.
+
+**Reasoning:** feature tests broadcast on the `null` connection, whose `auth()` never runs a channel's callback, so no test sees member data unless it installs and configures a real broadcaster's SDK (`pusher/pusher-php-server` for Reverb and Pusher). Recording `channel_data` from such responses is possible, but Contract Coverage couldn't require it of every app with a presence channel, and a Contract nothing requires proves little. The member type is generated from the Data class like every other, so what stays unchecked is only that class's own serialisation.
 
 ### P-148
 
@@ -1454,7 +1472,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Reproduction:** `useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => …)`, or `.notification((n: { title: string }) => …)` on it, or the same on `echo().private(…)`, compiles and passes lint: `strictly/typed-broadcasts` rejects only Echo's listening hooks, not the channel objects its other hooks and `echo()` return.
 
-**Manual workaround:** listen through `useChannelEvent()` only, and leave Echo's channel objects to joining, leaving and presence members.
+**Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only, and leave Echo's channel objects to joining and leaving.
 
 ## Translations
 
