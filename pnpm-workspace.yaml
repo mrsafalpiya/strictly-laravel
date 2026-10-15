@@ -1,5 +1,6 @@
 # Only the published packages are workspace members.
-# reference/ (read-only prior art) and .fixtures/ (harness apps with their own
-# pnpm workspace) must never be added here.
+# reference/ (read-only prior art), .fixtures/ (harness apps with their own
+# pnpm workspace) and testbed/ (the Testbed App, its own pnpm workspace that
+# links the npm package like any app) must never be added here.
 packages:
     - packages/*
