@@ -8,6 +8,24 @@
  * Types only: nothing here exists at runtime.
  */
 
+declare const routeKeyOf: unique symbol;
+
+/**
+ * A model's route key (Problem P-003): what a route parameter bound to the model takes, and how the matching property
+ * of a Data class built from the model, or declared `#[RouteKeyOf(Project::class)]`, is generated:
+ *
+ *     public function show(Project $project)   →   show(project), show(project.id), show(issue.project_id)
+ *
+ * all take `RouteKey<'Project', number>`, so an issue, its `id` or a plain number don't fit. Branded by the model's
+ * class basename. Feature tests check that every branded value the server sends is an existing key of its model.
+ */
+export type RouteKey<TModel extends string, TValue> = TValue extends string | number
+    ? TValue & { readonly [routeKeyOf]: TModel }
+    : TValue;
+
+/** Any model's route key (`RouteKey<'Project', number>`): what Contracts strip, since JSON can't carry the brand. */
+export type AnyRouteKey = { readonly [routeKeyOf]: string };
+
 /** An HTTP method an Inertia visit can use. */
 export type VisitMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
