@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { create, index } from '@/routes/projects';
 import type { PageProps } from '@/generated';
+import { t } from '@/generated/translations';
 
 export default function ProjectsIndex({
     projects,
@@ -15,10 +16,12 @@ export default function ProjectsIndex({
 
     return (
         <>
-            <Head title="Projects" />
+            <Head title={t('projects.index.title')} />
             <div className="flex flex-col gap-4 p-4">
                 <div className="flex items-center justify-between gap-2">
-                    <h1 className="text-xl font-semibold">Projects</h1>
+                    <h1 className="text-xl font-semibold">
+                        {t('projects.index.title')}
+                    </h1>
                     <div className="flex items-center gap-2">
                         {archivedCount > 0 && (
                             <Button asChild variant="outline" size="sm">
@@ -31,15 +34,18 @@ export default function ProjectsIndex({
                                     preserveScroll
                                 >
                                     {showArchived
-                                        ? 'Hide archived'
-                                        : `Show archived (${archivedCount})`}
+                                        ? t('projects.index.hide_archived')
+                                        : t('projects.index.show_archived', {
+                                              count: archivedCount,
+                                          })}
                                 </Link>
                             </Button>
                         )}
                         {workspace.can.manage && (
                             <Button asChild size="sm">
                                 <Link href={create(workspace)}>
-                                    <Plus className="size-4" /> New project
+                                    <Plus className="size-4" />{' '}
+                                    {t('projects.index.new')}
                                 </Link>
                             </Button>
                         )}
@@ -48,7 +54,7 @@ export default function ProjectsIndex({
 
                 {projects.length === 0 ? (
                     <p className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
-                        No projects yet.
+                        {t('projects.index.empty')}
                     </p>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

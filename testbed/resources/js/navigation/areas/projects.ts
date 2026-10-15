@@ -1,4 +1,5 @@
 import { FolderKanban, IterationCw, Tags } from 'lucide-react';
+import { t } from '@/generated/translations';
 import type { WorkspaceNav } from '@/navigation';
 import { index as cycles } from '@/routes/cycles';
 import { index as labels } from '@/routes/labels';
@@ -8,7 +9,7 @@ export default ((workspace, features) => [
     {
         group: 'workspace',
         order: 40,
-        title: 'Projects',
+        title: t('projects.nav.projects'),
         href: projects(workspace),
         icon: FolderKanban,
     },
@@ -17,7 +18,7 @@ export default ((workspace, features) => [
               {
                   group: 'workspace' as const,
                   order: 50,
-                  title: 'Cycles',
+                  title: t('projects.nav.cycles'),
                   href: cycles(workspace),
                   icon: IterationCw,
               },
@@ -28,7 +29,7 @@ export default ((workspace, features) => [
               {
                   group: 'manage' as const,
                   order: 10,
-                  title: 'Labels',
+                  title: t('projects.nav.labels'),
                   href: labels(workspace),
                   icon: Tags,
               },

@@ -65,7 +65,7 @@ final class ProjectController extends Controller
             'lead_id' => $data->leadId,
         ]);
 
-        FlashData::success("Created {$project->key} · {$project->name}.");
+        FlashData::success(__('projects.flash.created', ['key' => $project->key, 'name' => $project->name]));
 
         return to_route('projects.index', $workspace);
     }
@@ -92,7 +92,7 @@ final class ProjectController extends Controller
             'lead_id' => $data->leadId,
         ]);
 
-        FlashData::success("Saved {$project->key}.");
+        FlashData::success(__('projects.flash.saved', ['key' => $project->key]));
 
         return to_route('projects.index', $workspace);
     }
@@ -105,7 +105,7 @@ final class ProjectController extends Controller
         $archiving = $project->archived_at === null;
         $project->update(['archived_at' => $archiving ? now() : null]);
 
-        FlashData::success($archiving ? "Archived {$project->key}." : "Restored {$project->key}.");
+        FlashData::success(__($archiving ? 'projects.flash.archived' : 'projects.flash.restored', ['key' => $project->key]));
 
         return back();
     }
@@ -119,14 +119,14 @@ final class ProjectController extends Controller
         Gate::authorize('manage', $workspace);
 
         if ($project->issues()->exists()) {
-            FlashData::error("{$project->key} still has issues. Archive it instead, or move its issues first.");
+            FlashData::error(__('projects.flash.has_issues', ['key' => $project->key]));
 
             return back();
         }
 
         $project->delete();
 
-        FlashData::success("Deleted {$project->key}.");
+        FlashData::success(__('projects.flash.deleted', ['key' => $project->key]));
 
         return to_route('projects.index', $workspace);
     }
