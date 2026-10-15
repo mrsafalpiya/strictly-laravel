@@ -1,0 +1,9 @@
+{
+    "problem": "P-063",
+    "description": "Two Data classes with the same short name in different namespaces fail generation, naming both classes and the fix, instead of writing two types with the same name into @/generated.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "`App\\Data\\Issues\\SummaryData` and `App\\Data\\Projects\\SummaryData` both generate `SummaryData`. Rename one, or give one a TypeScript name with `#[TypeScript(name: '…')]`."
+    }
+}
