@@ -192,7 +192,9 @@ export type TypedFormProps<TInput> = RouteFormTarget &
  *         {({ errors, field }) => <Input name={field('name')} aria-invalid={errors.name !== undefined} />}
  *     </TypedForm>
  *
- * A route whose action takes no input gets a form without fields (`field()` accepts nothing). `field()` returns a
+ * A route whose action takes no input gets a form without fields (`field()` accepts nothing); a vendor route (Fortify's)
+ * is branded with the payload `config/strictly.php` declares for its action. The payload is never a type argument:
+ * `strictly/typed-forms` rejects `<TypedForm<LoginData>>`, which nothing would check against the server (P-100). `field()` returns a
  * `FieldName`, the only `name` the app's JSX types accept on a form control (ADR-0004, P-015). The oxlint rules
  * `strictly/typed-forms` and `strictly/typed-form-fields` reject Inertia's `<Form>` and a literal `name` inside
  * `<TypedForm>`.
