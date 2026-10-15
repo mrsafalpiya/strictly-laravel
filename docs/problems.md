@@ -45,7 +45,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-104](#p-104) | A query property without a default fails on a URL that leaves its key out | routes | closed |
 | [P-105](#p-105) | A query value the route function leaves out of the URL reads as a different default | routes | closed |
 | [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | closed |
-| [P-151](#p-151) | A closure route's query class doesn't type its route function | routes | open |
+| [P-151](#p-151) | A closure route's query class doesn't type its route function | routes | closed |
+| [P-171](#p-171) | A closure route PHPStan can't see as one isn't checked | routes | accepted gap |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
 | [P-116](#p-116) | A route-key brand can be put on a value that isn't its model's key | routes | closed |
@@ -61,7 +62,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | closed |
 | [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | closed |
 | [P-100](#p-100) | A form to a route without an input brand names its payload by hand | form payloads | closed |
-| [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | open |
+| [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | closed |
 | [P-015](#p-015) | Form control names are plain strings | form payloads | closed |
 | [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | closed |
 | [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | closed |
@@ -78,7 +79,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
-| [P-167](#p-167) | A closure route can take a FormRequest or read the request's input | form payloads | open |
+| [P-167](#p-167) | A closure route can take a FormRequest or read the request's input | form payloads | closed |
 | [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | accepted gap |
 | [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | closed |
 | [P-157](#p-157) | A model key named unlike one and validated by no `exists` rule needs no `#[KeyOf]` | form payloads | accepted gap |
@@ -113,7 +114,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
 | [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
-| [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | open |
+| [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
@@ -296,7 +297,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** take a query class on every action that reads its query string.
 
-**Closed by:** the Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types the `options` of every route function whose action has no query class ([`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) finds none: a controller action without one, a closure route, a vendor action `config/strictly.php` declares none for) as `NoQueryOptions` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)), whose `query` and `mergeQuery` are `NoQueryClass`, a type no value fits. Passing a query string to such a route fails `tsc`: `error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'.` On the server, the PHPStan rule `strictly.queryRead` ([`QueryReadRule`](../packages/laravel/src/PHPStan/QueryReadRule.php)) rejects reading the query string from the request in a controller (`$request->query(…)`, `$request->query->…`, `request()->query(…)`, `Request::query(…)`), with or without a query class: keys are read from the query class. Pagination needs no query class: `<Pagination>` follows the links the paginator builds, Inertia's `<InfiniteScroll>` asks for the next page itself, and the paginator reads `page` and `cursor` outside the controller, so neither goes through a route function's `query`. A closure route with a query class takes no query string through its route function either: [P-151](#p-151). Scenarios: `route-query-typed-with-and-without-query-class-passes`, `query-on-route-without-query-class-fails-tsc`, `merge-query-on-closure-route-fails-tsc`, `query-read-without-query-class-fails-phpstan`; pagination keeps working in `paginators-typed-as-laravel-sends-them-passes` and the Testbed App.
+**Closed by:** the Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types the `options` of every route function whose action has no query class ([`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) finds none: a controller action without one, a closure route, a vendor action `config/strictly.php` declares none for) as `NoQueryOptions` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)), whose `query` and `mergeQuery` are `NoQueryClass`, a type no value fits. Passing a query string to such a route fails `tsc`: `error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'.` On the server, the PHPStan rule `strictly.queryRead` ([`QueryReadRule`](../packages/laravel/src/PHPStan/QueryReadRule.php)) rejects reading the query string from the request in a controller (`$request->query(…)`, `$request->query->…`, `request()->query(…)`, `Request::query(…)`), with or without a query class: keys are read from the query class. Pagination needs no query class: `<Pagination>` follows the links the paginator builds, Inertia's `<InfiniteScroll>` asks for the next page itself, and the paginator reads `page` and `cursor` outside the controller, so neither goes through a route function's `query`. A closure route takes no query string through its route function either, and may neither take a query class nor read the query string: [P-151](#p-151). Scenarios: `route-query-typed-with-and-without-query-class-passes`, `query-on-route-without-query-class-fails-tsc`, `merge-query-on-closure-route-fails-tsc`, `query-read-without-query-class-fails-phpstan`; pagination keeps working in `paginators-typed-as-laravel-sends-them-passes` and the Testbed App.
 
 ### P-151
 
@@ -305,11 +306,28 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** routes
 - **Source:** found while closing [P-106](#p-106)
 - **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Route::get('projects', fn (ProjectFiltersData $filters): IndexPage => …)->name('projects.index')` parses its query string leniently, but its route function can't tell it takes a query class, so `index()` from `@/routes/projects` takes `NoQueryOptions` and `index({ query: { sort: 'name' } })` fails `tsc` although `sort` is a property of the class. Nothing says why, and nothing rejects the closure. A closure route that reads `$request->query('tab')` isn't rejected either: `strictly.queryRead` checks controllers only. It fails safe: no route function can send such a route an untyped query string.
 
 **Manual workaround:** take query classes, and read query strings, in controller actions only (as for inputs, [P-097](#p-097), and responses, [P-109](#p-109)).
+
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a query class: `The closure route GET projects takes App\Data\ProjectFiltersData, a query class, but Wayfinder types a route function's query option only from a controller action: no route function can send its keys.` `strictly.queryRead` ([P-106](#p-106)) also rejects reading the query string anywhere in a closure route: `A closure route reads the query string from the request, where nothing types it: a route function sends only the keys of a controller action's query class.` Scenarios: `closure-routes-without-data-classes-pass`, `query-class-in-closure-route-fails-phpstan`.
+
+### P-171
+
+**A closure route PHPStan can't see as one isn't checked**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-097](#p-097)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `$store = fn (StoreProjectData $data) => …; Route::post('projects', $store);`, or a closure registered through `Route::addRoute()`. `strictly.closureRoute`, `strictly.inputRead` and `strictly.queryRead` see a closure route only when its closure is written as the action argument of `Route::get/post/put/patch/delete/options/any/match()` (on the facade, the router or a route registrar), so such a route can take an input or query class, return a Data class or read the request, and its route function is untyped as in [P-097](#p-097), [P-109](#p-109) and [P-151](#p-151).
+
+**Manual workaround:** write a closure route's closure in its route call, or use a controller action.
+
+**Reasoning:** which closure a variable holds is known only where it is called, and the closure written in the route call is how the Base Kit and Laravel's documentation define closure routes. Such a route's function still fails safe for its query string (`NoQueryOptions`) and its response (`unknown`), `useRouteForm()` refuses it, and the validation-error Contracts and the form-endpoint and JSON-endpoint coverage still see the closure.
 
 ### P-007
 
@@ -750,7 +768,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)); declare one for a vendor action that reads either ([P-025](#p-025)). A GET with a query class records the keys it reads as a `query` Contract checked against the class.
 
-**Closed by:** two PHPStan rules, which share [`ControllerAction`](../packages/laravel/src/PHPStan/ControllerAction.php) and [`RequestRead`](../packages/laravel/src/PHPStan/RequestRead.php) with `strictly.queryRead` ([P-106](#p-106)). [`FormRequestRule`](../packages/laravel/src/PHPStan/FormRequestRule.php) (`strictly.formRequest`) rejects a controller action parameter typed as a FormRequest: `App\Http\Controllers\ProjectController::store() takes App\Http\Requests\StoreProjectRequest, a FormRequest, where nothing types its payload: a typed form sends only the fields of its action's input class.` [`InputReadRule`](../packages/laravel/src/PHPStan/InputReadRule.php) (`strictly.inputRead`) rejects reading input from the request in any method of a controller (or closure in one) that takes no input or query class: the accessors of `InteractsWithInput` and `InteractsWithData` (`input()`, `string()`, `boolean()`, `all()`, `only()`, `has()`, `file()`, …), `get()`, `json()`, the `validate()` macros, a FormRequest's `validated()` and `safe()`, the `request` and `files` bags, a key read as a property (`$request->name`) or offset (`$request['name']`), `Request::input()` on the facade and `request('name')`. A method that takes an input or query class may still read the request, since its Contract checks every key it reads ([P-024](#p-024), [P-104](#p-104)), and reading what isn't the payload (`user()`, `route()`, `header()`, `ip()`, `session()`, `cookie()`) passes. Kit Conversion's `SecurityController::edit()` takes a plain `Request` and makes the Base Kit's `TwoFactorAuthenticationRequest`, which validates nothing, from it with `createFrom()` for Fortify's two-factor state handling. Vendor actions stay covered by their declarations ([P-025](#p-025)). Not covered: closure routes ([P-167](#p-167)) and reads outside a controller ([P-168](#p-168)). Scenarios: `form-request-in-action-fails-phpstan`, `input-read-without-input-class-fails-phpstan`, `input-class-and-request-metadata-passes`.
+**Closed by:** two PHPStan rules, which share [`ControllerAction`](../packages/laravel/src/PHPStan/ControllerAction.php) and [`RequestRead`](../packages/laravel/src/PHPStan/RequestRead.php) with `strictly.queryRead` ([P-106](#p-106)). [`FormRequestRule`](../packages/laravel/src/PHPStan/FormRequestRule.php) (`strictly.formRequest`) rejects a controller action parameter typed as a FormRequest: `App\Http\Controllers\ProjectController::store() takes App\Http\Requests\StoreProjectRequest, a FormRequest, where nothing types its payload: a typed form sends only the fields of its action's input class.` [`InputReadRule`](../packages/laravel/src/PHPStan/InputReadRule.php) (`strictly.inputRead`) rejects reading input from the request in any method of a controller (or closure in one) that takes no input or query class: the accessors of `InteractsWithInput` and `InteractsWithData` (`input()`, `string()`, `boolean()`, `all()`, `only()`, `has()`, `file()`, …), `get()`, `json()`, the `validate()` macros, a FormRequest's `validated()` and `safe()`, the `request` and `files` bags, a key read as a property (`$request->name`) or offset (`$request['name']`), `Request::input()` on the facade and `request('name')`. A method that takes an input or query class may still read the request, since its Contract checks every key it reads ([P-024](#p-024), [P-104](#p-104)), and reading what isn't the payload (`user()`, `route()`, `header()`, `ip()`, `session()`, `cookie()`) passes. Kit Conversion's `SecurityController::edit()` takes a plain `Request` and makes the Base Kit's `TwoFactorAuthenticationRequest`, which validates nothing, from it with `createFrom()` for Fortify's two-factor state handling. Vendor actions stay covered by their declarations ([P-025](#p-025)). Closure routes are covered too ([P-167](#p-167)); reads outside a controller aren't ([P-168](#p-168)). Scenarios: `form-request-in-action-fails-phpstan`, `input-read-without-input-class-fails-phpstan`, `input-class-and-request-metadata-passes`.
 
 ### P-167
 
@@ -759,11 +777,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-112](#p-112)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Route::post('projects', fn (Request $request) => Project::create(['name' => $request->string('name')]))` or `fn (StoreProjectRequest $request) => …`. `strictly.inputRead` and `strictly.formRequest` check controllers only, so neither is rejected, and as with [P-097](#p-097) the route function has no input type, so no typed form can send the payload.
 
 **Manual workaround:** handle a payload in a controller action that takes an input class.
+
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a FormRequest (`… takes App\Http\Requests\StoreProjectRequest, a FormRequest, but Wayfinder types a route function's payload only from a controller action: no typed form can send it.`), and `strictly.inputRead` ([P-112](#p-112)) rejects reading input from the request anywhere in a closure route, with the accessors it rejects in a controller: `A closure route reads input from the request with string(), where nothing types it: a typed form sends only the fields of a controller action's input class.` Reading what isn't the payload (`$request->user()`) passes. Scenarios: `closure-routes-without-data-classes-pass`, `input-read-in-closure-route-fails-phpstan`.
 
 ### P-168
 
@@ -891,7 +911,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** keep each hand-named payload class next to the vendor action it describes and check it against the vendor's rules by reading them.
 
-**Closed by:** the oxlint rule `strictly/typed-forms` rejects a type argument on `<TypedForm>` or an alias of it (`` `<TypedForm>`'s payload comes from the route it submits to: drop the type argument. `` …), so a form's payload, field names and error keys always come from its route's brand. A vendor route gets its brand from the payload `config/strictly.php` declares for its action ([P-025](#p-025)), so Kit Conversion's Fortify forms (login, registration, password reset and confirmation, the two-factor challenge and setup) drop their type arguments, and their routes are form endpoints whose validation errors, validated fields and reads are Contracts. A closure route's form still has no fields until its input moves to a controller action ([P-097](#p-097)). Scenarios: `vendor-form-typed-by-declaration-passes`, `typed-form-type-argument-fails-lint`.
+**Closed by:** the oxlint rule `strictly/typed-forms` rejects a type argument on `<TypedForm>` or an alias of it (`` `<TypedForm>`'s payload comes from the route it submits to: drop the type argument. `` …), so a form's payload, field names and error keys always come from its route's brand. A vendor route gets its brand from the payload `config/strictly.php` declares for its action ([P-025](#p-025)), so Kit Conversion's Fortify forms (login, registration, password reset and confirmation, the two-factor challenge and setup) drop their type arguments, and their routes are form endpoints whose validation errors, validated fields and reads are Contracts. A closure route can't take an input class, so its form has none to type ([P-097](#p-097)). Scenarios: `vendor-form-typed-by-declaration-passes`, `typed-form-type-argument-fails-lint`.
 
 ### P-097
 
@@ -900,11 +920,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-014](#p-014)
 - **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Route::post('projects', fn (StoreProjectData $data) => …)->name('projects.store')`: the generated `@/routes/projects` `store()` has no `WithInput` brand, so `useRouteForm(store(), …)` is refused as taking no input and `visit(store())` compiles, sending no payload. The PHPStan rule `strictly.inputData` checks controller actions only, so a plain Data class in such a closure isn't rejected either. The validation-error Contracts and the form-endpoint coverage do see the closure.
 
 **Manual workaround:** take inputs in controller actions only.
+
+**Closed by:** the PHPStan rule `strictly.closureRoute` ([`ClosureRouteRule`](../packages/laravel/src/PHPStan/ClosureRouteRule.php)) rejects a closure route that takes an input class, or any other Data class: `The closure route POST projects takes App\Data\StoreProjectData, an input class, but Wayfinder types a route function's payload only from a controller action: no typed form can send it.` Its tip says to move the route to a controller action, whose input class brands the route function. A closure route is a closure written as the action of `Route::get/post/put/patch/delete/options/any/match()`, on the facade, the router or a route registrar (`Route::middleware('auth')->post(…)`); [`RouteClosure`](../packages/laravel/src/PHPStan/RouteClosure.php) finds it, and also tells `strictly.inputRead` and `strictly.queryRead` when a read is inside one ([P-151](#p-151), [P-167](#p-167)). A route a test registers (where `$this` is a PHPUnit `TestCase`, as in a Pest test) is left alone: it exists only while the test runs, so no route function is generated for it, and a test route taking an input class is how a feature test checks the class's validation. A closure route the rule can't see as one isn't checked: [P-171](#p-171). Scenarios: `closure-routes-without-data-classes-pass`, `input-class-in-closure-route-fails-phpstan`.
 
 ## Validation errors
 
@@ -1306,7 +1328,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
 
-**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); nor is a closure route's response: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); and a closure route can't return a Data class: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
@@ -1343,11 +1365,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** found while closing [P-048](#p-048), like [P-097](#p-097) for inputs
 - **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Route::get('stats', fn (): StatsData => …)->name('stats')`: the generated `@/routes` `stats()` has no `WithResponse` brand, so `useRouteHttp(stats())` types the result `unknown`. The JSON Contracts and the JSON-endpoint coverage do see the closure.
 
 **Manual workaround:** return JSON from controller actions only.
+
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) also rejects a closure route whose return type, declared or inferred, is a Data class other than a Page class (a closure route may still render a page): `The closure route GET stats returns App\Data\StatsData, but Wayfinder types a route function's response only from a controller action: useRouteHttp() types its result unknown.` Scenarios: `closure-routes-without-data-classes-pass` (a controller action returns the Data class), `data-response-from-closure-route-fails-phpstan`.
 
 ### P-050
 
