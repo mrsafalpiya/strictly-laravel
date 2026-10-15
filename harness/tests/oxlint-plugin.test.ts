@@ -236,6 +236,14 @@ describe('oxlint plugin: strictly/typed-forms', () => {
             { code: "import { Form as InertiaForm } from '@inertiajs/react'; <InertiaForm />;", errors: 1 },
             { code: "export { Form } from '@inertiajs/react';", errors: 1 },
             { code: "import * as Inertia from '@inertiajs/react'; <Inertia.Form {...store.form()} />;", errors: 1 },
+            {
+                code: "import { TypedForm } from '@mrsafalpiya/strictly-laravel/react'; <TypedForm<LoginData> {...store.form()}>x</TypedForm>;",
+                errors: [{ message: /`<TypedForm>`'s payload comes from the route it submits to: drop the type argument\./ }],
+            },
+            {
+                code: "import { TypedForm as Form } from '@mrsafalpiya/strictly-laravel/react'; <Form<LoginData> {...store.form()} />;",
+                errors: 1,
+            },
         ],
     });
 });

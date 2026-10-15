@@ -1,0 +1,9 @@
+{
+    "problem": "P-025",
+    "description": "A field Fortify's login doesn't take, in a <TypedForm> for its route, fails tsc against the payload config/strictly.php declares for the action.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2345: Argument of type '\"username\"' is not assignable to parameter of type '\"email\" | \"password\" | \"remember\"'."
+    }
+}
