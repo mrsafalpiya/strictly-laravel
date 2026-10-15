@@ -92,13 +92,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-074](#p-074) | A label map typed loosely isn't tied to the enum | enums | accepted gap |
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | closed |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
-| [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | open |
+| [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | accepted gap |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
 | [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
 | [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | closed |
-| [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | open |
+| [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | accepted gap |
 | [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | closed |
 | [P-046](#p-046) | A nested partial reload returns only the subtree | pagination and deferred props | closed |
 | [P-092](#p-092) | A partial reload's shared props aren't checked | pagination and deferred props | accepted gap |
@@ -202,10 +202,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 - **Type Boundary:** routes
 - **Source:** overview §4; Tracklane's `App\Support\Wayfinder\RouteTypes`
-- **Upstream:** no upstream issue filed
+- **Upstream:** [laravel/wayfinder#328](https://github.com/laravel/wayfinder/issues/328)
 - **Status:** open
 
-**Reproduction:** a Wayfinder template override that writes a parameter type containing `import('@/lib/routes').RouteKey<'Project', string>` across several lines. The formatter collapses the argument list up to the first `)`, which here is inside `import(…)`, and the generated signature comes out mangled.
+**Reproduction:** a Wayfinder template override that writes a parameter type containing `import('@/lib/routes').RouteKey<'Project', string>` across several lines. The formatter collapses the argument list only up to the first `)`, which here is inside `import(…)`. The lines after it keep their line breaks and lose their indentation. The output still compiles, so the defect is cosmetic: the generated files are hard to read and diff.
 
 **Manual workaround:** render the whole parameters argument on one line (`RouteTypes::arguments`).
 
@@ -1001,11 +1001,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** models
 - **Source:** overview §4; type-safety rule 17; eval-01 §7
 - **Upstream:** by design since [larastan/larastan#369](https://github.com/larastan/larastan/pull/369) (confirmed in [larastan/larastan#2495](https://github.com/larastan/larastan/issues/2495))
-- **Status:** open
+- **Status:** accepted gap
 
 **Reproduction:** `$issue->project` for a non-nullable foreign key is `Project|null` to PHPStan, so `ProjectData::fromModel($issue->project)` is an error at level max, pushing code towards `?->` and nullable Data properties that don't match the data.
 
 **Manual workaround:** declare non-nullable relations on the model: `@property-read Project $project`.
+
+**Reasoning:** Larastan types `BelongsTo` as nullable on purpose: a related row can be missing even when the foreign key column is `NOT NULL`, for example without a database constraint or when the relation was loaded without its columns. Overriding that would make PHPStan trust data it can't see. The workaround is one PHPDoc line per relation and is standard Laravel practice, so the Overlay teaches it in its Boost core guideline instead of changing Larastan's types.
 
 ### P-039
 
@@ -1089,11 +1091,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** eval-02 §4 and §9
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** accepted gap
 
 **Reproduction:** a prop built with `Lazy::closure()` or marked `defaultIncluded` is always sent but generated as `prop?: X`, so every component must handle an `undefined` that never happens.
 
-**Manual workaround:** none recorded; avoid these wrappers for props that are always sent.
+**Manual workaround:** declare a prop that is always sent as a plain property (`public StatsData $stats`), not `Lazy|StatsData`; use `Lazy` only with `Lazy::inertia()` or `Lazy::inertiaDeferred()`, for props that can be missing.
+
+**Reasoning:** the generator types a `Lazy|X` property from its declared type, and the variants that are always sent differ only in how the value is built, so it can't tell them apart. The resulting type is looser than the data, never stricter: components handle an `undefined` that doesn't happen, but no wrong value gets through. The always-sent case already has a typed path, the plain property, which the deferred-props Boost skill teaches.
 
 ### P-045
 
