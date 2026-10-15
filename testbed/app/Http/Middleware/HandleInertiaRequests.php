@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Data\AuthData;
+use App\Data\FeaturesData;
 use App\Data\SharedProps;
 use App\Data\UserData;
 use App\Data\Workspaces\CurrentWorkspaceData;
@@ -60,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                     ->map(fn (Membership $membership): WorkspaceSummaryData => WorkspaceSummaryData::fromModel($membership->workspace, $membership->role))
                     ->values()
                     ->all(),
+                features: FeaturesData::fromConfig(),
             ))->props(),
         ];
     }
