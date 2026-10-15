@@ -65,6 +65,7 @@ class HandleInertiaRequests extends Middleware
                     ->values()
                     ->all(),
                 features: FeaturesData::fromConfig(),
+                unreadNotifications: $user?->unreadNotifications()->count() ?? 0,
             ))->props(),
         ];
     }

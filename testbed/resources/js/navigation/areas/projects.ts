@@ -5,7 +5,7 @@ import { index as cycles } from '@/routes/cycles';
 import { index as labels } from '@/routes/labels';
 import { index as projects } from '@/routes/projects';
 
-export default ((workspace, features) => [
+export default ((workspace, { features }) => [
     {
         group: 'workspace',
         order: 40,

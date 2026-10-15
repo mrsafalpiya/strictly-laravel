@@ -9,6 +9,7 @@ use App\Data\Activity\IssueCreatedPayload;
 use App\Data\Activity\PriorityChangedPayload;
 use App\Data\Activity\StatusChangedPayload;
 use App\Data\Attachments\AttachmentData;
+use App\Data\Comments\CommentData;
 use App\Data\FlashData;
 use App\Data\Issues\BulkUpdateIssuesData;
 use App\Data\Issues\CreateIssueQueryData;
@@ -19,16 +20,21 @@ use App\Data\Issues\IssueFormOptionsData;
 use App\Data\Issues\IssueListItemData;
 use App\Data\Issues\StoreIssueData;
 use App\Data\Issues\UpdateIssueData;
+use App\Data\Notifications\IssueAssignedNotificationPayload;
+use App\Data\SavedViews\SavedViewData;
 use App\Data\Users\UserSummaryData;
 use App\Enums\IssuePriority;
 use App\Enums\IssueSort;
 use App\Enums\IssueStatus;
 use App\Models\Activity;
 use App\Models\Attachment;
+use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\Project;
+use App\Models\SavedView;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Notifications\IssueAssigned;
 use App\Pages\Issues\CreatePage;
 use App\Pages\Issues\IndexPage;
 use App\Pages\Issues\ShowPage;
@@ -45,7 +51,7 @@ final class IssueController extends Controller
 {
     public function __construct(private readonly RecordActivity $recordActivity) {}
 
-    public function index(IssueFiltersData $filters, Workspace $workspace): IndexPage
+    public function index(IssueFiltersData $filters, Workspace $workspace, #[CurrentUser] User $user): IndexPage
     {
         $issues = $this->query($workspace, $filters)
             ->with(['project', 'assignee', 'labels'])
@@ -57,6 +63,9 @@ final class IssueController extends Controller
             issues: IssueListItemData::collect($issues, PaginatedDataCollection::class),
             filters: $filters,
             options: IssueFormOptionsData::forWorkspace($workspace),
+            savedViews: $workspace->savedViews()->whereBelongsTo($user)->orderBy('name')->get()
+                ->map(fn (SavedView $view): SavedViewData => SavedViewData::fromModel($view))
+                ->all(),
         );
     }
 
@@ -122,6 +131,12 @@ final class IssueController extends Controller
 
         return new ShowPage(
             issue: IssueData::fromModel($issue),
+            comments: Lazy::inertiaDeferred(fn (): array => $issue->comments()
+                ->with(['user', 'reactions'])
+                ->oldest('id')
+                ->get()
+                ->map(fn (Comment $comment): CommentData => CommentData::fromModel($comment, $user))
+                ->all()),
             attachments: $issue->attachments()->with('user')->latest('id')->get()
                 ->map(fn (Attachment $attachment): AttachmentData => AttachmentData::fromModel($attachment))
                 ->all(),
@@ -222,6 +237,13 @@ final class IssueController extends Controller
             $summary = fn (?int $id): ?UserSummaryData => ($found = $users->get($id ?? 0)) === null ? null : UserSummaryData::fromModel($found);
 
             $this->recordActivity->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: $summary($before['assignee_id']), to: $summary($data->assigneeId)));
+
+            // A newly assigned user hears about it, unless they assigned themselves.
+            $assignee = $users->get($data->assigneeId ?? 0);
+
+            if ($assignee !== null && $assignee->id !== $user->id) {
+                $assignee->notify(new IssueAssigned(IssueAssignedNotificationPayload::fromModels($workspace, $issue, $user)));
+            }
         }
     }
 

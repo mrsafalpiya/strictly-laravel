@@ -8,7 +8,7 @@ use App\Models\Project;
 use Spatie\LaravelData\Data;
 use StrictlyLaravel\Data\RouteKeyOf;
 
-/** A link to another issue (parent, sub-issue). */
+/** A link to another issue (parent, sub-issue, search result). */
 final class IssueReferenceData extends Data
 {
     public function __construct(

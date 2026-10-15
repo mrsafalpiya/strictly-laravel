@@ -1,0 +1,5 @@
+{
+    "problem": "P-133",
+    "description": "Feature tests that send an infinite-scroll (ScrollProp) page prop with items in every state their type permits (a nullable field set and null): Contract Coverage finds no gaps and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
