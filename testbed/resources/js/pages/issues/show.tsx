@@ -1,7 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ActivityItem } from '@/components/activity/activity-item';
 import { CommentThread } from '@/components/comments/comment-thread';
 import { LabelPill } from '@/components/domain/label-pill';
@@ -29,6 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 import { destroy, index, show, update } from '@/routes/issues';
 import { isDateOnly } from '@/generated';
+import { channel, useChannelEvent } from '@/generated/broadcasting';
 import type { PageProps, UpdateIssueData } from '@/generated';
 import { forPage, submit, visit } from '@mrsafalpiya/strictly-laravel/react';
 
@@ -48,6 +50,23 @@ export default function IssuesShow({
     const [title, setTitle] = useState(issue.title);
     const [description, setDescription] = useState(issue.description ?? '');
     const route = { workspace, project: issue.project, issue };
+
+    // Another member's comment on this issue arrives live: reload the thread and the activity entry it adds.
+    useChannelEvent(
+        channel('workspaces.{workspace}', { workspace }),
+        'CommentPosted',
+        (posted) => {
+            if (posted.issueId !== issue.id) {
+                return;
+            }
+
+            toast(`${posted.author.name} commented`, {
+                description: posted.excerpt,
+            });
+            router.reload({ only: page.only('comments', 'activity') });
+        },
+        [issue.id],
+    );
 
     // Every inline edit is a typed partial update: only the keys of UpdateIssueData are allowed.
     const save = (changes: UpdateIssueData) => {
