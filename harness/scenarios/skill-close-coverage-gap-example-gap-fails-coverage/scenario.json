@@ -1,0 +1,8 @@
+{
+    "problem": "P-146",
+    "description": "The gap the strictly-close-coverage-gap Boost skill starts from: the only feature test renders the projects page with a null description, so Contract Coverage fails ci:check with the gap the skill quotes.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ ProjectData.description is only ever null (at projects/index › projects[].description): add a feature test that renders projects/index with projects[].description not null."
+    }
+}

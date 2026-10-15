@@ -1,0 +1,5 @@
+{
+    "problem": "P-146",
+    "description": "The worked example of the strictly-add-translation Boost skill: a message is added to the default locale's lang file and, with the same key and :params, to every other locale, a component renders it with the generated t(), and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
