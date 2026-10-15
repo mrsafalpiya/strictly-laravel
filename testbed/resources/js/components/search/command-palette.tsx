@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { show as board } from '@/routes/board';
+import { index as issuesIndex, show } from '@/routes/issues';
 import { index as notificationsIndex } from '@/routes/notifications';
 import type {
     CurrentWorkspaceData,
@@ -83,17 +83,21 @@ function Palette({ workspace }: { workspace: CurrentWorkspaceData }) {
     const go = (item: Item) => {
         setOpen(false);
 
-        // Until the Issues area has issue pages, an issue or a project opens the board of its project.
+        // An issue opens its page, a project the issue list filtered to it.
         switch (item.kind) {
             case 'issue':
                 return visit(
-                    board(workspace, {
-                        query: { project: item.issue.projectKey },
+                    show({
+                        workspace,
+                        project: item.issue.projectKey,
+                        issue: item.issue.number,
                     }),
                 );
             case 'project':
                 return visit(
-                    board(workspace, { query: { project: item.project.key } }),
+                    issuesIndex(workspace, {
+                        query: { projectKey: item.project.key },
+                    }),
                 );
             case 'notifications':
                 return visit(notificationsIndex(workspace));

@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ActivityItem } from '@/components/activity/activity-item';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { StatusChart } from '@/components/dashboard/status-chart';
@@ -7,6 +7,7 @@ import { IssueRow } from '@/components/issues/issue-row';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { index as activityIndex } from '@/routes/activity';
+import { index as issuesIndex } from '@/routes/issues';
 import type { PageProps } from '@/generated';
 
 export default function WorkspacesDashboard({
@@ -17,6 +18,7 @@ export default function WorkspacesDashboard({
     recentActivity,
 }: PageProps<'workspaces/dashboard'>) {
     const workspace = useWorkspace();
+    const { auth } = usePage().props;
 
     return (
         <>
@@ -66,8 +68,21 @@ export default function WorkspacesDashboard({
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
-                    {/* The Issues area adds a "View all" link to the issue list, filtered by assignee. */}
-                    <Panel title="Assigned to me">
+                    <Panel
+                        title="Assigned to me"
+                        action={
+                            auth.user !== null && (
+                                <Link
+                                    href={issuesIndex(workspace, {
+                                        query: { assigneeId: auth.user.id },
+                                    })}
+                                    className="text-xs text-muted-foreground hover:underline"
+                                >
+                                    View all
+                                </Link>
+                            )
+                        }
+                    >
                         {assignedToMe.length === 0 ? (
                             <p className="py-6 text-center text-sm text-muted-foreground">
                                 Nothing assigned to you.

@@ -5,8 +5,10 @@ use App\Enums\Reaction as ReactionEmoji;
 use App\Enums\WorkspaceRole;
 use App\Models\Comment;
 use App\Models\Issue;
+use App\Models\Reaction;
 use App\Notifications\CommentAdded;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Collaboration\Members;
 
 test('a comment is stored, recorded as activity and notifies assignee and reporter but not the author', function () {
@@ -63,6 +65,30 @@ test('guests cannot comment', function () {
     $this->actingAs($guest)
         ->post(route('comments.store', [$workspace, $project, $issue]), ['body' => 'Hi'])
         ->assertForbidden();
+});
+
+test('the thread reloads only the deferred comments prop', function () {
+    [$workspace, $user, $project] = workspaceWith();
+    $other = Members::add($workspace, WorkspaceRole::Member);
+    $issue = Issue::factory()->create(['project_id' => $project->id]);
+    $mine = Comment::factory()->create(['issue_id' => $issue->id, 'user_id' => $user->id, 'edited_at' => now()]);
+    Comment::factory()->create(['issue_id' => $issue->id, 'user_id' => $other->id]);
+    Reaction::query()->create(['comment_id' => $mine->id, 'user_id' => $user->id, 'emoji' => ReactionEmoji::Heart]);
+    Reaction::query()->create(['comment_id' => $mine->id, 'user_id' => $other->id, 'emoji' => ReactionEmoji::Heart]);
+
+    $this->actingAs($user)
+        ->get(route('issues.show', [$workspace, $project, $issue]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('comments')
+            ->reloadOnly('comments', fn (Assert $reload) => $reload
+                ->missing('issue')
+                ->has('comments', 2)
+                ->where('comments.0.reactions.0.emoji', '❤️')
+                ->where('comments.0.reactions.0.count', 2)
+                ->where('comments.0.reactions.0.reacted', true)
+                ->whereNot('comments.0.editedAt', null)
+                ->where('comments.1.can.update', false)
+                ->where('comments.1.can.delete', true)));
 });
 
 test('only the author can edit a comment, which marks it as edited', function () {

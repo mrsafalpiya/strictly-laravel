@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { ActivityItem } from '@/components/activity/activity-item';
+import { CommentThread } from '@/components/comments/comment-thread';
 import { LabelPill } from '@/components/domain/label-pill';
 import { PriorityIcon } from '@/components/domain/priority-icon';
 import { StatusIcon } from '@/components/domain/status-icon';
@@ -37,6 +38,7 @@ const NONE = '__none';
 
 export default function IssuesShow({
     issue,
+    comments,
     attachments,
     activity,
     options,
@@ -157,6 +159,24 @@ export default function IssuesShow({
                             attachments={attachments}
                             canUpload={can.update}
                         />
+                    </section>
+
+                    <section>
+                        <h2 className="mb-3 text-sm font-semibold">Comments</h2>
+                        {/* Deferred prop: `comments` is optional in the generated type until it has loaded. */}
+                        {comments === undefined ? (
+                            <Skeleton className="h-24" />
+                        ) : (
+                            <CommentThread
+                                issue={issue}
+                                comments={comments}
+                                canComment={can.comment}
+                                // A comment is also an activity entry.
+                                reload={{
+                                    only: page.only('comments', 'activity'),
+                                }}
+                            />
+                        )}
                     </section>
 
                     <section>

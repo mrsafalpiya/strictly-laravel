@@ -4,7 +4,6 @@ use App\Actions\RecordActivity;
 use App\Data\Activity\AssigneeChangedPayload;
 use App\Data\Activity\CommentedPayload;
 use App\Data\Activity\IssueCreatedPayload;
-use App\Data\Activity\MemberJoinedPayload;
 use App\Data\Activity\PriorityChangedPayload;
 use App\Data\Activity\StatusChangedPayload;
 use App\Data\Users\UserSummaryData;
@@ -297,7 +296,7 @@ test('the issue page shows an open issue with nothing optional set', function ()
             ->where('issue.children', []));
 });
 
-test('the activity on the issue page has an entry of every kind', function () {
+test('the activity on the issue page has an entry of every kind an issue gets', function () {
     [$workspace, $user, $project] = workspaceWith();
     $issue = Issue::factory()->create(['project_id' => $project->id]);
     $record = app(RecordActivity::class);
@@ -308,17 +307,16 @@ test('the activity on the issue page has an entry of every kind', function () {
     $record->handle($workspace, $user, $issue, new PriorityChangedPayload(from: IssuePriority::Low, to: IssuePriority::High));
     $record->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: null, to: $someone));
     $record->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: $someone, to: null));
-    // The Collaboration area records these; ActivityData is one union wherever it's shown.
+    // Recorded by the Collaboration area's comments. (`member_joined` is a workspace's, shown in the activity feed.)
     $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: 1, excerpt: 'Looks good'));
-    $record->handle($workspace, $user, $issue, new MemberJoinedPayload(role: WorkspaceRole::Member));
 
     $this->actingAs($user)
         ->get(route('issues.show', [$workspace, $project, $issue]))
         ->assertInertia(fn (Assert $page) => $page
             ->loadDeferredProps(fn (Assert $reload) => $reload
-                ->has('activity', 7)
-                ->where('activity.0.payload.type', 'member_joined')
-                ->where('activity.6.payload.type', 'issue_created')));
+                ->has('activity', 6)
+                ->where('activity.0.payload.type', 'commented')
+                ->where('activity.5.payload.type', 'issue_created')));
 });
 
 test('issues of another workspace are not reachable through this one', function () {

@@ -1,8 +1,11 @@
+import { Link } from '@inertiajs/react';
 import { MessageSquare } from 'lucide-react';
 import { LabelPill } from '@/components/domain/label-pill';
 import { PriorityIcon } from '@/components/domain/priority-icon';
 import { UserAvatar } from '@/components/domain/user-avatar';
+import { useWorkspace } from '@/hooks/use-workspace';
 import { cn } from '@/lib/utils';
+import { show } from '@/routes/issues';
 import type { IssueListItemData } from '@/generated';
 
 /** The `dataTransfer` type a dragged card carries; its value is the issue id. */
@@ -24,6 +27,8 @@ export function BoardCard({
     /** `after` is true when the pointer is over the lower half of the card. */
     onDragOver: (after: boolean) => void;
 }) {
+    const workspace = useWorkspace();
+
     return (
         <div
             data-board-card
@@ -52,8 +57,13 @@ export function BoardCard({
                 <span className="font-mono">{issue.identifier}</span>
                 <UserAvatar user={issue.assignee} className="ml-auto size-5" />
             </div>
-            {/* The Issues area links the title to the issue page. */}
-            <span className="line-clamp-2 font-medium">{issue.title}</span>
+            <Link
+                href={show({ workspace, project: issue.project, issue })}
+                className="line-clamp-2 font-medium hover:underline"
+                draggable={false}
+            >
+                {issue.title}
+            </Link>
             {(issue.labels.length > 0 ||
                 issue.commentsCount > 0 ||
                 issue.dueOn !== null) && (

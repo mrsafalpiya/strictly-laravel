@@ -9,17 +9,46 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\IssueAssigned;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Collaboration\Members;
 
 /**
- * What assigning an issue sends its new assignee. (The Issues area sends it when an issue's assignee changes.)
+ * What assigning an issue sends its new assignee, as IssueController does when an issue's assignee changes.
  */
 function notifyAssigned(Workspace $workspace, Issue $issue, User $by, User $assignee): void
 {
     $issue->loadMissing('project');
     $assignee->notify(new IssueAssigned(IssueAssignedNotificationPayload::fromModels($workspace, $issue, $by)));
 }
+
+test('changing the assignee notifies the new assignee, but not when assigning yourself', function () {
+    Notification::fake();
+    [$workspace, $user, $project] = workspaceWith();
+    $assignee = Members::add($workspace);
+    $issue = Issue::factory()->create(['project_id' => $project->id]);
+
+    $this->actingAs($user)->patch(route('issues.update', [$workspace, $project, $issue]), ['assigneeId' => $assignee->id]);
+    $this->actingAs($user)->patch(route('issues.update', [$workspace, $project, $issue]), ['assigneeId' => $assignee->id]);
+    $this->actingAs($user)->patch(route('issues.update', [$workspace, $project, $issue]), ['assigneeId' => $user->id]);
+    $this->actingAs($user)->patch(route('issues.update', [$workspace, $project, $issue]), ['assigneeId' => null]);
+
+    Notification::assertSentToTimes($assignee, IssueAssigned::class, 1);
+    Notification::assertSentTo($assignee, IssueAssigned::class, fn (IssueAssigned $notification) => $notification->payload->assignedBy->id === $user->id
+        && $notification->payload->workspaceSlug === $workspace->slug);
+    Notification::assertNotSentTo($user, IssueAssigned::class);
+});
+
+test('bulk assignment notifies the assignee once per issue', function () {
+    Notification::fake();
+    [$workspace, $user, $project] = workspaceWith();
+    $assignee = Members::add($workspace);
+    $issues = Issue::factory(2)->create(['project_id' => $project->id]);
+
+    $this->actingAs($user)->patch(route('issues.bulk-update', $workspace), ['ids' => $issues->pluck('id')->all(), 'assigneeId' => $assignee->id]);
+
+    Notification::assertSentToTimes($assignee, IssueAssigned::class, 2);
+});
 
 test('stored payloads round-trip into the discriminated union', function () {
     [$workspace, $user, $project] = workspaceWith();

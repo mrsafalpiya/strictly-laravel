@@ -4,7 +4,7 @@ import { UserAvatar } from '@/components/domain/user-avatar';
 import { Button } from '@/components/ui/button';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { cn } from '@/lib/utils';
-import { show as board } from '@/routes/board';
+import { show } from '@/routes/issues';
 import { read } from '@/routes/notifications';
 import type { NotificationData, UserSummaryData } from '@/generated';
 import { visit } from '@mrsafalpiya/strictly-laravel/react';
@@ -60,10 +60,11 @@ export function NotificationItem({
             <div className="min-w-0 flex-1">
                 <span className="font-medium">{actor.name}</span> {text}{' '}
                 <Link
-                    // Notifications are per user, not per workspace: link into the one it came from. Until the
-                    // Issues area has an issue page, that is the board of the issue's project.
-                    href={board(payload.workspaceSlug, {
-                        query: { project: payload.issue.projectKey },
+                    // Notifications are per user, not per workspace: link into the one it came from.
+                    href={show({
+                        workspace: payload.workspaceSlug,
+                        project: payload.issue.projectKey,
+                        issue: payload.issue.number,
                     })}
                     onClick={() => unread && markAsRead()}
                     className="font-medium hover:underline"

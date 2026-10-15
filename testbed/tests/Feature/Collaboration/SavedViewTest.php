@@ -7,6 +7,7 @@ use App\Enums\IssueStatus;
 use App\Enums\WorkspaceRole;
 use App\Models\Label;
 use App\Models\SavedView;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Collaboration\Members;
 
 test('the current filters can be saved as a personal view', function () {
@@ -39,6 +40,14 @@ test('the current filters can be saved as a personal view', function () {
         ->and($view->filters->priorities)->toBe([IssuePriority::Urgent])
         ->and($view->filters->labelIds)->toBe([$label->id])
         ->and($view->filters->search)->toBe('crash');
+
+    $this->actingAs($user)
+        ->get(route('issues.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('savedViews', 1)
+            ->where('savedViews.0.name', 'My urgent bugs')
+            ->where('savedViews.0.filters.statuses', ['todo', 'in_progress'])
+            ->where('savedViews.0.filters.priorities', [4]));
 });
 
 test('default filters (empty lists) can be saved', function () {
