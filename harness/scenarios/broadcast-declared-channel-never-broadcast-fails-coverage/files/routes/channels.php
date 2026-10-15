@@ -1,0 +1,9 @@
+<?php
+
+use App\Models\Project;
+use App\Models\User;
+use Illuminate\Support\Facades\Broadcast;
+
+Broadcast::channel('projects.{project}', fn (User $user, Project $project): bool => $project->user_id === $user->id);
+
+Broadcast::channel('App.Models.User.{id}', fn (User $user, int $id): bool => $user->id === $id);

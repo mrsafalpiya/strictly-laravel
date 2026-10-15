@@ -1,0 +1,6 @@
+{
+    "problem": "P-144",
+    "description": "Listening for an event on a channel its #[BroadcastsOn] doesn't declare, where the callback would never fire, fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2345: Argument of type '\"ProjectUpdated\"' is not assignable to parameter of type '\"ProjectShared\"'." }
+}

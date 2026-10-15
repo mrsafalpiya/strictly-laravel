@@ -1,6 +1,6 @@
 {
     "problem": "P-054",
-    "description": "channel() takes every channel routes/channels.php defines by its pattern, with a model's route key (or its Data object) for a bound parameter, any value for a plain one and nothing for a pattern without parameters, and tsc passes.",
+    "description": "channel() takes every channel routes/channels.php defines by its pattern, with a model's route key (or its Data object) for a bound parameter, any value for a plain one and nothing for a pattern without parameters, each handle takes the events declared on its channel (or on every channel it may be), and tsc passes.",
     "step": "tsc",
     "expect": { "outcome": "pass" }
 }

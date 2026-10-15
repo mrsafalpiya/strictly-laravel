@@ -1,0 +1,8 @@
+{
+    "problem": "P-144",
+    "description": "A public channel config/strictly.php declares that no event's #[BroadcastsOn] names, where a listener would hear nothing, is a Contract Coverage gap.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ maintenance: no event's #[BroadcastsOn] names this public channel: declare it on the events sent on it, or remove it from public_channels."
+    }
+}
