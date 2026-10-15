@@ -20,7 +20,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Upstream.** For a Problem caused by a third-party tool: a link to the upstream issue or PR that matches it, "by design" with the link that shows it, or "no upstream issue filed". When one is filed, link it here and in the code comment of the isolated workaround. Problems that aren't a tool's defect say "none".
 
-**Reference Implementation names.** Manual workarounds use the Reference Implementation's names: `config/types.php`, the `type-safety/*` lint rules, the `@/lib/*` modules. In the Overlay the config is `config/strictly.php` and suppressible rules are `strictly/<rule>` (oxlint) and `strictly.<rule>` (PHPStan), per ADR-0007.
+**Reference Implementation names.** Manual workarounds use the Reference Implementation's names: `config/types.php`, the `type-safety/*` lint rules, the `@/lib/*` modules, and the template's and Tracklane's classes and files. That code was retired once the Overlay had extracted it (#31), so these names describe what it did; its overview and standard are kept in the research docs (below). In the Overlay the config is `config/strictly.php` and suppressible rules are `strictly/<rule>` (oxlint) and `strictly.<rule>` (PHPStan), per ADR-0007.
 
 **Adding a Problem.** Copy an entry, take the next free ID, add a row to the index, and give a reproduction concrete enough to become a breaking scenario.
 
@@ -29,7 +29,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 - **overview**: [`research/reference-overview.md`][overview]
 - **eval-01**, **eval-02**, **eval-03**: [`research/evaluations/01-wayfinder-next.md`][eval-01], [`02-laravel-data-ts.md`][eval-02], [`03-other-tools.md`][eval-03]
 - **ecosystem**: [`research/ecosystem.md`][ecosystem]
-- **type-safety**: the Reference Implementation's standard, [`reference/template/docs/type-safety.md`][type-safety]
+- **type-safety**: the Reference Implementation's standard, [`research/type-safety.md`][type-safety]
 - **spec**: the parent spec, [issue #1][spec]
 
 ## Index
@@ -201,7 +201,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 **Wayfinder's output formatter collapses function arguments**
 
 - **Type Boundary:** routes
-- **Source:** overview §4; `reference/showcase/app/Support/Wayfinder/RouteTypes.php`
+- **Source:** overview §4; Tracklane's `App\Support\Wayfinder\RouteTypes`
 - **Upstream:** no upstream issue filed
 - **Status:** open
 
@@ -216,7 +216,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **`withoutScopedBindings()` inside `scopeBindings()` has no effect**
 
 - **Type Boundary:** routes
-- **Source:** overview §4; `reference/showcase/app/Http/Controllers/NotificationController.php`
+- **Source:** overview §4; Tracklane's `NotificationController`
 - **Upstream:** no upstream issue filed (Laravel)
 - **Status:** open
 
@@ -317,7 +317,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **A route-key brand can be put on a value that isn't its model's key**
 
 - **Type Boundary:** routes
-- **Source:** overview §5; `reference/showcase/tests/Support/RouteKeyChecks.php`
+- **Source:** overview §5; Tracklane's `RouteKeyChecks` test helper
 - **Upstream:** none
 - **Status:** closed
 
@@ -576,7 +576,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **PHPDoc literal unions are not validated**
 
 - **Type Boundary:** form payloads
-- **Source:** overview §2; type-safety rule 8; `reference/template/app/Support/Data/LiteralTypesRuleInferrer.php`
+- **Source:** overview §2; type-safety rule 8; the template's `LiteralTypesRuleInferrer`
 - **Upstream:** no upstream issue filed
 - **Status:** closed
 
@@ -606,7 +606,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Typed iterables are not cast by default**
 
 - **Type Boundary:** form payloads
-- **Source:** overview §4; `reference/showcase/config/data.php`; `reference/showcase/tests/Feature/Collaboration/SavedViewTest.php`
+- **Source:** overview §4; Tracklane's `config/data.php` and its saved-view tests
 - **Upstream:** by design in laravel-data 4 (the `cast_and_transform_iterables` feature is off by default and announced as default in the next major). No upstream issue filed.
 - **Status:** closed
 
@@ -621,7 +621,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **An invalid item in a typed list is a 500**
 
 - **Type Boundary:** form payloads
-- **Source:** overview §2 and §4; `reference/template/app/Support/Data/ListItemsRule.php`
+- **Source:** overview §2 and §4; the template's `ListItemsRule`
 - **Upstream:** no upstream issue filed
 - **Status:** closed
 
@@ -1044,7 +1044,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **A generic `replaceType` target crashes generation**
 
 - **Type Boundary:** pagination and deferred props
-- **Source:** overview §2 and §4; `reference/template/app/Support/TypeScript/UnwrapInertiaPropsVisitor.php`
+- **Source:** overview §2 and §4; the template's `UnwrapInertiaPropsVisitor`
 - **Upstream:** no upstream issue filed (typescript-transformer)
 - **Status:** closed
 
@@ -1194,7 +1194,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **`useHttp` resolves `undefined` on a 422 despite `Promise<T>`**
 
 - **Type Boundary:** JSON endpoints
-- **Source:** overview §4; `reference/showcase/resources/js/components/search/use-search.ts`
+- **Source:** overview §4; Tracklane's `use-search` hook
 - **Upstream:** behaviour introduced by [inertiajs/inertia#3142](https://github.com/inertiajs/inertia/pull/3142) (`return undefined as TResponse`); no upstream issue filed for the return type
 - **Status:** closed
 
@@ -1546,7 +1546,7 @@ Problems in generation or verification that affect every Type Boundary.
 **Unmapped PHP classes become `undefined`**
 
 - **Type Boundary:** every Type Boundary (seen in form payloads and page props)
-- **Source:** overview §2 and §4; eval-02 §3 and §9; `reference/showcase/app/Data/Attachments/StoreAttachmentData.php`
+- **Source:** overview §2 and §4; eval-02 §3 and §9; Tracklane's `StoreAttachmentData`
 - **Upstream:** no upstream issue filed (typescript-transformer)
 - **Status:** closed
 
@@ -1647,7 +1647,7 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **A form's empty defaults are a Contract Coverage gap no test can close**
 
 - **Type Boundary:** every Type Boundary (seen in form payloads)
-- **Source:** found porting Tracklane's Projects area into the Testbed App (#23); the Reference Implementation exempted input classes from its coverage check (`reference/showcase/app/Console/Commands/TypesCoverageCommand.php`, "Input classes only appear as form defaults/filters, which are empty by design")
+- **Source:** found porting Tracklane's Projects area into the Testbed App (#23); the Reference Implementation exempted input classes from its coverage check (`types:coverage`, "Input classes only appear as form defaults/filters, which are empty by design")
 - **Upstream:** none
 - **Status:** closed
 
@@ -1859,7 +1859,7 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 
 **Reproduction:** the Base Kit is generated with `--no-boost`, so an AI coding agent working in an installed app gets no guidance at all. Add Boost the usual way (`composer require laravel/boost --dev`, `php artisan boost:install`) and the agent files it writes (`CLAUDE.md` or `AGENTS.md`, `.claude/skills`) say "Use `Inertia::render()` for server-side routing", and its `inertia-react-development` skill shows `<Link href="/users">`, `router.visit('/users')`, `useForm` and `<Form>`. Nothing mentions Page classes, input classes, `<TypedForm>`, `useRouteHttp()`, `forPage()`, Contracts or Contract Coverage. An agent that follows the guidance writes code `ci:check` rejects (`strictly.inertiaRender`, `strictly/typed-requests`, `strictly/no-hardcoded-urls`), or hand-types the props `ci:check` would have generated, and then works around the checks.
 
-**Manual workaround:** paste the type-safety standard (the Reference Implementation's `docs/type-safety.md`) into the app's `CLAUDE.md` and keep it in step with each release by hand.
+**Manual workaround:** paste the type-safety standard (the Reference Implementation's `docs/type-safety.md`, kept as [`research/type-safety.md`][type-safety]) into the app's `CLAUDE.md` and keep it in step with each release by hand.
 
 **Closed by:** the Composer package requires `laravel/boost` and ships a Boost core guideline (`resources/boost/guidelines/core.md`: the condensed standard, what checks what, and that it overrides Boost's generic Inertia guidance) and one skill per workflow (`resources/boost/skills/strictly-*/SKILL.md`), which Boost reads from the installed package, so they update with it. Boost installs a third-party package's guidance only when the app's `boost.json` lists it, and the Base Kit gitignores `boost.json` along with every agent file Boost writes; [`BoostGuidance`](../packages/laravel/src/Boost/BoostGuidance.php) adds the package to `boost.json` before `boost:install` and `boost:update` run, so no guidance is selected or committed by hand. The installer hook `Composer scripts: boost:update after composer update` ([`BoostUpdateScript`](../packages/laravel/src/Install/BoostUpdateScript.php)) runs `boost:update` after `composer update`, as `laravel new` does for an app it installs Boost in. Each skill's worked example is a scenario that passes the full `ci:check`, and `harness/tests/boost-guidance.test.ts` fails when a skill's code drifts from its scenario, quotes a diagnostic no breaking scenario produces, or names a lint rule or PHPStan identifier that doesn't exist. Scenarios: `skill-add-page-example-passes`, `skill-add-form-example-passes`, `skill-add-query-filters-example-passes`, `skill-add-json-endpoint-example-passes`, `skill-add-deferred-props-example-passes`, `skill-add-broadcast-event-example-passes`, `skill-add-translation-example-passes`, `skill-close-coverage-gap-example-passes`, `skill-close-coverage-gap-example-gap-fails-coverage`. Harness tests: "Boost installs the package's core guideline and every skill, and nothing it writes is committed (P-146)" and "composer update runs boost:update; an app that lost that script fails ci:check:install until strictly:install restores it (P-146)".
 
@@ -1880,5 +1880,5 @@ Findings from the sources that are not ways a type can be wrong at a Type Bounda
 [eval-02]: research/evaluations/02-laravel-data-ts.md
 [eval-03]: research/evaluations/03-other-tools.md
 [ecosystem]: research/ecosystem.md
-[type-safety]: ../reference/template/docs/type-safety.md
+[type-safety]: research/type-safety.md
 [spec]: https://github.com/mrsafalpiya/strictly-laravel/issues/1

@@ -1,3 +1,5 @@
+> **Archived from the Reference Implementation (2026-10-14).** This is the template's own standard, `docs/type-safety.md`, kept verbatim when the Reference Implementation's code was retired (#31). It describes that template, not the Overlay: paths such as `app/Support/…`, `config/types.php`, `lint/type-safety.js`, `tests/Support/…` and `@/lib/*` name files of the template and Tracklane that are no longer in this repo. The Problem register cites its rules as "type-safety rule N"; what the Overlay ships instead is in the Problem register's **Closed by** entries and the Composer package's Boost guidance (`packages/laravel/resources/boost/`).
+
 # Type safety: how this codebase works
 
 PHP is the single source of truth for every shape that crosses into React. You never write a TypeScript
