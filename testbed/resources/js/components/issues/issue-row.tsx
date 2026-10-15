@@ -1,9 +1,12 @@
+import { Link } from '@inertiajs/react';
 import { MessageSquare } from 'lucide-react';
 import { LabelPill } from '@/components/domain/label-pill';
 import { PriorityIcon } from '@/components/domain/priority-icon';
 import { StatusIcon } from '@/components/domain/status-icon';
 import { UserAvatar } from '@/components/domain/user-avatar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useWorkspace } from '@/hooks/use-workspace';
+import { show } from '@/routes/issues';
 import type { IssueListItemData } from '@/generated';
 
 export function IssueRow({
@@ -15,6 +18,8 @@ export function IssueRow({
     selected?: boolean;
     onSelectedChange?: (selected: boolean) => void;
 }) {
+    const workspace = useWorkspace();
+
     return (
         <div className="group flex items-center gap-3 border-b px-3 py-2 text-sm last:border-b-0 hover:bg-accent/50">
             {onSelectedChange && (
@@ -31,10 +36,13 @@ export function IssueRow({
                 {issue.identifier}
             </span>
             <StatusIcon status={issue.status} />
-            {/* The Issues area links the title to the issue page. */}
-            <span className="min-w-0 flex-1 truncate font-medium">
+            <Link
+                href={show({ workspace, project: issue.project, issue })}
+                className="min-w-0 flex-1 truncate font-medium hover:underline"
+                prefetch
+            >
                 {issue.title}
-            </span>
+            </Link>
             <div className="hidden items-center gap-1 md:flex">
                 {issue.labels.map((label) => (
                     <LabelPill key={label.id} label={label} />

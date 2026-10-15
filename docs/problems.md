@@ -76,6 +76,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | open |
+| [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | open |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
 | [P-027](#p-027) | `FieldName` proves a name came from some `field()`, not this form's | form payloads | accepted gap |
@@ -688,6 +689,19 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Reproduction:** an action taking a FormRequest, such as the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` before Kit Conversion gave it `PasswordUpdateData`, validates `current_password` and `password` and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form has no fields (naming its payload as a `<TypedForm>` type argument fails lint, [P-100](#p-100)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing. A vendor action is one of them until `config/strictly.php` declares its payload ([P-025](#p-025)); the Base Kit's Fortify actions that take no payload (logout, disabling two-factor authentication) aren't declared.
 
 **Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)); declare one for a vendor action that reads either ([P-025](#p-025)). A GET with a query class records the keys it reads as a `query` Contract checked against the class.
+
+### P-128
+
+**A model key in an input class is a plain number, so another model's key type-checks**
+
+- **Type Boundary:** form payloads
+- **Source:** found porting Tracklane's Issues area into the Testbed App (#24)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** the Testbed App's bulk action `BulkUpdateIssuesData` takes `/** @var list<int> */ array $ids`, the issues' primary keys, and is generated `ids: number[]`. In `pages/issues/index.tsx`, collecting the selection from `issue.number` (the per-project number, `RouteKey<'Issue', number>`) instead of `issue.id` still type-checks: the brand is assignable to `number`. The server only checks that each value is the id of *some* issue in the workspace, so in production, where tables share one id range, the request can update other issues than the ones selected; in feature tests the disjoint id ranges ([P-116](#p-116)) usually turn it into a validation error instead. The same holds for every key an input carries: `StoreIssueData.assigneeId`, `labelIds`, `cycleId`, `parentId`. [P-003](#p-003)'s brands don't help, for two reasons: input and query classes are never branded, because they hold what the user sent, and only a binding field a route uses gets a brand (`Issue` binds `{issue}` by `number`, so an issue's `id` has none, not even on `IssueListItemData`).
+
+**Manual workaround:** name the field after the model it belongs to and check the call sites in review; the input's `exists` rules (`App\Rules\WorkspaceRules`) at least reject keys that belong to no row of the workspace.
 
 ### P-025
 
