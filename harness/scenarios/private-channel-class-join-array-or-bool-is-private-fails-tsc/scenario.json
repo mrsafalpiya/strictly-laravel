@@ -1,0 +1,6 @@
+{
+    "problem": "P-145",
+    "description": "A channel class whose join() returns array|bool, as make:channel writes it, generates a private channel, so usePresence() on it fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2345: Argument of type 'BroadcastChannel<\"projects.{project}\">' is not assignable to parameter of type 'BroadcastChannel<never>'." }
+}
