@@ -65,7 +65,7 @@ The model key a route or broadcast channel bound to a model takes: the key of th
 _Avoid_: ID type, typed id
 
 **Default locale**:
-The locale `app.locale` names, whose lang files are the Source of Truth for translation keys: `t()` takes exactly their keys and each message's `:params`, and every other locale must have the same keys and params (the locale parity test, `tests/Feature/LocaleParityTest.php`). Messages reach the client as generated JSON bundled by Vite; only the locale's name may travel in the shared props.
+The locale `app.locale` names, whose lang files are the Source of Truth for translation keys: `t()` takes exactly their keys and each message's `:params` (`choice()` the keys of pluralised `|` messages), and every other locale must have the same keys and params, pluralised where its messages are (the locale parity test, `tests/Feature/LocaleParityTest.php`). Messages reach the client as generated JSON bundled by Vite; only the locale's name may travel in the shared props.
 _Avoid_: base language, master locale
 
 **Contract**:

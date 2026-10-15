@@ -6,7 +6,8 @@ import type { ChannelEventListener, UseEcho } from '../echo/index.js';
 import type { Key } from '../routes/index.js';
 
 // The Echo helpers at runtime, bound the way @/generated/broadcasting binds them: channel() names a channel from its
-// pattern, and useChannelEvent() calls Echo's useEcho() with the channel and the event's full name. The harness
+// pattern (which the handle carries, for useChannelEvent()'s types), and useChannelEvent() calls Echo's useEcho() with
+// the channel and the event's full name. The harness
 // scenarios prove their types in an app (broadcast-*-fails-tsc).
 
 type IssueKey = Key<'Issue', 'id', number>;
@@ -26,6 +27,15 @@ type Channels = {
     'issues.{issue}.public': { visibility: 'public'; params: { issue: IssueKey | { id: IssueKey } } };
 };
 
+type ChannelEvents = {
+    'issues.{issue}': 'CommentPosted' | 'Issues.Closed';
+    'App.Models.User.{id}': never;
+    'issues.{issue}.viewers': '.issue.renamed';
+    announcements: never;
+    status: never;
+    'issues.{issue}.public': 'Issues.Closed';
+};
+
 const definitions = {
     'issues.{issue}': { visibility: 'private', keys: { issue: 'id' } },
     'App.Models.User.{id}': { visibility: 'private', keys: { id: null } },
@@ -38,26 +48,26 @@ const definitions = {
 const issue = { id: 4000001 as IssueKey, title: 'Kick-off' };
 
 describe('channel()', () => {
-    const { channel, publicChannel } = createBroadcasting<Events, Channels>(definitions);
+    const { channel, publicChannel } = createBroadcasting<Events, Channels, ChannelEvents>(definitions);
 
     test('fills the pattern with a route key, or the key of the Data object passed for it', () => {
-        assert.deepEqual(channel('issues.{issue}', { issue: issue.id }), { name: 'issues.4000001', visibility: 'private' });
-        assert.deepEqual(channel('issues.{issue}', { issue }), { name: 'issues.4000001', visibility: 'private' });
+        assert.deepEqual(channel('issues.{issue}', { issue: issue.id }), { pattern: 'issues.{issue}', name: 'issues.4000001', visibility: 'private' });
+        assert.deepEqual(channel('issues.{issue}', { issue }), { pattern: 'issues.{issue}', name: 'issues.4000001', visibility: 'private' });
     });
 
     test('fills a plain parameter with its value', () => {
-        assert.deepEqual(channel('App.Models.User.{id}', { id: 7 }), { name: 'App.Models.User.7', visibility: 'private' });
+        assert.deepEqual(channel('App.Models.User.{id}', { id: 7 }), { pattern: 'App.Models.User.{id}', name: 'App.Models.User.7', visibility: 'private' });
     });
 
     test('names a presence channel, and a channel without parameters', () => {
-        assert.deepEqual(channel('issues.{issue}.viewers', { issue }), { name: 'issues.4000001.viewers', visibility: 'presence' });
-        assert.deepEqual(channel('announcements'), { name: 'announcements', visibility: 'private' });
+        assert.deepEqual(channel('issues.{issue}.viewers', { issue }), { pattern: 'issues.{issue}.viewers', name: 'issues.4000001.viewers', visibility: 'presence' });
+        assert.deepEqual(channel('announcements'), { pattern: 'announcements', name: 'announcements', visibility: 'private' });
     });
 
     test('names a public channel config/strictly.php declares, filling its parameters as channel() does', () => {
-        assert.deepEqual(publicChannel('status'), { name: 'status', visibility: 'public' });
-        assert.deepEqual(publicChannel('issues.{issue}.public', { issue }), { name: 'issues.4000001.public', visibility: 'public' });
-        assert.deepEqual(publicChannel('issues.{issue}.public', { issue: issue.id }), { name: 'issues.4000001.public', visibility: 'public' });
+        assert.deepEqual(publicChannel('status'), { pattern: 'status', name: 'status', visibility: 'public' });
+        assert.deepEqual(publicChannel('issues.{issue}.public', { issue }), { pattern: 'issues.{issue}.public', name: 'issues.4000001.public', visibility: 'public' });
+        assert.deepEqual(publicChannel('issues.{issue}.public', { issue: issue.id }), { pattern: 'issues.{issue}.public', name: 'issues.4000001.public', visibility: 'public' });
     });
 
     test('throws on a pattern of the other kind, which only an untyped call can pass', () => {
@@ -75,7 +85,7 @@ describe('useChannelEvent()', () => {
 
             return listener;
         };
-        const { channel, useChannelEvent } = createBroadcasting<Events, Channels>(definitions, useEcho);
+        const { channel, useChannelEvent } = createBroadcasting<Events, Channels, ChannelEvents>(definitions, useEcho);
         const received: string[] = [];
         const callback = (comment: Events['CommentPosted']): void => {
             received.push(comment.body);

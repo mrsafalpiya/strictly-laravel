@@ -10,11 +10,13 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use StrictlyLaravel\Broadcasting\BroadcastsData;
+use StrictlyLaravel\Broadcasting\BroadcastsOn;
 
 /**
  * A comment was posted: every member viewing the workspace hears of it live (routes/channels.php), and an open issue
  * page reloads its thread. The payload is taken when the comment is posted, so the queued broadcast needs no queries.
  */
+#[BroadcastsOn('workspaces.{workspace}')]
 final class CommentPosted implements ShouldBroadcast
 {
     use BroadcastsData, Dispatchable, InteractsWithSockets, SerializesModels;

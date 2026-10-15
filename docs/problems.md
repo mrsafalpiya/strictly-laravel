@@ -120,14 +120,16 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-147](#p-147) | A broadcast notification or model broadcast needs an app event alongside it | broadcasting | accepted gap |
 | [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
 | [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
-| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
+| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
-| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | open |
-| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
+| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
+| [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
+| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | closed |
+| [P-163](#p-163) | Text no lang file defines can't be told from a misspelled key | translations | accepted gap |
 | [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
 | [P-140](#p-140) | A `VITE_*` variable `.env.example` lists can be unset when Vite builds | exposed config | closed |
@@ -1440,11 +1442,13 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-053](#p-053) and [P-054](#p-054)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `CommentPosted` broadcasts on `issues.{issue}`; the client calls `useChannelEvent(channel('projects.{project}', { project }), 'CommentPosted', cb)`. The pattern and the event name are each checked, but not that the event goes to that channel, so the callback never fires.
 
 **Manual workaround:** none; check each listener's channel against the event's `broadcastOn()` by hand.
+
+**Closed by:** each broadcast event names the channel patterns it is sent on with a repeatable `#[BroadcastsOn('issues.{issue}')]` ([`BroadcastsOn`](../packages/laravel/src/Broadcasting/BroadcastsOn.php), ADR-0010), and the PHPStan rule `strictly.broadcastsOn` requires one (`Broadcast event App\Events\ProjectUpdated declares no channel it is sent on.`). A pattern must name a channel the app knows, private or presence from `routes/channels.php` or public from `config/strictly.php`'s `public_channels`, or `strictly:generate` fails (`App\Events\ProjectUpdated: #[BroadcastsOn('project.{project}')] names no channel.`). `@/generated/broadcasting` maps each channel's pattern to the events declared on it (`ChannelEvents`); `channel()` and `publicChannel()` return a handle that carries its pattern, and `useChannelEvent(handle, event, cb)` takes only that pattern's events, or for a handle whose pattern is one of several, the events sent on every one of them: `error TS2345: Argument of type '"ProjectUpdated"' is not assignable to parameter of type '"ProjectShared"'.` The declaration duplicates `broadcastOn()`, which builds the names at runtime, so it is verified both ways. Each broadcast Contract records the pattern of every channel the event went to, matched as Laravel's broadcaster matches it, and checks it against the event's declaration, so a `broadcastOn()` that sends the event elsewhere fails `tsc` (`error TS2322: Type '"App.Models.User.{id}"' is not assignable to type '"projects.{project}"'.`). Contract Coverage reports a declared pattern no feature test broadcasts the event on, a stale declaration (`✗ ProjectUpdated on App.Models.User.{id}: no feature test broadcasts this event on this channel: …`), unless the event's Contracts already fail on a channel it doesn't declare, and a public channel no event declares, which listeners would hear nothing on (`✗ maintenance: no event's #[BroadcastsOn] names this public channel: …`). Scenarios: `broadcast-event-on-undeclared-channel-fails-tsc`, `broadcast-on-channel-not-declared-fails-contract`, `broadcast-declared-channel-never-broadcast-fails-coverage`, `broadcast-public-channel-no-event-declares-fails-coverage`, `broadcast-on-unknown-channel-pattern-fails-generate`, `broadcast-event-without-broadcasts-on-fails-phpstan`, and the passing `broadcast-channels-typed-passes`, `broadcast-event-names-typed-passes`, `broadcast-payload-typed-passes`, `broadcast-public-channels-declared-passes`.
 
 ### P-145
 
@@ -1528,11 +1532,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found building the translations boundary (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `lang/en/issues.php` defines `'count' => '{0} No issues|{1} One issue|[2,*] :count issues'`; the client calls `t('issues.count', { count: 3 })`, which compiles and renders the whole message, pipes and ranges included. `trans_choice()` selects the variant on the server; nothing does on the client.
 
 **Manual workaround:** one key per variant (`issues.count_none`, `issues.count_one`, `issues.count_many`), chosen in TypeScript.
+
+**Closed by:** a message is pluralised when it contains `|` (`StrictlyLaravel\Translations\Translations::isPlural()`), and `@/generated/translations` lists those keys as `PluralTranslationKey`. Its `choice(key, count, params?)` picks the form as Laravel's `MessageSelector` does (a `{n}` or `[from,to]` range holding the count first, `*` leaving a range open, then the plural rule of the locale whose message it is, falling back to the default locale's message like `t()`), fills `:count` with the count (or a `count` param) and takes the message's other `:params`. `t()` rejects a pluralised key (`error TS2345: Argument of type '"issues.count"' is not assignable to parameter of type '"issues.count is a plural message: use choice()"'.`) and `choice()` every other key (`… '"issues.title is not a plural message: use t()"'.`). The locale parity test ([P-057](#p-057)) reports a locale whose message is pluralised where the default locale's isn't, or the other way round (`de: issues.count isn't plural, but the en message is, so choice() can't pick its form`); the number of forms may differ, since each locale's plural rule has its own. The npm package's unit tests compare `choice()` with what `trans_choice()` returns in `en`, `de`, `fr`, `ru`, `pl`, `ar` and `ja`. Scenarios: `translation-plural-choice-passes`, `translation-plural-key-in-t-fails-tsc`, `translation-singular-key-in-choice-fails-tsc`, `locale-plural-mismatch-fails-test`.
+
+### P-161
+
+**A message with a literal `|` is a pluralised message**
+
+- **Type Boundary:** translations
+- **Source:** found typing `choice()` (#47)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `lang/en/app.php` defines `'title' => 'Tracklane | Projects'`, which isn't pluralised. `t('app.title')` fails `tsc` (`… is a plural message: use choice()`), and `choice('app.title', 1)` renders `Tracklane `, the first form.
+
+**Manual workaround:** keep the `|` out of the message: `` `${t('app.name')} | ${t('projects.index.title')}` ``, or a different character (`·`, `—`).
+
+**Reasoning:** `|` is Laravel's form separator and has no escape: `trans_choice()` splits such a message on the server just as `choice()` does on the client. Only `__()` renders it whole, and telling a literal `|` from a form separator would mean guessing at the message's intent; a wrong guess renders a pluralised message whole, which is the Problem P-136 closed.
 
 ### P-137
 
@@ -1541,11 +1562,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found translating the Testbed App's flash messages (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `FlashData::success(__('projects.flash.saevd', ['key' => $project->key]))` passes PHPStan and the tests; the toast shows the raw key. A param misspelled in `__()`'s replacements leaves the `:key` placeholder unfilled the same way.
 
 **Manual workaround:** a feature test that asserts the flashed message's text.
+
+**Closed by:** the PHPStan rule [`TranslationRule`](../packages/laravel/src/PHPStan/TranslationRule.php) checks `__()`, `trans()`, `trans_choice()`, `Lang::get()`, `Lang::choice()` and the Translator's `get()` and `choice()` as `tsc` checks `t()` and `choice()` ([P-055](#p-055), [P-056](#p-056), [P-136](#p-136)), against the default locale's messages as `strictly:generate` reads them (PHP lang files with nested and subdirectory keys, and the JSON file) over Laravel's own lang files (`validation.*`, `auth.*`, `passwords.*`, `pagination.*`), which the translator falls back to when the app hasn't published them ([P-138](#p-138)). A key neither defines fails with `Translation key 'projects.flash.saevd' isn't defined in locale en.` (`strictly.translationKey`). The replacements must be exactly the message's `:params`, matched as on the client (`:key`, `:Key` and `:KEY` are the param `key`): `Translation 'projects.flash.saved' needs the param 'key'.` and `… takes no param 'kye'.` (`strictly.translationParams`); `trans_choice()` may leave out `count`, which it fills from the number, and a closure replacement fills a `<tag>`, not a `:param`. A pluralised message goes through a choice call and any other through a get call (`Translation 'issues.count' is pluralised: use trans_choice().`, `strictly.translationPlural`), as `choice()` and `t()` on the client: `__()` renders every form, and `trans_choice()` has none to pick. A key, or replacements, that PHPStan can't resolve to literals (a union of literal keys is fine, each is checked) can't be checked, so it is reported as `strictly.translationDynamic`, which a suppression with its reason accepts (ADR-0007), just as `t()` takes no `string` key. A package's namespaced key (`billing::invoices.title`) isn't checked, as its lang files aren't read. Each analysed file depends on the default locale's lang files through PHPStan's result cache, so editing a lang file re-checks the calls. Rule-test kit cases: `packages/laravel/tests/PHPStan/TranslationRuleTest.php`. Scenarios: `translation-calls-in-php-pass-phpstan`, `translation-key-misspelled-in-php-fails-phpstan`, `translation-param-misspelled-in-php-fails-phpstan`.
+
+### P-163
+
+**Text no lang file defines can't be told from a misspelled key**
+
+- **Type Boundary:** translations
+- **Source:** found checking translation keys in PHP (#48)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** the Base Kit flashes `__('Profile updated.')` and has no `lang/en.json`; Laravel's translator renders text it has no message for as it is. `__('Profile updatd.')` passes PHPStan the same way, and so does a misspelled text key that `lang/en.json` defines, which then renders untranslated in every locale.
+
+**Manual workaround:** give the message a `group.item` key (`__('settings.flash.profile_updated')`), which must be defined.
+
+**Reasoning:** Laravel documents text as its own key ("translation strings as keys") and renders it when no lang file defines it, and the Base Kit relies on that. So [P-137](#p-137)'s rule reports only an undefined key shaped like a lang file's (`group.item`, dot-separated with no whitespace), and accepts other text, checking only that its own `:params` are passed. Requiring every text to be defined would fail every app that uses the convention, and the Base Kit, until each such text is copied into `lang/en.json` unchanged.
 
 ### P-138
 

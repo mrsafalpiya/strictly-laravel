@@ -35,7 +35,7 @@ export function createBroadcasting(definitions, useEcho = /** @type {UseEcho} */
             return String(field !== null && typeof value === 'object' && value !== null ? /** @type {Record<string, unknown>} */ (value)[field] : value);
         });
 
-        return { name: filled, visibility: definition.visibility };
+        return { pattern, name: filled, visibility: definition.visibility };
     };
 
     return {
