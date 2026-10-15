@@ -8,7 +8,6 @@ use App\Models\Issue;
 use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Carbon\CarbonInterface;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelData\Attributes\Validation\DateFormat;
 use Spatie\LaravelData\Attributes\Validation\Max;
@@ -41,12 +40,9 @@ final class UpdateIssueData extends InputData
     ) {}
 
     /** Runs before validation, so a guest gets a 403, not the fields' errors. */
-    public static function authorize(Request $request): bool
+    public static function authorize(Issue $issue): bool
     {
-        // authorize() can't take the route's bound models: read the issue from the current route (P-126).
-        $issue = $request->route('issue');
-
-        return $issue instanceof Issue && Gate::allows('update', $issue);
+        return Gate::allows('update', $issue);
     }
 
     /**
