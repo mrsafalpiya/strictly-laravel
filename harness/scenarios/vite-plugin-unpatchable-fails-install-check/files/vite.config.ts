@@ -50,6 +50,7 @@ export default defineConfig({
             'strictly/typed-forms': 'error',
             'strictly/typed-inertia-components': 'error',
             'strictly/typed-optimistic-updates': 'error',
+            'strictly/typed-page-props': 'error',
             'strictly/typed-prop-names': 'error',
             'strictly/typed-requests': 'error',
         },

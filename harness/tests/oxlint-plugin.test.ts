@@ -146,6 +146,31 @@ describe('oxlint plugin: strictly/typed-inertia-components', () => {
     });
 });
 
+describe('oxlint plugin: strictly/typed-page-props', () => {
+    tester.run('typed-page-props', rule('typed-page-props'), {
+        valid: [
+            "import { usePage } from '@inertiajs/react'; const { features } = usePage().props;",
+            "import { usePage } from '@inertiajs/react'; import type { PageProps } from '@/generated'; const { project } = usePage<PageProps<'projects/show'>>().props;",
+            "import { usePage } from './use-page'; usePage<{ features: { boards: boolean } }>();",
+        ],
+        invalid: [
+            {
+                code: "import { usePage } from '@inertiajs/react'; const { features } = usePage<{ features: { boards: boolean } }>().props;",
+                errors: [
+                    {
+                        message:
+                            /`usePage\(\)` takes its props' type from the generated shared props and Page classes: drop the type argument\. A server setting or feature flag every page needs is a property of the shared props Data class/,
+                    },
+                ],
+            },
+            { code: "import { usePage as page } from '@inertiajs/react'; page<SharedData>();", errors: 1 },
+            { code: "import * as Inertia from '@inertiajs/react'; Inertia.usePage<SharedData>();", errors: 1 },
+            { code: "import { usePage } from '@inertiajs/react'; usePage<PageProps>();", errors: 1 },
+            { code: "import { usePage } from '@inertiajs/react'; usePage<PageProps<'x'> & { flags: string[] }>();", errors: 1 },
+        ],
+    });
+});
+
 describe('oxlint plugin: strictly/typed-optimistic-updates', () => {
     tester.run('typed-optimistic-updates', rule('typed-optimistic-updates'), {
         valid: [

@@ -1,0 +1,5 @@
+{
+    "problem": "P-059",
+    "description": "Feature flags read from config with a typed accessor and shared as a Data class property of the shared props reach React typed through usePage().props, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
