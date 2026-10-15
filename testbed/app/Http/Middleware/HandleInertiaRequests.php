@@ -60,6 +60,7 @@ class HandleInertiaRequests extends Middleware
                     ->map(fn (Membership $membership): WorkspaceSummaryData => WorkspaceSummaryData::fromModel($membership->workspace, $membership->role))
                     ->values()
                     ->all(),
+                unreadNotifications: $user?->unreadNotifications()->count() ?? 0,
             ))->props(),
         ];
     }

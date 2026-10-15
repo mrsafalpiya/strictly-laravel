@@ -13,8 +13,9 @@ import { workspaceNav } from '@/navigation';
 import { dashboard } from '@/routes';
 
 export function AppSidebar() {
-    const { workspace } = usePage().props;
-    const nav = workspace === null ? null : workspaceNav(workspace);
+    const shared = usePage().props;
+    const { workspace } = shared;
+    const nav = workspace === null ? null : workspaceNav(workspace, shared);
 
     return (
         <Sidebar collapsible="icon" variant="inset">

@@ -1,4 +1,4 @@
-import type { CurrentWorkspaceData } from '@/generated';
+import type { CurrentWorkspaceData, SharedProps } from '@/generated';
 import type { NavItem } from '@/types';
 
 /** A sidebar entry inside a workspace: its group, and its position in that group (lowest first). */
@@ -7,9 +7,10 @@ export type WorkspaceNavItem = NavItem & {
     order: number;
 };
 
-/** What one Tracklane area adds to the sidebar of a workspace. */
+/** What one Tracklane area adds to the sidebar of a workspace, from the workspace and the other shared props. */
 export type WorkspaceNav = (
     workspace: CurrentWorkspaceData,
+    shared: SharedProps,
 ) => WorkspaceNavItem[];
 
 /*
@@ -27,9 +28,10 @@ const areas = import.meta.glob<{ default: WorkspaceNav }>('./areas/*.ts', {
 /** The sidebar of a workspace, by group. */
 export function workspaceNav(
     workspace: CurrentWorkspaceData,
+    shared: SharedProps,
 ): Record<WorkspaceNavItem['group'], NavItem[]> {
     const items = Object.values(areas)
-        .flatMap((area) => area.default(workspace))
+        .flatMap((area) => area.default(workspace, shared))
         .sort((a, b) => a.order - b.order);
 
     return {
