@@ -109,9 +109,13 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | open |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
-| [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | open |
-| [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | open |
-| [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | open |
+| [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
+| [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | closed |
+| [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | closed |
+| [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | open |
+| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | open |
+| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
+| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
@@ -1240,7 +1244,9 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 ## Broadcasting
 
-The Reference Implementation never exercised this Type Boundary, so these Problems have no recorded workaround beyond hand-typing. The Testbed App will exercise them (spec user stories 44–46 and 76).
+The Reference Implementation never exercised this Type Boundary, so these Problems had no recorded workaround beyond hand-typing. The Overlay builds on Laravel's own client, `@laravel/echo-react`, which `php artisan install:broadcasting` installs and configures for a React app; the Testbed App's real-time comments exercise it (spec user stories 44–46 and 76).
+
+**The convention.** A broadcast event uses `StrictlyLaravel\Broadcasting\BroadcastsData` and returns its payload from `broadcastData()`, declaring the payload's Data class as the return type. `strictly:generate` writes `@/generated/broadcasting`: `BroadcastEvents` maps each event, by the name Echo listens for it (`CommentPosted` for `App\Events\CommentPosted`, `.comment.posted` for one whose `broadcastAs()` is `comment.posted`), to that Data class, and `BroadcastChannels` holds each channel `routes/channels.php` defines with its parameters. React listens with `useChannelEvent(channel('issues.{issue}', { issue }), 'CommentPosted', (comment) => …)`, both imported from that module.
 
 ### P-052
 
@@ -1248,12 +1254,14 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 - **Type Boundary:** broadcasting
 - **Source:** spec user stories 44 and 46; ecosystem C ("Broadcast / env")
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: `@laravel/echo-react` types a payload from a global `Events` interface the app writes by hand, and its `useEcho()` takes any type argument
+- **Status:** closed
 
 **Reproduction:** an event `CommentPosted implements ShouldBroadcast` returns `['id' => …, 'body' => …]` from `broadcastWith()`; the listener's payload is typed by hand, `useEcho(channel, 'CommentPosted', (e: { id: number; text: string }) => …)`, and compiles after the PHP keys change.
 
 **Manual workaround:** hand-write the payload type next to the listener and keep it in sync.
+
+**Closed by:** an event's payload is a Data class: it uses [`BroadcastsData`](../packages/laravel/src/Broadcasting/BroadcastsData.php), whose `broadcastWith()` sends what `broadcastData(): CommentData` returns. The PHPStan rule `strictly.broadcastData` ([`BroadcastDataRule`](../packages/laravel/src/PHPStan/BroadcastDataRule.php)) rejects a broadcast event that sends its payload any other way (public properties, its own `broadcastWith()` array, a `broadcastData()` that declares no single Data class): `Broadcast event App\Events\ProjectUpdated sends a payload that has no generated type.` `@/generated/broadcasting` maps the event to the Data class's generated type ([`BroadcastingModule`](../packages/laravel/src/Broadcasting/BroadcastingModule.php)), and `useChannelEvent()` ([`@mrsafalpiya/strictly-laravel/echo`](../packages/npm/echo/index.d.ts), a wrapper around `@laravel/echo-react`'s `useEcho()`) types the callback's payload with it, so reading a field it lacks fails `tsc`. The oxlint rule `strictly/typed-broadcasts` rejects Echo's untyped `useEcho()`, `useEchoPresence()` and `useEchoPublic()`. Every broadcast a feature test makes, from a request or not, is recorded as a Contract, `export const payload = {…} satisfies Contract<BroadcastEvents['ProjectUpdated']>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on an event no test broadcasts and observes the payloads' shapes ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `broadcast ProjectUpdated › description`). Broadcast notifications and model broadcasts aren't covered: [P-142](#p-142). ADR-0008. Scenarios: `broadcast-payload-typed-passes`, `broadcast-payload-field-misread-fails-tsc`, `broadcast-payload-without-data-class-fails-phpstan`, `broadcast-payload-around-the-data-class-fails-contract`, `broadcast-event-never-broadcast-fails-coverage`.
 
 ### P-053
 
@@ -1261,12 +1269,14 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 - **Type Boundary:** broadcasting
 - **Source:** spec user story 45
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** by design: `useEcho()` has an overload that takes any string ([`@laravel/echo-react`](https://github.com/laravel/echo/tree/2.x/packages/react))
+- **Status:** closed
 
 **Reproduction:** `useEcho(channel, 'CommentPostd', cb)` or a stale name after `broadcastAs()` changes compiles and silently never fires.
 
 **Manual workaround:** none; names are typed by hand.
+
+**Closed by:** `BroadcastEvents` in `@/generated/broadcasting` is keyed by the name Echo listens for each event under its default namespace ([`BroadcastEvents`](../packages/laravel/src/Broadcasting/BroadcastEvents.php)): relative to `App\Events`, with dots (`ProjectUpdated`, `Projects.ProjectArchived`), or a dot and the `broadcastAs()` name (`.project.renamed`). Generation reads `broadcastAs()` on an instance whose constructor never ran; a name that depends on the event's state fails `strictly:generate`, and so do two events with one name. `useChannelEvent()` takes only those keys, so a misspelled or stale name fails `tsc`: `error TS2345: Argument of type '"ProjectUpdatd"' is not assignable to parameter of type '"ProjectUpdated"'.` At runtime it listens for the full name (`.App\Events\ProjectUpdated`), whatever namespace Echo is configured with. A broadcast Contract is checked under the name the event really broadcast, so a name generation got wrong fails `tsc` too. The oxlint rule `strictly/typed-broadcasts` rejects `useEcho()`. ADR-0008. Scenarios: `broadcast-event-names-typed-passes`, `broadcast-event-name-misspelled-fails-tsc`, `use-echo-fails-lint`.
 
 ### P-054
 
@@ -1275,11 +1285,65 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** spec user story 45
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Broadcast::channel('workspace.{workspace}', …)` in `routes/channels.php`; the client subscribes with `` `workspace.${workspace.slug}` `` while the channel binds by id. Both compile; the subscription is refused or joins the wrong channel.
 
 **Manual workaround:** none; channel strings are built by hand.
+
+**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so its name stays unchecked: [P-143](#p-143). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
+
+### P-142
+
+**Broadcast notifications and model broadcasts have no generated payload type**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-052](#p-052)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** a notification with `via(): ['broadcast']` whose `toBroadcast()` returns `new BroadcastMessage([...])`, read with `useEchoNotification(channel, (n: { title: string }) => …)`; or a model using `BroadcastsEvents`, read with `useEchoModel()`. Both payloads are typed by hand, no Contract records them, and `strictly/typed-broadcasts` leaves those hooks alone.
+
+**Manual workaround:** broadcast an event of the app's own with a `BroadcastsData` payload alongside the notification or model change, and listen for that.
+
+### P-143
+
+**A public channel's name is hand-written**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-054](#p-054)
+- **Upstream:** none (Laravel needs no definition for a public channel)
+- **Status:** open
+
+**Reproduction:** an event broadcasts on `new Channel('status')`; the client listens with `useChannelEvent(publicChannel('statuss'), …)`. Both compile, since nothing in `routes/channels.php` names the channel, and the broadcast Contract checks only private and presence channels.
+
+**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it.
+
+### P-144
+
+**An event can be listened for on a channel it is never broadcast on**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-053](#p-053) and [P-054](#p-054)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `CommentPosted` broadcasts on `issues.{issue}`; the client calls `useChannelEvent(channel('projects.{project}', { project }), 'CommentPosted', cb)`. The pattern and the event name are each checked, but not that the event goes to that channel, so the callback never fires.
+
+**Manual workaround:** none; check each listener's channel against the event's `broadcastOn()` by hand.
+
+### P-145
+
+**A presence channel's member data is untyped**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-054](#p-054)
+- **Upstream:** by design: `@laravel/echo-react`'s presence callbacks take `any`
+- **Status:** open
+
+**Reproduction:** `Broadcast::channel('issues.{issue}.viewers', fn (User $user, Issue $issue): array => ['id' => $user->id, 'name' => $user->name])`; the client reads the members through `here()`, `joining()` and `leaving()` on `usePresenceChannel()`'s channel, typed by hand.
+
+**Manual workaround:** type the member data by hand next to the listener.
 
 ## Translations
 
