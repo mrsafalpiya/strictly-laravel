@@ -390,7 +390,7 @@ export default function ProjectStatuses() {
         );
     });
 
-    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types', async () => {
+    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class or two that generate the same type name keep the last good types', async () => {
         const app = await createApp('live-regeneration');
         const dataClass = join(app.dir, 'app', 'Data', 'ProjectData.php');
         const projectData = (properties: string) =>
@@ -425,6 +425,15 @@ export default function ProjectStatuses() {
             writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}'));
             writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3, lead: 'Ada'"));
             await untilTsc('tsc passes with the finished edit', tsc, 'pass', dev);
+
+            // A second ProjectData in another namespace would generate the same type name (P-063).
+            const sameName = join(app.dir, 'app', 'Data', 'Archive', 'ProjectData.php');
+            mkdirSync(dirname(sameName), { recursive: true });
+            writeFileSync(sameName, projectData('        public string $archivedAt,\n    ) {}').replace('namespace App\\Data;', 'namespace App\\Data\\Archive;'));
+            await until('the same type name was reported', () => dev.output().includes('`App\\Data\\Archive\\ProjectData` and `App\\Data\\ProjectData` both generate `ProjectData`.'), dev);
+            assertOutcome(await tsc(), { outcome: 'pass' });
+            assert.equal(dev.exited(), false, 'the dev server stopped');
+            rmSync(sameName);
 
             mkdirSync(dirname(pageFile), { recursive: true });
             writeFileSync(pageFile, 'export default function Index() {\n    return <h1>Projects</h1>;\n}\n');
