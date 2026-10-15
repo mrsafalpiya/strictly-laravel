@@ -1,0 +1,9 @@
+{
+    "problem": "P-075",
+    "description": "A test that sends a calendar date for a plain datetime input property and expects it accepted fails with the inferred date_format rule's message, not laravel-data's CannotCastDate.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "The starts at field must match the format Y-m-d"
+    }
+}
