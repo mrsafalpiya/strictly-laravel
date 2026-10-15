@@ -1,0 +1,6 @@
+{
+    "problem": "P-062",
+    "description": "A generic Data class keeps its template's bound (@template TItem of IssueData) as its type parameter's constraint, so instantiating it with a type outside the bound fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2344: Type 'UserData' does not satisfy the constraint 'IssueData'." }
+}

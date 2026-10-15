@@ -1,0 +1,5 @@
+{
+    "problem": "P-062",
+    "description": "A mixed Data class property and a mixed page prop, generated as unknown, are read after narrowing with typeof and a type guard; the pages' Contracts and Contract Coverage check them, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
