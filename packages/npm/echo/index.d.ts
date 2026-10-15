@@ -1,12 +1,13 @@
 import type { DependencyList } from 'react';
 
 /*
- * The typed Echo helpers (Problems P-052, P-053, P-054, P-143, P-144), built on Laravel's own React hooks, `@laravel/echo-react`,
+ * The typed Echo helpers (Problems P-052, P-053, P-054, P-143, P-144, P-145), built on Laravel's own React hooks, `@laravel/echo-react`,
  * which `php artisan install:broadcasting` installs and configures (`configureEcho()`). `php artisan strictly:generate`
  * writes `@/generated/broadcasting`, which binds them to the app's broadcast events and channels; apps import
- * `channel`, `publicChannel` and `useChannelEvent` from there:
+ * `channel`, `publicChannel`, `useChannelEvent` and `usePresence` from there:
  *
  *     useChannelEvent(channel('issues.{issue}', { issue: issue.id }), 'CommentPosted', (comment) => …);
+ *     usePresence(channel('issues.{issue}.viewers', { issue }), { here: (viewers) => …, joining: (viewer) => … });
  *
  * This file declares its own types and imports nothing from `@laravel/echo-react`, so an app type-checks whether or
  * not it has installed broadcasting.
@@ -17,11 +18,13 @@ export type ChannelVisibility = 'public' | 'private' | 'presence';
 
 /**
  * A channel the app knows: a private or presence one routes/channels.php defines, or a public one config/strictly.php
- * declares. How a client subscribes to it, and what each parameter of its name takes.
+ * declares. How a client subscribes to it, what each parameter of its name takes, and for a presence channel, the data
+ * each member shares (the Data class its callback returns).
  */
 export type ChannelDefinition = {
     visibility: ChannelVisibility;
     params: Record<string, unknown>;
+    member?: unknown;
 };
 
 /** The patterns of the channels a client subscribes to with the given visibilities. */
@@ -77,6 +80,34 @@ export type ChannelArgs<Channels extends Record<string, ChannelDefinition>, Patt
         ? []
         : [params: Channels[Pattern]['params']];
 
+/**
+ * The data each member of a presence channel of `Pattern` shares: the Data class its callback returns, or for a channel
+ * whose pattern is one of several, any of theirs.
+ */
+export type PresenceMember<Channels extends Record<string, ChannelDefinition>, Pattern extends keyof Channels> = Channels[Pattern] extends {
+    member: infer Member;
+}
+    ? Member
+    : never;
+
+/** What `usePresence()` calls as members come and go, each optional. */
+export interface PresenceCallbacks<Member> {
+    /** Once subscribed: every member on the channel, the current user included. */
+    here?: (members: Member[]) => void;
+    /** A member joined. */
+    joining?: (member: Member) => void;
+    /** A member left. */
+    leaving?: (member: Member) => void;
+}
+
+/** What `usePresence()` returns: Echo's controls for its channel. */
+export interface PresenceListener {
+    /** Leave the channel (all of its visibilities with `leaveAll`). */
+    leaveChannel: (leaveAll?: boolean) => void;
+    /** Leave the channel and its private and presence variants. */
+    leave: () => void;
+}
+
 /** What `useChannelEvent()` returns: Echo's controls for the listener and its channel. */
 export interface ChannelEventListener {
     /** Listen again after `stopListening()`. */
@@ -125,6 +156,16 @@ export interface Broadcasting<
         callback: (payload: Events[Event]) => void,
         dependencies?: DependencyList,
     ) => ChannelEventListener;
+    /**
+     * Join a presence channel and follow its members (Problem P-145): `here` once subscribed with every member,
+     * `joining` and `leaving` as each comes and goes, each with the data the channel's callback in routes/channels.php
+     * returns for a member, typed as its Data class. A private or public channel fails `tsc`. Subscribes on mount and
+     * leaves on unmount, as Echo's `usePresenceChannel()` does; the callbacks may change between renders.
+     */
+    usePresence: <Pattern extends ChannelPattern<Channels, 'presence'>>(
+        channel: BroadcastChannel<Pattern>,
+        callbacks: PresenceCallbacks<PresenceMember<Channels, Pattern>>,
+    ) => PresenceListener;
 }
 
 /** How `@laravel/echo-react`'s `useEcho()` is called; the helpers call it (a test may pass its own). */
@@ -135,6 +176,19 @@ export type UseEcho = (
     dependencies: DependencyList,
     visibility: ChannelVisibility,
 ) => ChannelEventListener;
+
+/** An Echo presence channel, as `@laravel/echo-react`'s `useChannel(name, 'presence')` hands it out once joined. */
+export interface EchoPresenceChannel {
+    here: (callback: (members: never[]) => void) => EchoPresenceChannel;
+    joining: (callback: (member: never) => void) => EchoPresenceChannel;
+    leaving: (callback: (member: never) => void) => EchoPresenceChannel;
+}
+
+/** How `@laravel/echo-react`'s `useChannel()` is called for a presence channel; `usePresence()` calls it (a test may pass its own). */
+export type UseChannel = (
+    channelName: string,
+    visibility: 'presence',
+) => PresenceListener & { channel: () => EchoPresenceChannel | null };
 
 /**
  * Bind the helpers to an app's broadcast events and channels, and to which events are sent on which channel
@@ -154,7 +208,15 @@ export function createBroadcasting<
         };
     },
     useEcho?: UseEcho,
+    useChannel?: UseChannel,
 ): Broadcasting<Events, Channels, ChannelEvents>;
+
+/**
+ * Call `callbacks()`'s `here`, `joining` and `leaving` as an Echo presence channel reports its members, until the
+ * returned function stops it (Echo has no way to remove them from the channel). `usePresence()` calls it once the
+ * channel is joined; apps call `usePresence()`.
+ */
+export function followMembers(channel: EchoPresenceChannel | null, callbacks: () => PresenceCallbacks<never>): () => void;
 
 /**
  * The name Echo's `listen()` takes for an event key, absolute so that it doesn't depend on the namespace Echo is
