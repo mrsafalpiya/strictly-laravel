@@ -133,6 +133,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-080](#p-080) | An existing app silently lacks a hook a newer release adds, or one it lost | every Type Boundary | closed |
 | [P-081](#p-081) | A half-updated app runs one release's Composer package with another's npm package | every Type Boundary | closed |
 | [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
+| [P-124](#p-124) | `ci:check` fails in a fresh clone because feature tests need a Vite build | every Type Boundary | closed |
 
 ## Routes
 
@@ -1579,6 +1580,21 @@ Problems in generation or verification that affect every Type Boundary.
 **Manual workaround:** read the installer's output and the release notes carefully.
 
 **Closed by:** `ci:check:install` (`strictly:install --check`, [P-080](#p-080)) fails while any hook is `not applied`, and the error says what to do by hand. A hook the developer applied by hand counts as applied. The [upgrade guide](../packages/laravel/UPGRADE.md) lists each release's app-side changes and documents the release-check convention: every such change is applied by a hook, or detected by a hook that fails until it's made, or checked by a rule in the earliest tool that can express it, or marked as having no check, with the reason. Scenarios: `vite-plugin-unpatchable-fails-install-check`, `vite-plugin-registered-by-hand-passes`.
+
+### P-124
+
+**`ci:check` fails in a fresh clone because feature tests need a Vite build**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** spec user story 58; found porting Tracklane into the Testbed App (#23)
+- **Upstream:** none (the Base Kit builds before its tests in its own CI)
+- **Status:** closed
+
+**Reproduction:** clone an installed app and run `composer ci:check`. `public/build` is gitignored and nothing in `ci:check` builds, so every feature test that renders a page fails with `Vite manifest not found at: …/public/build/manifest.json` (16 of the Base Kit's own tests). In a working copy that was built once, a new page fails the same way (`Unable to locate file in Vite manifest: resources/js/pages/projects/index.tsx`) until the next build. No Contract is recorded for those pages.
+
+**Manual workaround:** run `pnpm run build` before `ci:check`, or call `$this->withoutVite()` in the test case (the Reference Implementation's `tests/TestCase.php` did).
+
+**Closed by:** [`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php), which the installer applies to every feature test, renders pages without the Vite build: Contracts check payloads, not asset tags. A test that needs the real tags calls `$this->withVite()`. Scenarios: `fresh-clone-without-build-passes-test`, `vite-assets-without-build-fails-test`.
 
 ## Findings not registered
 

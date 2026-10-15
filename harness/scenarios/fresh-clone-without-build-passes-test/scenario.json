@@ -1,0 +1,7 @@
+{
+    "problem": "P-124",
+    "description": "A fresh clone has no Vite build (public/build is gitignored), and its feature tests still render every page and pass.",
+    "step": "test",
+    "delete": ["public/build"],
+    "expect": { "outcome": "pass" }
+}
