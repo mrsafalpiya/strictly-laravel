@@ -22,6 +22,8 @@ type Channels = {
     'App.Models.User.{id}': { visibility: 'private'; params: { id: string | number } };
     'issues.{issue}.viewers': { visibility: 'presence'; params: { issue: IssueKey | { id: IssueKey } } };
     announcements: { visibility: 'private'; params: {} };
+    status: { visibility: 'public'; params: {} };
+    'issues.{issue}.public': { visibility: 'public'; params: { issue: IssueKey | { id: IssueKey } } };
 };
 
 const definitions = {
@@ -29,6 +31,8 @@ const definitions = {
     'App.Models.User.{id}': { visibility: 'private', keys: { id: null } },
     'issues.{issue}.viewers': { visibility: 'presence', keys: { issue: 'id' } },
     announcements: { visibility: 'private', keys: {} },
+    status: { visibility: 'public', keys: {} },
+    'issues.{issue}.public': { visibility: 'public', keys: { issue: 'id' } },
 } as const;
 
 const issue = { id: 4000001 as IssueKey, title: 'Kick-off' };
@@ -50,8 +54,15 @@ describe('channel()', () => {
         assert.deepEqual(channel('announcements'), { name: 'announcements', visibility: 'private' });
     });
 
-    test('names a public channel as given', () => {
+    test('names a public channel config/strictly.php declares, filling its parameters as channel() does', () => {
         assert.deepEqual(publicChannel('status'), { name: 'status', visibility: 'public' });
+        assert.deepEqual(publicChannel('issues.{issue}.public', { issue }), { name: 'issues.4000001.public', visibility: 'public' });
+        assert.deepEqual(publicChannel('issues.{issue}.public', { issue: issue.id }), { name: 'issues.4000001.public', visibility: 'public' });
+    });
+
+    test('throws on a pattern of the other kind, which only an untyped call can pass', () => {
+        assert.throws(() => (publicChannel as (pattern: string) => unknown)('announcements'), /config\/strictly\.php declares no public channel announcements\./);
+        assert.throws(() => (channel as (pattern: string) => unknown)('status'), /routes\/channels\.php defines no channel status\./);
     });
 });
 

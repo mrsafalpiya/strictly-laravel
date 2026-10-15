@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import type { ProjectData } from '@/generated';
-import {
-    channel,
-    publicChannel,
-    useChannelEvent,
-} from '@/generated/broadcasting';
+import { channel, useChannelEvent } from '@/generated/broadcasting';
 
 export function ProjectFeed({
     project,
@@ -34,7 +30,6 @@ export function ProjectFeed({
         rename,
     );
     useChannelEvent(channel('announcements'), 'ProjectUpdated', rename);
-    useChannelEvent(publicChannel('status'), 'ProjectUpdated', rename);
 
     return <h1>{name}</h1>;
 }

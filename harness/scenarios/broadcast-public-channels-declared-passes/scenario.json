@@ -1,0 +1,5 @@
+{
+    "problem": "P-143",
+    "description": "Public channels config/strictly.php declares, with and without a parameter bound to a model, are broadcast on and listened to with publicChannel(), their broadcasts' Contracts pass, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

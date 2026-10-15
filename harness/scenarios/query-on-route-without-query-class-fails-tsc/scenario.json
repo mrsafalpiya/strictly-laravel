@@ -1,0 +1,9 @@
+{
+    "problem": "P-106",
+    "description": "A route function whose controller action takes no query class takes no query string: edit({ query: { tab: 'password' } }) fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'."
+    }
+}

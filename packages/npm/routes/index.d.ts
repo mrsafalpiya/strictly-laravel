@@ -75,6 +75,26 @@ export type QueryOptions<TQuery> = {
     mergeQuery?: Partial<TQuery>;
 };
 
+declare const actionTakesNoQueryClass: unique symbol;
+
+/**
+ * The `query` of a route whose action takes no query class (Problem P-106): no value fits, so
+ * `dashboard({ query: { tab: 'stats' } })` fails `tsc` with "'tab' does not exist in type 'NoQueryClass'". To send a
+ * query string, take a query class (a QueryData subclass) on the action; its route function then takes
+ * `QueryOptions<TQuery>`.
+ */
+export type NoQueryClass = { readonly [actionTakesNoQueryClass]: never };
+
+/**
+ * The `options` of a route function whose action takes no query class: a controller action without one, a closure
+ * route, or a vendor action config/strictly.php declares no query class for. It still fits Wayfinder's
+ * `RouteQueryOptions`, which the generated function passes it on as.
+ */
+export type NoQueryOptions = {
+    query?: NoQueryClass;
+    mergeQuery?: NoQueryClass;
+};
+
 /**
  * Every field name of an input type, including nested and array paths (`settings.notifyOnAssign`, `tags.0`,
  * `tasks.0.title`): the keys the server can report a validation error under. The validation-error Contracts prove

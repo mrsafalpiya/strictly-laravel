@@ -44,7 +44,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-006](#p-006) | Query strings are untyped | routes | closed |
 | [P-104](#p-104) | A query property without a default fails on a URL that leaves its key out | routes | closed |
 | [P-105](#p-105) | A query value the route function leaves out of the URL reads as a different default | routes | closed |
-| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | open |
+| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | closed |
+| [P-151](#p-151) | A closure route's query class doesn't type its route function | routes | open |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
 | [P-116](#p-116) | A route-key brand can be put on a value that isn't its model's key | routes | closed |
@@ -115,7 +116,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | closed |
 | [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | closed |
 | [P-147](#p-147) | A broadcast notification or model broadcast needs an app event alongside it | broadcasting | accepted gap |
-| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | open |
+| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
+| [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
@@ -239,7 +241,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a `QueryData` class type-hinted on the GET action (`index(IssueFiltersData $filters)`), parsed leniently (invalid items fall back to defaults); a Wayfinder template override types the route function's `query` option as `QueryOptions<IssueFiltersData>` (`RouteTypes::queryOptions`). The same object is sent back as a prop so the filter UI is typed by it.
 
-**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class still take any query: [P-106](#p-106). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
+**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class take none ([P-106](#p-106)). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
 
 ### P-104
 
@@ -278,11 +280,26 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** routes
 - **Source:** found while closing [P-006](#p-006)
 - **Upstream:** none (Wayfinder's `query` option is `RouteQueryOptions` on every route)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). A vendor GET that reads a query string gets a query class only by declaring one in `config/strictly.php` ([P-025](#p-025)), as the Base Kit's password reset link (`email`) is. A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
 
 **Manual workaround:** take a query class on every action that reads its query string.
+
+**Closed by:** the Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types the `options` of every route function whose action has no query class ([`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) finds none: a controller action without one, a closure route, a vendor action `config/strictly.php` declares none for) as `NoQueryOptions` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)), whose `query` and `mergeQuery` are `NoQueryClass`, a type no value fits. Passing a query string to such a route fails `tsc`: `error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'.` On the server, the PHPStan rule `strictly.queryRead` ([`QueryReadRule`](../packages/laravel/src/PHPStan/QueryReadRule.php)) rejects reading the query string from the request in a controller (`$request->query(…)`, `$request->query->…`, `request()->query(…)`, `Request::query(…)`), with or without a query class: keys are read from the query class. Pagination needs no query class: `<Pagination>` follows the links the paginator builds, Inertia's `<InfiniteScroll>` asks for the next page itself, and the paginator reads `page` and `cursor` outside the controller, so neither goes through a route function's `query`. A closure route with a query class takes no query string through its route function either: [P-151](#p-151). Scenarios: `route-query-typed-with-and-without-query-class-passes`, `query-on-route-without-query-class-fails-tsc`, `merge-query-on-closure-route-fails-tsc`, `query-read-without-query-class-fails-phpstan`; pagination keeps working in `paginators-typed-as-laravel-sends-them-passes` and the Testbed App.
+
+### P-151
+
+**A closure route's query class doesn't type its route function**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-106](#p-106)
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** open
+
+**Reproduction:** `Route::get('projects', fn (ProjectFiltersData $filters): IndexPage => …)->name('projects.index')` parses its query string leniently, but its route function can't tell it takes a query class, so `index()` from `@/routes/projects` takes `NoQueryOptions` and `index({ query: { sort: 'name' } })` fails `tsc` although `sort` is a property of the class. Nothing says why, and nothing rejects the closure. A closure route that reads `$request->query('tab')` isn't rejected either: `strictly.queryRead` checks controllers only. It fails safe: no route function can send such a route an untyped query string.
+
+**Manual workaround:** take query classes, and read query strings, in controller actions only (as for inputs, [P-097](#p-097), and responses, [P-109](#p-109)).
 
 ### P-007
 
@@ -1317,7 +1334,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Manual workaround:** none; channel strings are built by hand.
 
-**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so its name stays unchecked: [P-143](#p-143). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
+**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so `config/strictly.php` declares it instead ([P-143](#p-143)). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
 
 ### P-142
 
@@ -1356,11 +1373,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-054](#p-054)
 - **Upstream:** none (Laravel needs no definition for a public channel)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an event broadcasts on `new Channel('status')`; the client listens with `useChannelEvent(publicChannel('statuss'), …)`. Both compile, since nothing in `routes/channels.php` names the channel, and the broadcast Contract checks only private and presence channels.
 
-**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it.
+**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it. That isn't equivalent: a private channel needs an authenticated user, so guests, whom public channels exist for, can't listen.
+
+**Closed by:** the app declares its public channels in `config/strictly.php`'s `public_channels`, next to the vendor declarations, since Laravel defines them nowhere: a name (`'status'`), or a pattern keyed by itself with the models its parameters hold the route key of (`'projects.{project}.public' => ['project' => Project::class]`), which the installer publishes empty for new apps and the package's defaults give existing ones ([`PublicChannels`](../packages/laravel/src/Broadcasting/PublicChannels.php)). `BroadcastChannels::of()` returns them next to the channels `routes/channels.php` defines, with the visibility `public`, so `BroadcastChannels` in `@/generated/broadcasting` covers all three kinds. `publicChannel(pattern, params)` takes only the declared patterns, with their parameters typed as `channel()` types them (a bound one takes the model's route key or its Data object), and `channel()` takes only private and presence ones: a misspelled name fails `tsc` (`error TS2345: Argument of type '"statuss"' is not assignable to parameter of type '"status" | "projects.{project}.public"'.`), and so does any public channel in an app that declares none (`… parameter of type 'never'.`). Each broadcast Contract now checks every channel the event was broadcast on, public ones included, so broadcasting on an undeclared one fails `tsc` (`error TS2820: Type '"statuss"' is not assignable to type 'BroadcastChannelName'. Did you mean '"status"'?`). A declaration that isn't a name, binds a parameter its pattern doesn't have or a class that isn't a model, names a `private-` or `presence-` channel, or repeats a pattern `routes/channels.php` defines fails `strictly:generate`. Scenarios: `broadcast-public-channels-declared-passes`, `broadcast-public-channel-misspelled-fails-tsc`, `broadcast-on-undeclared-public-channel-fails-contract`, `broadcast-public-channel-declaration-invalid-fails-generate`.
+
+### P-153
+
+**A misspelled channel pattern with parameters fails `tsc` on the argument count**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-143](#p-143)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app whose channels take different parameters (`projects.{project}`, `App.Models.User.{id}`) calls `channel('project.{project}', { project })`. `tsc` fails with `error TS2554: Expected 1 arguments, but got 2.` at the parameters instead of naming the pattern: it falls back to every pattern for the one it can't match, and the parameters of every pattern at once are none. The same holds for `publicChannel()`.
+
+**Manual workaround:** none needed for safety, since the call fails `tsc`; read the pattern instead of the reported argument.
+
+**Closed by:** `ChannelArgs` ([`echo/index.d.ts`](../packages/npm/echo/index.d.ts)) lets a pattern `tsc` couldn't match take its parameters or not, so the pattern is what fails: `error TS2345: Argument of type '"project.{project}.public"' is not assignable to parameter of type '"status" | "projects.{project}.public"'.` A pattern typed as a union of several takes no parameters. Scenarios: `broadcast-public-channels-declared-passes`, `broadcast-public-channel-with-params-misspelled-fails-tsc`.
 
 ### P-144
 
