@@ -1,0 +1,6 @@
+{
+    "problem": "P-145",
+    "description": "A presence listener that reads a member field the channel callback's Data class doesn't have fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'email' does not exist on type 'ViewerData'." }
+}
