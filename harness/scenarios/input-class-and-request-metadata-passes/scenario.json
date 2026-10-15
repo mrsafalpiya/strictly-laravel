@@ -1,0 +1,6 @@
+{
+    "problem": "P-112",
+    "description": "A controller action that takes an input class instead of a FormRequest, and reads only what isn't the payload from the request (its user, route, headers, IP, session), passes PHPStan and its feature test.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}
