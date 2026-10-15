@@ -65,7 +65,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-015](#p-015) | Form control names are plain strings | form payloads | closed |
 | [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | closed |
 | [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | closed |
-| [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | open |
+| [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | closed |
 | [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | closed |
 | [P-019](#p-019) | `int` is validated as `numeric` | form payloads | closed |
 | [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | closed |
@@ -544,7 +544,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the `InputData` base class carries `#[MergeValidationRules]`.
 
-**Closed by:** [`InputData`](../packages/laravel/src/Data/InputData.php) carries `#[MergeValidationRules]`, so an input's `rules()` are merged with the rules inferred from its types, and the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action that takes a Data class not extending it. A nested Data class inside an input still has its `rules()` replace its inferred ones: [P-099](#p-099). Scenarios: `custom-input-rules-merged-passes`, `plain-data-action-input-fails-phpstan`.
+**Closed by:** [`InputData`](../packages/laravel/src/Data/InputData.php) carries `#[MergeValidationRules]`, so an input's `rules()` are merged with the rules inferred from its types, and the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action that takes a Data class not extending it. A Data class with `rules()` nested in an input must extend it too: [P-099](#p-099). Scenarios: `custom-input-rules-merged-passes`, `plain-data-action-input-fails-phpstan`.
 
 ### P-099
 
@@ -553,11 +553,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-017](#p-017)
 - **Upstream:** by design; laravel-data reads `#[MergeValidationRules]` from each Data class. No upstream issue filed.
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an input with `public TaskData $task` (or `list<TaskData>`), where the plain Data class `TaskData` has `public string $title` and `rules()` returning `['title' => ['max:50']]`: the inferred `required|string` for `task.title` is dropped. Only the action's own parameter must extend InputData (`strictly.inputData`).
 
 **Manual workaround:** make every Data class nested in an input that has `rules()` extend InputData too.
+
+**Closed by:** the PHPStan rule `strictly.inputData` also rejects, in every input and query class, a property that nests a Data class with `rules()` not extending InputData ([`NestedInputDataRule`](../packages/laravel/src/PHPStan/NestedInputDataRule.php)): as the property's type, an item of a list, a map or a `DataCollection` of it, or a `#[DataCollectionOf]` class, at any depth. The message names the nested class (and the classes it is nested through). A nested class that extends InputData carries `#[MergeValidationRules]`, so its `rules()` are merged with its inferred ones. Scenarios: `nested-data-with-rules-fails-phpstan`, `nested-input-data-rules-merged-passes`.
 
 ### P-018
 
