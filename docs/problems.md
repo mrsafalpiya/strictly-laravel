@@ -113,8 +113,10 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
 | [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
-| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
+| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | closed |
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
+| [P-179](#p-179) | A closure route that answers JSON without a Data class isn't rejected | JSON endpoints | open |
+| [P-180](#p-180) | JSON an action builds itself has no response type | JSON endpoints | accepted gap |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
@@ -1328,7 +1330,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
 
-**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); and a closure route can't return a Data class: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. An action that answers JSON through anything but one Data class (a list, a collection, a nullable or union type) fails PHPStan: [P-108](#p-108); a JSON response the action builds itself stays `unknown`: [P-180](#p-180). A closure route can't return a Data class: [P-109](#p-109); one that answers JSON without a Data class isn't checked: [P-179](#p-179). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
@@ -1352,11 +1354,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** found while closing [P-048](#p-048)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public function recent(): array` with `@return list<ProjectData>`, or a `DataCollection` / `PaginatedDataCollection` return type: the PHP return type doesn't name a Data class, so the route isn't branded, `useRouteHttp(recent())` types the result `unknown`, no Contract records its responses and Contract Coverage doesn't list it. The same holds for a nullable or union return type (`?ProjectData`).
 
 **Manual workaround:** return one Data class that holds the list (`RecentProjectsData` with `@param list<ProjectData> $projects`).
+
+**Closed by:** the PHPStan rule `strictly.jsonResponse` ([`JsonResponseRule`](../packages/laravel/src/PHPStan/JsonResponseRule.php)) rejects a controller action whose native return type is something Laravel answers as JSON with no Data class (`array` or `iterable`, a `@return list<ProjectData>` included, a Collection, laravel-data's `DataCollection`, `PaginatedDataCollection` and `CursorPaginatedDataCollection`, a paginator, a model or an API resource: anything `Arrayable`, `Jsonable` or `JsonSerializable` that isn't a Data class), `App\Http\Controllers\ProjectController::recent() returns array, which Laravel sends as JSON that nothing types: useRouteHttp() types the route's response unknown, and no Contract checks it.`, and one that returns a nullable Data class or a union holding one (`?ProjectData`, `ProjectData|RedirectResponse`), `… returns App\Data\ProjectData|null, a nullable or union type, which declares no response: …`. Its tip says to return one Data class that holds the value (`RecentProjectsData` with a `list<ProjectData>` property), which is a JSON endpoint like any other: its route is branded, its responses are recorded as Contracts and Contract Coverage sees the list filled. Page classes (on their own, nullable or in a union), redirects, `Response`, downloads and `void` stay allowed, and so does a `JsonResponse`, JSON the action builds itself ([P-180](#p-180)). A closure route returning such JSON isn't checked: [P-179](#p-179). The PHPStan rule-test kit covers each rejected and allowed return type. Scenarios: `json-endpoint-returning-list-fails-phpstan`, `json-endpoint-returning-nullable-data-fails-phpstan`, `json-endpoint-returning-wrapped-list-passes`.
 
 ### P-109
 
@@ -1372,6 +1376,34 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** return JSON from controller actions only.
 
 **Closed by:** `strictly.closureRoute` ([P-097](#p-097)) also rejects a closure route whose return type, declared or inferred, is a Data class other than a Page class (a closure route may still render a page): `The closure route GET stats returns App\Data\StatsData, but Wayfinder types a route function's response only from a controller action: useRouteHttp() types its result unknown.` Scenarios: `closure-routes-without-data-classes-pass` (a controller action returns the Data class), `data-response-from-closure-route-fails-phpstan`.
+
+### P-179
+
+**A closure route that answers JSON without a Data class isn't rejected**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-108](#p-108)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `Route::get('projects/recent', fn (): array => Project::query()->latest()->take(5)->get()->all())`: Laravel answers the array as JSON, but `strictly.jsonResponse` checks controller actions only, so the route function's response is `unknown`, no Contract records it and Contract Coverage doesn't list it, without a word. A closure route returning a Data class fails `strictly.closureRoute` ([P-109](#p-109)), but its check stops at Data classes.
+
+**Manual workaround:** return JSON from controller actions only, as one Data class.
+
+### P-180
+
+**JSON an action builds itself has no response type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-108](#p-108)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `public function health(): JsonResponse { return response()->json(['status' => 'ok']); }`, or a `Responsable` whose `toResponse()` builds JSON, or a `mixed` return type: the route isn't branded, so `useRouteHttp(health())` types the result `unknown`; no Contract records the response and Contract Coverage doesn't list the route.
+
+**Manual workaround:** return one Data class instead; where the JSON must stay untyped, narrow the `unknown` result before reading it, which `tsc` enforces.
+
+**Reasoning:** a `JsonResponse` is the explicit way to answer JSON no Data class describes (a health check, a payload a third party dictates), and the client already can't read it without narrowing, so it fails loudly rather than silently. Rejecting it would leave such endpoints only a suppression; what `strictly.jsonResponse` rejects are the return types that look typed in PHP (`list<ProjectData>`, `?ProjectData`) yet reach the client as `unknown` ([P-108](#p-108)).
 
 ### P-050
 
