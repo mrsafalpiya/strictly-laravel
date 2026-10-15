@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { UpdateProjectData, UserSummaryData } from '@/generated';
+import { t } from '@/generated/translations';
 
 const NONE = '__none';
 
@@ -34,7 +35,11 @@ export function ProjectFields({
 }) {
     return (
         <>
-            <Field label="Name" htmlFor="name" error={errors.name}>
+            <Field
+                label={t('projects.fields.name')}
+                htmlFor="name"
+                error={errors.name}
+            >
                 <Input
                     id="name"
                     value={data.name}
@@ -44,7 +49,7 @@ export function ProjectFields({
             </Field>
 
             <Field
-                label="Description"
+                label={t('projects.fields.description')}
                 htmlFor="description"
                 error={errors.description}
             >
@@ -63,14 +68,14 @@ export function ProjectFields({
                 />
             </Field>
 
-            <Field label="Colour" error={errors.color}>
+            <Field label={t('projects.fields.color')} error={errors.color}>
                 <ColorPicker
                     value={data.color}
                     onChange={(color) => setData({ color })}
                 />
             </Field>
 
-            <Field label="Lead" error={errors.leadId}>
+            <Field label={t('projects.fields.lead')} error={errors.leadId}>
                 <Select
                     value={data.leadId === null ? NONE : String(data.leadId)}
                     onValueChange={(value) =>
@@ -83,7 +88,9 @@ export function ProjectFields({
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value={NONE}>No lead</SelectItem>
+                        <SelectItem value={NONE}>
+                            {t('projects.fields.no_lead')}
+                        </SelectItem>
                         {members.map((member) => (
                             <SelectItem
                                 key={member.id}

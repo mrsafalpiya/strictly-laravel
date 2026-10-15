@@ -26,6 +26,10 @@
         "./routes": {
             "types": "./routes/index.d.ts"
         },
+        "./translations": {
+            "types": "./translations/index.d.ts",
+            "default": "./translations/index.js"
+        },
         "./vite": {
             "types": "./vite/index.d.ts",
             "default": "./vite/index.js"
@@ -39,6 +43,7 @@
         "oxlint",
         "react",
         "routes",
+        "translations",
         "vite"
     ],
     "peerDependencies": {

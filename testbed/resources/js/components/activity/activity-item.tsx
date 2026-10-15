@@ -1,5 +1,8 @@
+import { Link } from '@inertiajs/react';
 import { UserAvatar } from '@/components/domain/user-avatar';
+import { useWorkspace } from '@/hooks/use-workspace';
 import { issuePriorities, issueStatuses, workspaceRoles } from '@/lib/domain';
+import { show } from '@/routes/issues';
 import type { ActivityData } from '@/generated';
 
 /** `payload` is a discriminated union on `type`: each case below sees its own payload shape. */
@@ -32,6 +35,8 @@ export function ActivityItem({
     activity: ActivityData;
     showIssue?: boolean;
 }) {
+    const workspace = useWorkspace();
+
     return (
         <div className="flex items-start gap-3 py-2 text-sm">
             <UserAvatar user={activity.actor} className="mt-0.5" />
@@ -41,10 +46,16 @@ export function ActivityItem({
                 {showIssue && activity.issue !== null && (
                     <>
                         {' '}
-                        {/* The Issues area links the identifier to the issue page. */}
-                        <span className="font-medium">
+                        <Link
+                            href={show({
+                                workspace,
+                                project: activity.issue.projectKey,
+                                issue: activity.issue.number,
+                            })}
+                            className="font-medium hover:underline"
+                        >
                             {activity.issue.identifier}
-                        </span>
+                        </Link>
                     </>
                 )}
                 <div className="text-xs text-muted-foreground">

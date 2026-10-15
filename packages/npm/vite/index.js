@@ -2,7 +2,8 @@
 /**
  * The Strictly Laravel Vite plugin. `strictly:install` registers it in the app's vite.config.ts. While the dev server
  * runs (`composer dev`), it regenerates the TypeScript types (`@/generated`) whenever a PHP file under app/ is saved,
- * so the editor sees a changed Data class or enum without a command (Problem P-064), and whenever a page component
+ * so the editor sees a changed Data class or enum without a command (Problem P-064), whenever a lang file changes, so
+ * `t()` takes the new keys and params (Problems P-055, P-056), and whenever a page component
  * file is created or deleted under resources/js/pages, so the generated checks that tie each one to its Page class
  * list the files there are (Problem P-010):
  *
@@ -162,8 +163,9 @@ function readJson(file) {
 }
 
 /**
- * Whether a file event changes the types: any PHP file under app/, .env.example (`import.meta.env`), and a page
- * component file created or deleted (its contents aren't generated from, so saving one changes nothing).
+ * Whether a file event changes the types: any PHP file under app/, .env.example (`import.meta.env`), any lang file
+ * (the app's own, not lang/vendor/'s), and a page component file created or deleted (its contents aren't generated
+ * from, so saving one changes nothing).
  *
  * @param {'add' | 'change' | 'unlink'} event
  * @param {string} path relative to the project root, with forward slashes
@@ -175,6 +177,10 @@ function regeneratesTypes(event, path) {
 
     if (path.startsWith('app/')) {
         return path.endsWith('.php');
+    }
+
+    if (path.startsWith('lang/')) {
+        return !path.startsWith('lang/vendor/') && (path.endsWith('.php') || path.endsWith('.json'));
     }
 
     return event !== 'change' && path.startsWith('resources/js/pages/');

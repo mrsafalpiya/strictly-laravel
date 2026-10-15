@@ -1,0 +1,9 @@
+{
+    "problem": "P-056",
+    "description": "A misspelled :param name fails tsc: t('auth.throttle', { second }) when the message takes :seconds.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/components/throttle-notice.tsx(4,37): error TS2561: Object literal may only specify known properties, but 'second' does not exist in type 'TranslationParams<\"seconds\">'. Did you mean to write 'seconds'?"
+    }
+}

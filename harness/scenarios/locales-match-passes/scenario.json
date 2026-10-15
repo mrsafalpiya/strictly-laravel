@@ -1,0 +1,7 @@
+{
+    "problem": "P-057",
+    "description": "An app with a second locale whose PHP and JSON lang files have exactly the default locale's keys and params passes ci:check, locale parity test included.",
+    "expect": {
+        "outcome": "pass"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "problem": "P-056",
+    "description": "t() takes exactly a message's :params, numbers or strings, with :Name and :NAME filled by the param name; a message without params takes none.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "pass"
+    }
+}

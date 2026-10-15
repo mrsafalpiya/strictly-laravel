@@ -1,0 +1,8 @@
+{
+    "problem": "P-055",
+    "description": "t() takes every key of the default locale's lang files: PHP files (nested groups and directories too), the JSON file's keys, and template-literal keys.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "pass"
+    }
+}

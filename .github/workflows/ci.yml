@@ -18,9 +18,9 @@ concurrency:
 
 jobs:
   checks:
-    name: Package tests and harness scenarios
+    name: Harness typecheck, Pint and PHPStan rule tests
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -40,15 +40,68 @@ jobs:
       - name: PHPStan rule tests (Composer package)
         run: pnpm test:php
 
-      # The fixture cache starts empty here, so this generates the latest Base Kit first.
+  harness:
+    # Each shard runs the package tests and its share of the fixture-app tests (STRICTLY_HARNESS_SHARD), dealt out by
+    # cost so the shards finish together. Raise the shard count when the suite grows and the shards slow down.
+    name: Package tests and harness scenarios (shard ${{ matrix.shard }}/8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the monorepo
+        uses: ./.github/actions/setup
+
+      - name: Today's date
+        id: today
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      # The latest Base Kit is generated once a day (UTC) and shared by every run and shard that day. The nightly
+      # fresh-install job always generates its own.
+      - name: Restore today's Base Kit
+        id: base-kit
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .fixtures/.git
+            .fixtures/base-kit
+            .fixtures/base-kit.stamp.json
+          key: base-kit-${{ runner.os }}-${{ steps.today.outputs.date }}-${{ hashFiles('composer.lock', 'harness/src/fixture.ts') }}
+
+      # Without a cached Base Kit, this generates the latest one first.
       - name: Package tests and harness scenarios
         run: pnpm test
+        env:
+          STRICTLY_HARNESS_SHARD: ${{ matrix.shard }}/8
+
+      - name: Check whether a Base Kit was generated
+        id: generated
+        if: always() && matrix.shard == 1 && steps.base-kit.outputs.cache-hit != 'true'
+        run: test -f .fixtures/base-kit.stamp.json && echo "base-kit=true" >> "$GITHUB_OUTPUT" || true
+
+      - name: Save today's Base Kit
+        if: always() && steps.generated.outputs.base-kit == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .fixtures/.git
+            .fixtures/base-kit
+            .fixtures/base-kit.stamp.json
+          key: ${{ steps.base-kit.outputs.cache-primary-key }}
 
       - name: Upload fixture logs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: fixture-logs
+          name: fixture-logs-shard-${{ matrix.shard }}
           path: .fixtures/*.log
           # .fixtures/ is a hidden directory, which upload-artifact skips by default.
           include-hidden-files: true

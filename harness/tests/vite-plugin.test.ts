@@ -154,6 +154,20 @@ describe('Vite plugin: live regeneration', () => {
         await until('a run after the deleted page file finished', () => finishedRuns(dev) === 3);
     });
 
+    test('a lang file saved, created or deleted regenerates the translations', async () => {
+        const dev = await startDevServer();
+        await until('the first run finished', () => finishedRuns(dev) === 1);
+
+        dev.save('lang/en/auth.php');
+        await until('a run after the saved PHP lang file finished', () => finishedRuns(dev) === 2);
+
+        dev.create('lang/de.json');
+        await until('a run after the new JSON lang file finished', () => finishedRuns(dev) === 3);
+
+        dev.remove('lang/de/auth.php');
+        await until('a run after the deleted lang file finished', () => finishedRuns(dev) === 4);
+    });
+
     test('saving .env.example regenerates too, since import.meta.env is typed from it', async () => {
         const dev = await startDevServer();
         await until('the first run finished', () => finishedRuns(dev) === 1);
@@ -172,6 +186,8 @@ describe('Vite plugin: live regeneration', () => {
         dev.save('app/Data/README.md');
         dev.save('vendor/acme/app/Thing.php');
         dev.save('application/Thing.php');
+        dev.save('lang/README.md');
+        dev.save('lang/vendor/acme/en/messages.php');
         dev.save('resources/.env.example');
         await sleep(500);
 
