@@ -106,7 +106,7 @@ const pluralMessages = () => ({
     './lang/ru.json': { apples: 'яблоко|яблока|яблок', two: 'a|b' },
     './lang/pl.json': { apples: 'jabłko|jabłka|jabłek' },
     './lang/ar.json': { apples: 'zero|one|two|few|many|other' },
-    './lang/ja.json': { apples: 'りんご|りんごs' },
+    './lang/ja.json': { apples: 'りんご|りんごs', 'issues.count': '課題 :count 件' },
 });
 
 type PluralLocale = 'en' | 'de' | 'fr' | 'ru' | 'pl' | 'ar' | 'ja';
@@ -165,6 +165,11 @@ describe('choice()', () => {
         assert.deepEqual(
             [1, 5].map((count) => choiceIn('ja')('apples', count)),
             ['りんご', 'りんご'],
+        );
+        // A locale with one plural form needn't pluralise a message the default locale does (Problem P-136).
+        assert.deepEqual(
+            [0, 1, 5].map((count) => choiceIn('ja')('issues.count', count)),
+            ['課題 0 件', '課題 1 件', '課題 5 件'],
         );
     });
 
