@@ -1,0 +1,5 @@
+{
+    "problem": "P-113",
+    "description": "An input whose rules validate a key it doesn't declare (#[Confirmed] on password, without a password_confirmation field) records an input Contract that fails tsc, since the typed form can never send that key and every real submit is refused.",
+    "expect": { "outcome": "fail", "errorContains": "error TS2322: Type '\"password_confirmation\"' is not assignable to type '\"password\"'." }
+}

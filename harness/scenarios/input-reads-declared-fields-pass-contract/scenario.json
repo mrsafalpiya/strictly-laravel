@@ -1,0 +1,5 @@
+{
+    "problem": "P-024",
+    "description": "Actions that read only their input's fields (boolean(), filled(), has(), hasAny(), a wildcard input(), only(), a magic property; a route parameter isn't input) record input Contracts that pass tsc, and framework plumbing (the paginators' page and cursor, laravel-data's response partials) is ignored; the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
