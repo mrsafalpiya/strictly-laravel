@@ -1,0 +1,6 @@
+{
+    "problem": "P-025",
+    "description": "Fortify's login and registration routes are branded with the payloads config/strictly.php declares for them, so submit() takes their fields from the route.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}
