@@ -1,0 +1,7 @@
+{
+    "problem": "P-068",
+    "description": "Running strictly:install again adds the rules against type and non-null assertions to the lint config of an app installed before they existed, which then rejects a cast.",
+    "reinstall": true,
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(consistent-type-assertions): Do not use any type assertions." }
+}
