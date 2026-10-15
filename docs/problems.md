@@ -76,7 +76,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
-| [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | open |
+| [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
+| [P-167](#p-167) | A closure route can take a FormRequest or read the request's input | form payloads | open |
+| [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | accepted gap |
 | [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | closed |
 | [P-157](#p-157) | A model key named unlike one and validated by no `exists` rule needs no `#[KeyOf]` | form payloads | accepted gap |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
@@ -121,7 +123,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
 | [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
-| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
+| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | closed |
+| [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
@@ -697,7 +700,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the test request records every key read (`input()`, `boolean()`, `only()`, `has()`, magic properties; `tests/Support/InputReads.php`) and the Contract `read satisfies InputKey<StoreProjectData>[]` fails on an undeclared key.
 
-**Closed by:** every feature test's request is a [`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php) ([`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) overrides the test case's `createTestRequest()`), which reports each input key the app reads by name (`input()`, `boolean()`, `string()`, `filled()`, `has()`, `hasAny()`, `only()`, `all('key')`, `query()`, `post()`, `file()`, `json()`, `$request->key`, `$request['key']`; a route parameter read as a property isn't input) to [`InputReads`](../packages/laravel/src/Testing/InputReads.php). A request to a form endpoint records the keys its action read, from the moment it reached its route, in its `form` Contract as `export const read = [...] satisfies InputKey<StoreProjectData>[]`, which fails `tsc` on a key the input type lacks: `Type '"notify"' is not assignable to type '"name" | "public"'.` Framework plumbing is ignored: keys starting with `_` (the CSRF token, `_method`) and the reads of the paginators (`page`, `cursor`) and of laravel-data (its `include`, `exclude`, `only` and `except` response partials). A read that names no key isn't seen: [P-026](#p-026). An action without an input class isn't checked: [P-112](#p-112). Scenarios: `input-reads-declared-fields-pass-contract`, `input-read-not-a-field-fails-contract`.
+**Closed by:** every feature test's request is a [`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php) ([`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) overrides the test case's `createTestRequest()`), which reports each input key the app reads by name (`input()`, `boolean()`, `string()`, `filled()`, `has()`, `hasAny()`, `only()`, `all('key')`, `query()`, `post()`, `file()`, `json()`, `$request->key`, `$request['key']`; a route parameter read as a property isn't input) to [`InputReads`](../packages/laravel/src/Testing/InputReads.php). A request to a form endpoint records the keys its action read, from the moment it reached its route, in its `form` Contract as `export const read = [...] satisfies InputKey<StoreProjectData>[]`, which fails `tsc` on a key the input type lacks: `Type '"notify"' is not assignable to type '"name" | "public"'.` Framework plumbing is ignored: keys starting with `_` (the CSRF token, `_method`) and the reads of the paginators (`page`, `cursor`) and of laravel-data (its `include`, `exclude`, `only` and `except` response partials). A read that names no key isn't seen: [P-026](#p-026). An action without an input class reads no input: [P-112](#p-112). Scenarios: `input-reads-declared-fields-pass-contract`, `input-read-not-a-field-fails-contract`.
 
 ### P-113
 
@@ -721,11 +724,41 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-024](#p-024)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an action taking a FormRequest, such as the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` before Kit Conversion gave it `PasswordUpdateData`, validates `current_password` and `password` and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form has no fields (naming its payload as a `<TypedForm>` type argument fails lint, [P-100](#p-100)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing. A vendor action is one of them until `config/strictly.php` declares its payload ([P-025](#p-025)); the Base Kit's Fortify actions that take no payload (logout, disabling two-factor authentication) aren't declared.
 
 **Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)); declare one for a vendor action that reads either ([P-025](#p-025)). A GET with a query class records the keys it reads as a `query` Contract checked against the class.
+
+**Closed by:** two PHPStan rules, which share [`ControllerAction`](../packages/laravel/src/PHPStan/ControllerAction.php) and [`RequestRead`](../packages/laravel/src/PHPStan/RequestRead.php) with `strictly.queryRead` ([P-106](#p-106)). [`FormRequestRule`](../packages/laravel/src/PHPStan/FormRequestRule.php) (`strictly.formRequest`) rejects a controller action parameter typed as a FormRequest: `App\Http\Controllers\ProjectController::store() takes App\Http\Requests\StoreProjectRequest, a FormRequest, where nothing types its payload: a typed form sends only the fields of its action's input class.` [`InputReadRule`](../packages/laravel/src/PHPStan/InputReadRule.php) (`strictly.inputRead`) rejects reading input from the request in any method of a controller (or closure in one) that takes no input or query class: the accessors of `InteractsWithInput` and `InteractsWithData` (`input()`, `string()`, `boolean()`, `all()`, `only()`, `has()`, `file()`, …), `get()`, `json()`, the `validate()` macros, a FormRequest's `validated()` and `safe()`, the `request` and `files` bags, a key read as a property (`$request->name`) or offset (`$request['name']`), `Request::input()` on the facade and `request('name')`. A method that takes an input or query class may still read the request, since its Contract checks every key it reads ([P-024](#p-024), [P-104](#p-104)), and reading what isn't the payload (`user()`, `route()`, `header()`, `ip()`, `session()`, `cookie()`) passes. Kit Conversion's `SecurityController::edit()` takes a plain `Request` and makes the Base Kit's `TwoFactorAuthenticationRequest`, which validates nothing, from it with `createFrom()` for Fortify's two-factor state handling. Vendor actions stay covered by their declarations ([P-025](#p-025)). Not covered: closure routes ([P-167](#p-167)) and reads outside a controller ([P-168](#p-168)). Scenarios: `form-request-in-action-fails-phpstan`, `input-read-without-input-class-fails-phpstan`, `input-class-and-request-metadata-passes`.
+
+### P-167
+
+**A closure route can take a FormRequest or read the request's input**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-112](#p-112)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `Route::post('projects', fn (Request $request) => Project::create(['name' => $request->string('name')]))` or `fn (StoreProjectRequest $request) => …`. `strictly.inputRead` and `strictly.formRequest` check controllers only, so neither is rejected, and as with [P-097](#p-097) the route function has no input type, so no typed form can send the payload.
+
+**Manual workaround:** handle a payload in a controller action that takes an input class.
+
+### P-168
+
+**Input read from the request outside a controller isn't rejected**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-112](#p-112)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a controller action without an input class hands the request to another class (`$this->projects->create($request)`, a job, an action class) that reads `$request->input('name')`; or reads the request through a value PHPStan doesn't type as one (`app('request')` in code typed `mixed`). `strictly.inputRead` sees reads only in a controller's own methods and closures, on a value typed as a `Request`. The same holds for a vendor action that reads input and that `config/strictly.php` declares nothing for ([P-025](#p-025)): vendor code isn't analysed.
+
+**Manual workaround:** take the input class in the action and pass it, not the request, to the code that needs the payload.
+
+**Reasoning:** middleware, a FormRequest's own methods, Fortify's customisation callbacks (`Fortify::authenticateUsing()`) and other framework hooks read the request by design, so a rule can't reject every read outside a controller; and which action a service's read serves is only known at runtime. The typed way hands such code the input class, and the reads a feature test reaches are still recorded in the action's Contract when it has one ([P-024](#p-024)). The Base Kit's undeclared Fortify actions (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes) take no payload.
 
 ### P-128
 
@@ -778,7 +811,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - a GET to a route with a query class, declared or the action's own, records the query keys it validated and read as a `query` Contract (`__contracts__/_queries/`) checked against the class;
 - Contract Coverage reports a declared field no test saw the vendor use ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php)): `✗ LoginData.nickname is declared for a vendor action that never uses it (at POST /login): add a feature test that submits to POST /login with nickname, or remove it from the declaration in config/strictly.php if … doesn't validate or read it.`
 
-`strictly:install` publishes `config/strictly.php` with the Base Kit's Fortify declarations ([`stubs/strictly.php`](../packages/laravel/stubs/strictly.php); the package's merged defaults declare nothing), and Kit Conversion adds their classes under `App\Data\Auth`, with the Reference Implementation's two findings declared: `remember` on registration and `force` on enabling two-factor authentication, both `bool|Optional`. Its `tests/Feature/ContractCoverageTest.php` submits to the Fortify actions the Base Kit's tests don't (password confirmation, the two-factor challenge, enabling and confirming two-factor authentication) and opens the password reset link with its `email`. Not declared: the passkey routes, whose requests Laravel Passkeys' own client sends, and the Fortify actions that take no payload (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes), whose reads are checked by nothing like any action without an input ([P-112](#p-112)). Scenarios: `vendor-input-declared-passes`, `vendor-input-undeclared-read-fails-contract`, `vendor-input-undeclared-force-fails-contract`, `vendor-form-wrong-field-fails-tsc`, `vendor-input-field-never-used-fails-coverage`, `vendor-request-reads-declared-key-passes`, `vendor-request-reads-undeclared-key-fails-contract`, `vendor-query-declared-passes`, `vendor-query-key-misspelled-fails-tsc`, `vendor-query-undeclared-read-fails-contract`, `vendor-declaration-unknown-class-fails-generate`.
+`strictly:install` publishes `config/strictly.php` with the Base Kit's Fortify declarations ([`stubs/strictly.php`](../packages/laravel/stubs/strictly.php); the package's merged defaults declare nothing), and Kit Conversion adds their classes under `App\Data\Auth`, with the Reference Implementation's two findings declared: `remember` on registration and `force` on enabling two-factor authentication, both `bool|Optional`. Its `tests/Feature/ContractCoverageTest.php` submits to the Fortify actions the Base Kit's tests don't (password confirmation, the two-factor challenge, enabling and confirming two-factor authentication) and opens the password reset link with its `email`. Not declared: the passkey routes, whose requests Laravel Passkeys' own client sends, and the Fortify actions that take no payload (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes), whose reads are checked by nothing ([P-168](#p-168)). Scenarios: `vendor-input-declared-passes`, `vendor-input-undeclared-read-fails-contract`, `vendor-input-undeclared-force-fails-contract`, `vendor-form-wrong-field-fails-tsc`, `vendor-input-field-never-used-fails-coverage`, `vendor-request-reads-declared-key-passes`, `vendor-request-reads-undeclared-key-fails-contract`, `vendor-query-declared-passes`, `vendor-query-key-misspelled-fails-tsc`, `vendor-query-undeclared-read-fails-contract`, `vendor-declaration-unknown-class-fails-generate`.
 
 ### P-026
 
@@ -1457,11 +1490,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-054](#p-054)
 - **Upstream:** by design: `@laravel/echo-react`'s presence callbacks take `any`
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Broadcast::channel('issues.{issue}.viewers', fn (User $user, Issue $issue): array => ['id' => $user->id, 'name' => $user->name])`; the client reads the members through `here()`, `joining()` and `leaving()` on `usePresenceChannel()`'s channel, typed by hand.
 
 **Manual workaround:** type the member data by hand next to the listener.
+
+**Closed by:** a presence channel's callback returns a Data class of what each member shares, declared as its return type (`fn (User $user, Issue $issue): ?ViewerData => …`, `null` refusing the user; a channel class's `join()` the same). `BroadcastChannels` reads the declared return type: a Data class makes the channel a presence one and is generated as its `member` in `BroadcastChannels` (`@/generated/broadcasting`). `usePresence(channel, { here, joining, leaving })` from there ([`echo/index.d.ts`](../packages/npm/echo/index.d.ts)) takes only a presence channel's handle, with its parameters typed as `channel()` types them, joins it through `@laravel/echo-react`'s `useChannel()` (ADR-0008), and types each callback's members as that Data class, so reading a field it lacks fails `tsc` (`error TS2339: Property 'email' does not exist on type 'ViewerData'.`). The PHPStan rule `strictly.presenceData` ([`PresenceDataRule`](../packages/laravel/src/PHPStan/PresenceDataRule.php)) rejects a channel callback that returns an array (`Presence channel issues.{issue}.viewers returns its members' data as an array.`), and one that returns a Data class without declaring it, which generation would take for a private channel; a callback returning `bool` is untouched. The oxlint rule `strictly/typed-broadcasts` also rejects Echo's `usePresenceChannel()` (``Echo's `usePresenceChannel()` hands out a presence channel whose members are typed by hand: …``). What that leaves is [P-165](#p-165). Scenarios: `presence-members-typed-passes`, `presence-member-field-misread-fails-tsc`, `presence-channel-returns-array-fails-phpstan`, `use-presence-channel-fails-lint`, and the passing `broadcast-channels-typed-passes`, `skill-add-broadcast-event-example-passes`.
+
+### P-165
+
+**A presence channel's member data isn't checked by a Contract**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-145](#p-145)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a presence channel's `ViewerData` gains a `#[WithTransformer]` (or a `toArray()` override) that changes what it serialises to. Its members reach the browser in the `channel_data` of the `/broadcasting/auth` response, which no feature test records, so the difference from the generated `ViewerData` type fails nothing, and Contract Coverage doesn't ask for a test that joins the channel.
+
+**Manual workaround:** a feature test that authorizes the presence channel through a Pusher-protocol broadcaster (switch the test to the Reverb connection, as the Testbed App's `CommentBroadcastTest` does for its private channel) and asserts the `user_info` in the response's `channel_data`.
+
+**Reasoning:** feature tests broadcast on the `null` connection, whose `auth()` never runs a channel's callback, so no test sees member data unless it installs and configures a real broadcaster's SDK (`pusher/pusher-php-server` for Reverb and Pusher). Recording `channel_data` from such responses is possible, but Contract Coverage couldn't require it of every app with a presence channel, and a Contract nothing requires proves little. The member type is generated from the Data class like every other, so what stays unchecked is only that class's own serialisation.
 
 ### P-148
 
@@ -1474,7 +1524,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Reproduction:** `useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => …)`, or `.notification((n: { title: string }) => …)` on it, or the same on `echo().private(…)`, compiles and passes lint: `strictly/typed-broadcasts` rejects only Echo's listening hooks, not the channel objects its other hooks and `echo()` return.
 
-**Manual workaround:** listen through `useChannelEvent()` only, and leave Echo's channel objects to joining, leaving and presence members.
+**Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only, and leave Echo's channel objects to joining and leaving.
 
 ## Translations
 

@@ -1,0 +1,5 @@
+{
+    "problem": "P-145",
+    "description": "Presence channels whose callback (a closure or a channel class's join()) returns a Data class are joined with usePresence(), whose here, joining and leaving receive that class, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

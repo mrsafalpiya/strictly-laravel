@@ -199,7 +199,8 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             "import { configureEcho, useConnectionStatus } from '@laravel/echo-react'; configureEcho({ broadcaster: 'reverb' }); useConnectionStatus();",
             "import { channel, useChannelEvent } from '@/generated/broadcasting'; import { useEchoNotification } from './hooks/notifications'; useEchoNotification(name, cb); useChannelEvent(channel('users.{user}', { user }), 'InvoicePaid', cb);",
             "import { useEcho } from './hooks/use-echo'; useEcho();",
-            "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);",
+            "import { channel, usePresence } from '@/generated/broadcasting'; usePresence(channel('issues.{issue}.viewers', { issue }), { here: cb });",
+            "import { usePresenceChannel } from './hooks/presence'; usePresenceChannel(name);",
         ],
         invalid: [
             {
@@ -229,6 +230,16 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             },
             { code: "import { useEchoModel as useModel } from '@laravel/echo-react'; useModel('App.Models.Project', id, 'ProjectUpdated', cb);", errors: 1 },
             { code: "import * as Echo from '@laravel/echo-react'; Echo.useEchoNotification(name, cb);", errors: 1 },
+            {
+                code: "import { usePresenceChannel } from '@laravel/echo-react'; usePresenceChannel(`issues.${issue.id}.viewers`).channel()?.here((members: { name: string }[]) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's `usePresenceChannel\(\)` hands out a presence channel whose members are typed by hand: use `usePresence\(channel, \{ here, joining, leaving \}\)` from `@\/generated\/broadcasting`, which types its members from the Data class the channel's callback returns\./,
+                    },
+                ],
+            },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);", errors: 1 },
         ],
     });
 });

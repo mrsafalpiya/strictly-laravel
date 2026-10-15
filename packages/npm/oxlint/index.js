@@ -693,22 +693,27 @@ const frameworkBroadcastHooks = new Map([
     ['useEchoModel', { reads: "a model broadcast's", alongside: 'the model change' }],
 ]);
 
+/** P-145: Echo's React hook that hands out a presence channel, whose members' data its callbacks type by hand. */
+const untypedPresenceHook = 'usePresenceChannel';
+
 /**
- * P-052, P-053, P-142: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
+ * P-052, P-053, P-142, P-145: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
  * `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data
  * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type,
  * and its `useEchoNotification()` and `useEchoModel()` read broadcast notifications and model broadcasts, whose
  * payloads have no generated type, so calling any of them when imported from `@laravel/echo-react` (by name, renamed or
  * through a namespace import) is rejected: a notification or model change broadcasts an app event with a
- * `BroadcastsData` payload alongside. Its other hooks stay allowed: channels, presence members and connection state
- * carry no event payload.
+ * `BroadcastsData` payload alongside. A presence channel's members are followed through `usePresence(channel, { here,
+ * joining, leaving })`, which types them from the Data class the channel's callback returns, so Echo's
+ * `usePresenceChannel()`, whose channel's `here()`, `joining()` and `leaving()` take hand-typed members, is rejected
+ * too. Its other hooks stay allowed: channels and connection state carry no typed data.
  *
  * @type {Rule}
  */
 const typedBroadcasts = {
     meta: {
         type: 'problem',
-        docs: { description: "Listen for broadcast events through useChannelEvent() instead of Echo's untyped hooks." },
+        docs: { description: "Listen for broadcast events through useChannelEvent(), and follow presence members through usePresence(), instead of Echo's untyped hooks." },
     },
     create(context) {
         /** Local name → imported name, for the hooks imported from `@laravel/echo-react`. */
@@ -754,6 +759,11 @@ const typedBroadcasts = {
                     context.report({
                         node,
                         message: `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
+                    });
+                } else if (hook === untypedPresenceHook) {
+                    context.report({
+                        node,
+                        message: `Echo's \`${hook}()\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`,
                     });
                 } else if (framework !== undefined) {
                     context.report({
