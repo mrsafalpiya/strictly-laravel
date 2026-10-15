@@ -592,7 +592,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** make every Data class nested in an input that has `rules()` extend InputData too.
 
-**Closed by:** the PHPStan rule `strictly.inputData` also rejects, in every input and query class, a property that nests a Data class with `rules()` not extending InputData ([`NestedInputDataRule`](../packages/laravel/src/PHPStan/NestedInputDataRule.php)): as the property's type, an item of a list, a map or a `DataCollection` of it, or a `#[DataCollectionOf]` class, at any depth. The message names the nested class (and the classes it is nested through). A nested class that extends InputData carries `#[MergeValidationRules]`, so its `rules()` are merged with its inferred ones. Scenarios: `nested-data-with-rules-fails-phpstan`, `nested-input-data-rules-merged-passes`.
+**Closed by:** the PHPStan rule `strictly.inputData` also rejects, in every input and query class, a property that nests a Data class with `rules()` not extending InputData ([`NestedInputDataRule`](../packages/laravel/src/PHPStan/NestedInputDataRule.php)): as the property's type, an item of a list, a map or a `DataCollection` of it, or a `#[DataCollectionOf]` class, at any depth. The message names the nested class (and the classes it is nested through). A nested class that extends InputData carries `#[MergeValidationRules]`, so its `rules()` are merged with its inferred ones; a plain Data class that carries the attribute itself, or through a parent class (laravel-data reads parents' attributes too), merges them the same way and passes. Scenarios: `nested-data-with-rules-fails-phpstan`, `nested-input-data-rules-merged-passes`, `nested-data-merging-its-own-rules-passes`.
 
 ### P-018
 
