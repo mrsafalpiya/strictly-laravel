@@ -84,7 +84,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
-| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | open |
+| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | closed |
+| [P-155](#p-155) | An input whose `rules()` take a route model is validated only through its route | validation errors | accepted gap |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
@@ -124,7 +125,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
-| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | open |
+| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
+| [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
 | [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
 | [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
@@ -885,11 +887,28 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** validation errors
 - **Source:** found porting Tracklane's Workspaces area into the Testbed App (#23)
 - **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`). Editing a comment is another: only its author may (`CommentPolicy::update`), so `UpdateCommentData::authorize()` reads `$request->route('comment')` the same way.
 
 **Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
+
+**Closed by:** an InputData's `authorize()` and `rules()` (a nested InputData's `rules()` too) receive, for each parameter typed as a model (any `UrlRoutable`), the model the current route binds to the parameter of the same name; every other parameter still resolves through the container ([`RouteModelArguments`](../packages/laravel/src/Workarounds/LaravelData/RouteModelArguments.php), called by InputData's pipeline in place of laravel-data's `AuthorizedDataPipe` and by the `DataValidationRulesResolver` the service provider binds). It never falls back to an empty model: a parameter the route has no parameter of that name for, a route parameter left unbound (the action doesn't take the model, so it stays the raw key), or a call outside a request's route (`validate()` from a command or a unit test, [P-155](#p-155)) throws a `LogicException` naming the parameter and the route; a nullable parameter receives `null` for an optional route parameter the URL left out. The PHPStan rule `strictly.routeModelParameter` ([`RouteModelParameterRule`](../packages/laravel/src/PHPStan/RouteModelParameterRule.php)) rejects a model parameter of `authorize()` or `rules()` on any other Data class (a query class, a plain Data class), where it would still be a new, empty model. The Testbed App's `UpdateMemberData`, `UpdateCommentData`, `UpdateIssueData` and `UpdateLabelData` take the models as parameters. Scenarios: `bound-models-in-input-authorize-and-rules-passes`, `input-model-parameter-not-on-route-fails-test`, `model-parameter-in-query-rules-fails-phpstan`.
+
+### P-155
+
+**An input whose `rules()` take a route model is validated only through its route**
+
+- **Type Boundary:** validation errors
+- **Source:** found while closing [P-126](#p-126)
+- **Upstream:** by design (laravel-data's `validate()` and `validateAndCreate()` take only the payload)
+- **Status:** accepted gap
+
+**Reproduction:** `UpdateLabelData::rules(Label $label)` gets the route's `{label}`. Validating that input outside a request to its route, with `UpdateLabelData::validate($payload)` from a command, a queued job or a unit test, has no route to take the label from, so it throws `…::rules() takes App\Models\Label $label, the model the current route binds to {label}, but there is no current route.` An input without model parameters validates anywhere, as before.
+
+**Manual workaround:** validate the input through a request to its route (a feature test). Where the same rules are needed elsewhere, put them in a static method that takes the model and call it from both `rules()` and the other caller.
+
+**Reasoning:** laravel-data gives `validate()` no way to pass the model, and falling back to an empty one is what P-126 removed. Inputs are validated by the request that carries them, and that path has the route.
 
 ## Enums
 
@@ -1493,11 +1512,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found building the translations boundary (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `lang/en/issues.php` defines `'count' => '{0} No issues|{1} One issue|[2,*] :count issues'`; the client calls `t('issues.count', { count: 3 })`, which compiles and renders the whole message, pipes and ranges included. `trans_choice()` selects the variant on the server; nothing does on the client.
 
 **Manual workaround:** one key per variant (`issues.count_none`, `issues.count_one`, `issues.count_many`), chosen in TypeScript.
+
+**Closed by:** a message is pluralised when it contains `|` (`StrictlyLaravel\Translations\Translations::isPlural()`), and `@/generated/translations` lists those keys as `PluralTranslationKey`. Its `choice(key, count, params?)` picks the form as Laravel's `MessageSelector` does (a `{n}` or `[from,to]` range holding the count first, `*` leaving a range open, then the plural rule of the locale whose message it is, falling back to the default locale's message like `t()`), fills `:count` with the count (or a `count` param) and takes the message's other `:params`. `t()` rejects a pluralised key (`error TS2345: Argument of type '"issues.count"' is not assignable to parameter of type '"issues.count is a plural message: use choice()"'.`) and `choice()` every other key (`… '"issues.title is not a plural message: use t()"'.`). The locale parity test ([P-057](#p-057)) reports a locale whose message is pluralised where the default locale's isn't, or the other way round (`de: issues.count isn't plural, but the en message is, so choice() can't pick its form`); the number of forms may differ, since each locale's plural rule has its own. The npm package's unit tests compare `choice()` with what `trans_choice()` returns in `en`, `de`, `fr`, `ru`, `pl`, `ar` and `ja`. Scenarios: `translation-plural-choice-passes`, `translation-plural-key-in-t-fails-tsc`, `translation-singular-key-in-choice-fails-tsc`, `locale-plural-mismatch-fails-test`.
+
+### P-161
+
+**A message with a literal `|` is a pluralised message**
+
+- **Type Boundary:** translations
+- **Source:** found typing `choice()` (#47)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `lang/en/app.php` defines `'title' => 'Tracklane | Projects'`, which isn't pluralised. `t('app.title')` fails `tsc` (`… is a plural message: use choice()`), and `choice('app.title', 1)` renders `Tracklane `, the first form.
+
+**Manual workaround:** keep the `|` out of the message: `` `${t('app.name')} | ${t('projects.index.title')}` ``, or a different character (`·`, `—`).
+
+**Reasoning:** `|` is Laravel's form separator and has no escape: `trans_choice()` splits such a message on the server just as `choice()` does on the client. Only `__()` renders it whole, and telling a literal `|` from a form separator would mean guessing at the message's intent; a wrong guess renders a pluralised message whole, which is the Problem P-136 closed.
 
 ### P-137
 
