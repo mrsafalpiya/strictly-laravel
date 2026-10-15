@@ -14,8 +14,9 @@ import { workspaceNav } from '@/navigation';
 import { dashboard } from '@/routes';
 
 export function AppSidebar() {
-    const { workspace, features } = usePage().props;
-    const nav = workspace === null ? null : workspaceNav(workspace, features);
+    const shared = usePage().props;
+    const { workspace } = shared;
+    const nav = workspace === null ? null : workspaceNav(workspace, shared);
     // Where users get help, per deployment; .env.example lists it, so it is typed (and set in every build).
     const supportUrl = import.meta.env.VITE_TRACKLANE_SUPPORT_URL;
 

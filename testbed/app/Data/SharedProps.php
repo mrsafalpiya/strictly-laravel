@@ -24,5 +24,7 @@ final class SharedProps extends Shared
         public array $workspaces,
         /** The areas of Tracklane config/tracklane.php turns on. */
         public FeaturesData $features,
+        /** The user's unread notifications, in every workspace (0 for guests). */
+        public int $unreadNotifications,
     ) {}
 }

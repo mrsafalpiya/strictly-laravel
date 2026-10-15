@@ -102,6 +102,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | closed |
 | [P-046](#p-046) | A nested partial reload returns only the subtree | pagination and deferred props | closed |
 | [P-092](#p-092) | A partial reload's shared props aren't checked | pagination and deferred props | accepted gap |
+| [P-133](#p-133) | Contract Coverage doesn't look inside an infinite-scroll prop | pagination and deferred props | closed |
 | [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
 | [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
@@ -132,6 +133,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | open |
 | [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
 | [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
+| [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
@@ -859,7 +861,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
 - **Status:** open
 
-**Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`).
+**Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`). Editing a comment is another: only its author may (`CommentPolicy::update`), so `UpdateCommentData::authorize()` reads `$request->route('comment')` the same way.
 
 **Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
 
@@ -1132,6 +1134,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** none needed in practice; see the reasoning.
 
 **Reasoning:** the shared props come from one share step, which runs the same way for a partial reload as for a full render, and every full render records them as a Contract checked against `SharedPageProps` ([P-088](#p-088)). A partial reload sends a subset of the same values, so checking it again would prove little. The Overlay leaves them out of the partial reload's Contract rather than check them against a second, partial type.
+
+### P-133
+
+**Contract Coverage doesn't look inside an infinite-scroll prop**
+
+- **Type Boundary:** pagination and deferred props
+- **Source:** found porting Tracklane's activity feed into the Testbed App (#25)
+- **Upstream:** none (laravel-data describes a `ScrollProp` property as an object it knows nothing about)
+- **Status:** closed
+
+**Reproduction:** the activity feed page sends `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, ActivityData>> */ public ScrollProp $activity`, generated as the paginated collection it wraps ([P-041](#p-041)). Contract Coverage reads a property's shape from laravel-data's description, which sees a `ScrollProp` and no Data class inside it, so it never walks the items: a test that renders the feed with only one kind of entry, or with only an empty feed, passes `strictly:coverage --strict`, and so does an item field only ever `null`, although `tsc` never saw the other shapes.
+
+**Manual workaround:** none; render the same Data class in a prop Contract Coverage does walk.
+
+**Closed by:** [`WrappedProp`](../packages/laravel/src/Coverage/WrappedProp.php) reads the Data class inside a `ScrollProp`, `MergeProp` or `OnceProp` prop from its PHPDoc type, the one its TypeScript type is generated from, and [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php) walks the prop as what Inertia sends: a paginated collection's `data`, a list, or one Data object. An infinite-scroll prop only ever empty, or an item field only ever `null`, is now a gap: `✗ EntryData.note is only ever null (at feed › entries[].note): …`. Scenarios: `scroll-prop-every-item-shape-passes-coverage`, `scroll-prop-item-only-null-fails-coverage`. The Testbed App's activity feed is such a prop.
 
 ## Flash messages
 
@@ -1589,6 +1606,21 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** in the tests Contract Coverage relies on, set every nullable, optional or list field explicitly, once filled in and once empty.
 
 **Reasoning:** Contract Coverage reports what the tests produced, and only the app's tests decide what that is; the Overlay can't tell a value a test chose from one a factory drew. Each gap already names the test to add, and once a test sets the field explicitly the result is stable. The Testbed App's tests set every such field and run its Contract Coverage repeatedly without a gap.
+
+### P-132
+
+**Contract Coverage counts every variant of a discriminated union as seen when one is**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found porting Tracklane's Board area into the Testbed App (#25)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** the activity feed's `ActivityData.payload` is `IssueCreatedPayload|StatusChangedPayload|PriorityChangedPayload|AssigneeChangedPayload|CommentedPayload|MemberJoinedPayload`, a discriminated union on a literal `type` (`/** @var ActivityType::StatusChanged */`). Three of its variants send the same keys (`from`, `to`, `type`). Contract Coverage told union variants apart by their keys only, so a test that only ever records a status change passes `strictly:coverage --strict` as if it had sent a priority change and an assignee change too, although `tsc` never saw those variants (an `IssuePriority` where an `IssueStatus` was, a `UserSummaryData | null` `to`).
+
+**Manual workaround:** none; a gap that isn't reported can't be noticed. Exercise every variant anyway.
+
+**Closed by:** a value is a union variant only if, for each of the variant's properties typed as a literal, it sends one of the literal's values, as `tsc` narrows a discriminated union ([`ShapeCoverage::isVariant()`](../packages/laravel/src/Coverage/ShapeCoverage.php)). The literals come from the same PHPDoc type the TypeScript literal is generated from ([`LiteralValues`](../packages/laravel/src/TypeScript/LiteralValues.php), shared with the `in:` rule inferred for a literal input, [P-020](#p-020)): string, int and float literals, class constants and enum cases. A test that only records a status change now fails with `✗ ActivityData.payload is never seen as PriorityChangedPayload (…)`. Scenarios: `discriminated-union-every-variant-passes-coverage`, `discriminated-union-variant-never-seen-fails-coverage`. The Testbed App's activity feed test sends every variant.
 
 ### P-067
 

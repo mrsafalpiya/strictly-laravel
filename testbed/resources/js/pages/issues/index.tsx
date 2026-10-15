@@ -1,8 +1,15 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import { IssueFilters } from '@/components/issues/issue-filters';
+import {
+    filtersToQuery,
+    IssueFilters,
+} from '@/components/issues/issue-filters';
 import { IssueRow } from '@/components/issues/issue-row';
+import {
+    SavedViewList,
+    SaveViewButton,
+} from '@/components/saved-views/saved-views';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -19,16 +26,24 @@ import {
     issueStatuses,
     issueStatusValues,
 } from '@/lib/domain';
-import { bulkUpdate, create } from '@/routes/issues';
+import { bulkUpdate, create, index } from '@/routes/issues';
 import type { BulkUpdateIssuesData, PageProps } from '@/generated';
-import { Pagination, submit } from '@mrsafalpiya/strictly-laravel/react';
+import {
+    forPage,
+    Pagination,
+    submit,
+} from '@mrsafalpiya/strictly-laravel/react';
+
+const page = forPage<'issues/index'>();
 
 export default function IssuesIndex({
     issues,
     filters,
     options,
+    savedViews,
 }: PageProps<'issues/index'>) {
     const workspace = useWorkspace();
+    const reloadViews = { only: page.only('savedViews') };
     const [selected, setSelected] = useState<number[]>([]);
 
     // The payload is the bulk action's input class: only status, priority and assigneeId can be set.
@@ -49,14 +64,30 @@ export default function IssuesIndex({
             <div className="flex flex-col gap-4 p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">Issues</h1>
-                    {workspace.can.contribute && (
-                        <Button asChild size="sm">
-                            <Link href={create(workspace)}>
-                                <Plus className="size-4" /> New issue
-                            </Link>
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <SaveViewButton
+                            filters={filters}
+                            reload={reloadViews}
+                        />
+                        {workspace.can.contribute && (
+                            <Button asChild size="sm">
+                                <Link href={create(workspace)}>
+                                    <Plus className="size-4" /> New issue
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
+
+                <SavedViewList
+                    savedViews={savedViews}
+                    href={(viewFilters) =>
+                        index(workspace, {
+                            query: filtersToQuery(viewFilters),
+                        })
+                    }
+                    reload={reloadViews}
+                />
 
                 <IssueFilters filters={filters} options={options} />
 
