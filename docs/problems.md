@@ -137,7 +137,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-141](#p-141) | A value the root Blade template writes into the page reaches React untyped | exposed config | accepted gap |
 | [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | closed |
 | [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | closed |
-| [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
+| [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | closed |
 | [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
 | [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
@@ -1709,12 +1709,14 @@ Problems in generation or verification that affect every Type Boundary.
 
 - **Type Boundary:** every Type Boundary
 - **Source:** eval-02 §4 and §9
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** no upstream issue filed (typescript-transformer 3.3 transpiles `mixed` to `any` and keeps only a `@template`'s name; [spatie/typescript-transformer#58](https://github.com/spatie/typescript-transformer/issues/58) asked for configurable fallbacks against v2)
+- **Status:** closed
 
 **Reproduction:** `public mixed $meta` or an untyped `public array $items` generates `any` / `any[]`; template bounds are dropped. Anything typed with them compiles.
 
 **Manual workaround:** PHPStan max with 100 % type coverage forbids untyped properties; arrays declare their item type (`/** @var array<int, TaskData> */`).
+
+**Closed by:** [`MixedAsUnknown`](../packages/laravel/src/Workarounds/TypeScriptTransformer/MixedAsUnknown.php) generates `mixed` as `unknown` wherever the Overlay emits TypeScript (a Data class, a Page class, the shared props, an input or query class, a JSON response, a broadcast payload, and inside their arrays: `array<string, mixed>` is `Record<string, unknown>`), and an array with no item type as `unknown[] | Record<string, unknown>`, so a reader narrows before reading a field. [`TemplateBounds`](../packages/laravel/src/Workarounds/TypeScriptTransformer/TemplateBounds.php) writes a generic Data class's `@template T of X` as `T extends X` (`object` for laravel-data's own base classes). Contract Coverage reports a `mixed` property only ever `null` like any nullable one. The one `any` left in typescript-transformer's output is a PHPDoc `callable` with no signature, which no JSON value can be (PHP forbids `callable` as a property type). Scenarios: `mixed-field-read-unnarrowed-fails-tsc`, `mixed-prop-narrowed-passes`, `mixed-generates-unknown-at-every-type-boundary-passes`, `generic-data-class-outside-bound-fails-tsc`, `generic-data-class-within-bounds-passes`.
 
 ### P-063
 
