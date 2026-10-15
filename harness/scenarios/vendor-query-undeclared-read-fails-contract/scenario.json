@@ -1,0 +1,8 @@
+{
+    "problem": "P-025",
+    "description": "A query key the reset password page reads from Fortify's password reset link that the link's declared query class lacks fails the query Contract the reset page's tests record.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type '\"address\"' is not assignable to type '\"email\"'."
+    }
+}

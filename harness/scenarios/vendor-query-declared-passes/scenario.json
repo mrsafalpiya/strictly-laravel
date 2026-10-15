@@ -1,0 +1,8 @@
+{
+    "problem": "P-025",
+    "description": "The route function of Fortify's password reset link takes the query string config/strictly.php declares for it.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "pass"
+    }
+}

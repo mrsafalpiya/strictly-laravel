@@ -1,0 +1,9 @@
+{
+    "problem": "P-025",
+    "description": "A vendor declaration in config/strictly.php naming a class that doesn't exist fails strictly:generate, instead of leaving Fortify's login untyped.",
+    "step": "generate",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "strictly.vendor_inputs.Laravel\\Fortify\\Http\\Controllers\\AuthenticatedSessionController@store: the class App\\Data\\Auth\\LogInData doesn't exist."
+    }
+}

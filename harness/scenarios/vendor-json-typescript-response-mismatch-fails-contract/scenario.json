@@ -1,0 +1,8 @@
+{
+    "problem": "P-050",
+    "description": "A TypeScript type declared as the response of Fortify's password confirmation status endpoint that doesn't match what Fortify sends fails the JSON Contract the feature test records.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'boolean' is not assignable to type 'string'."
+    }
+}

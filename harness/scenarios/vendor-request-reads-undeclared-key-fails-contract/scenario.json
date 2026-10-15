@@ -1,0 +1,8 @@
+{
+    "problem": "P-025",
+    "description": "A key read through the vendor's own FormRequest (Fortify's LoginRequest, which a custom authentication callback receives) that the login's declared payload lacks fails the input Contract the login tests record.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type '\"trust_device\"' is not assignable to type '\"email\" | \"password\" | \"remember\"'."
+    }
+}
