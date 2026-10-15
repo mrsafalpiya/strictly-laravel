@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Actions\RecordActivity;
 use App\Data\Activity\CommentedPayload;
+use App\Data\Comments\CommentPostedData;
 use App\Data\Comments\StoreCommentData;
 use App\Data\Comments\ToggleReactionData;
 use App\Data\Comments\UpdateCommentData;
 use App\Data\Notifications\CommentAddedNotificationPayload;
+use App\Events\CommentPosted;
 use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\Project;
@@ -45,6 +47,9 @@ final class CommentController extends Controller
         Notification::send($recipients, new CommentAdded(
             CommentAddedNotificationPayload::fromModels($workspace, $issue, $comment, $user),
         ));
+
+        // Live to the other members: their open issue page reloads its thread. The author's reloads on its own.
+        broadcast(new CommentPosted($workspace, CommentPostedData::fromModels($issue, $comment, $user)))->toOthers();
 
         return back();
     }

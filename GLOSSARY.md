@@ -44,6 +44,10 @@ _Avoid_: form request, request DTO
 A non-Inertia route whose action declares a Data class (not a Page class) as its return type, which laravel-data sends as JSON; the class is its response, and it brands the action's Wayfinder route, so `useRouteHttp(route, init)` types the result from it.
 _Avoid_: API route, resource endpoint
 
+**Broadcast event**:
+An event the app broadcasts (`implements ShouldBroadcast`) whose payload is a Data class: it uses `BroadcastsData` and returns the payload from `broadcastData()`, declaring that class as the return type. `@/generated/broadcasting` maps it, by the name Echo listens for it (`CommentPosted` for `App\Events\CommentPosted`), to the payload's type, so `useChannelEvent(channel('issues.{issue}', { issue }), 'CommentPosted', cb)` types `cb`; `channel()` takes only the patterns `routes/channels.php` defines, with their parameters.
+_Avoid_: broadcast message, socket event
+
 **Query class**:
 The Data class a GET action type-hints to receive its query string (list filters): it extends `QueryData`, is parsed leniently (an invalid value falls back to its default, never a 422), and types the `query` option of the action's Wayfinder route. A Page class can send it back as a prop, so the filter UI is typed by it too.
 _Avoid_: filter request, search DTO
@@ -53,7 +57,7 @@ An entry in the app's `config/strictly.php` that names, for an action of a contr
 _Avoid_: vendor override, route map
 
 **Route key**:
-A model's key as the routes bound to that model take it (`show(Project $project)` takes a project's `id`, `{project:slug}` its `slug`), typed nominally by the model: `RouteKey<'Project', number>`, so another model's key or a plain number doesn't fit. A Data class property holds one when the class is built from the model (a `from…(Project $project)` method) and the property is named after a binding field the routes use for it, or when it declares `#[RouteKeyOf(Project::class)]`. Feature tests check every route key the server sends is an existing key of its model.
+A model's key as the routes and broadcast channels bound to that model take it (`show(Project $project)` takes a project's `id`, `{project:slug}` its `slug`), typed nominally by the model: `RouteKey<'Project', number>`, so another model's key or a plain number doesn't fit. A Data class property holds one when the class is built from the model (a `from…(Project $project)` method) and the property is named after a binding field the routes use for it, or when it declares `#[RouteKeyOf(Project::class)]`. Feature tests check every route key the server sends is an existing key of its model.
 _Avoid_: ID type, typed id
 
 **Default locale**:
@@ -61,7 +65,7 @@ The locale `app.locale` names, whose lang files are the Source of Truth for tran
 _Avoid_: base language, master locale
 
 **Contract**:
-A real payload the server produced during a test (page props, flash, JSON response, validation errors), recorded and checked by `tsc` against the generated type for its Type Boundary.
+A real payload the server produced during a test (page props, flash, JSON response, validation errors, broadcast), recorded and checked by `tsc` against the generated type for its Type Boundary.
 _Avoid_: snapshot, fixture
 
 **Contract Coverage**:

@@ -31,9 +31,16 @@ export default defineConfig({
         strictlyLaravel(),
     ]),
     resolve: {
-        // The npm package is linked from the monorepo (link:), so its imports would resolve to its own copies of React
-        // and Inertia: two Reacts break hooks and two Inertias share no page. A published install has one of each.
-        dedupe: ['react', 'react-dom', '@inertiajs/core', '@inertiajs/react'],
+        // The npm package is linked from the monorepo (link:), so its imports would resolve to its own copies of React,
+        // Inertia and Echo: two Reacts break hooks, two Inertias share no page and two Echos share no connection
+        // (configureEcho() configures one). A published install has one of each.
+        dedupe: [
+            'react',
+            'react-dom',
+            '@inertiajs/core',
+            '@inertiajs/react',
+            '@laravel/echo-react',
+        ],
     },
     server: {
         watch: {
@@ -49,6 +56,7 @@ export default defineConfig({
     lint: {
         jsPlugins: ['@mrsafalpiya/strictly-laravel/oxlint'],
         rules: {
+            'strictly/typed-broadcasts': 'error',
             'strictly/typed-page-props': 'error',
             'strictly/no-hardcoded-urls': 'error',
             'strictly/require-suppression-reason': 'error',

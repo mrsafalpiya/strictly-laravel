@@ -1,0 +1,5 @@
+{
+    "problem": "P-054",
+    "description": "An event broadcast on a private channel routes/channels.php doesn't define, which no listener is ever authorized for, fails its recorded Contract.",
+    "expect": { "outcome": "fail", "errorContains": "' is not assignable to type 'BroadcastChannelName'." }
+}

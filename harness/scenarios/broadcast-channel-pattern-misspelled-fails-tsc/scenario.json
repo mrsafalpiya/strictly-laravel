@@ -1,0 +1,6 @@
+{
+    "problem": "P-054",
+    "description": "Naming a channel by a pattern routes/channels.php doesn't define fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2345: Argument of type '\"project.{project}\"' is not assignable to parameter of type '\"projects.{project}\"'." }
+}

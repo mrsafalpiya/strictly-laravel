@@ -164,14 +164,14 @@ function readJson(file) {
 
 /**
  * Whether a file event changes the types: any PHP file under app/, .env.example (`import.meta.env`), any lang file
- * (the app's own, not lang/vendor/'s), and a page component file created or deleted (its contents aren't generated
- * from, so saving one changes nothing).
+ * (the app's own, not lang/vendor/'s), routes/channels.php (the broadcast channels), and a page component file created
+ * or deleted (its contents aren't generated from, so saving one changes nothing).
  *
  * @param {'add' | 'change' | 'unlink'} event
  * @param {string} path relative to the project root, with forward slashes
  */
 function regeneratesTypes(event, path) {
-    if (path === '.env.example') {
+    if (path === '.env.example' || path === 'routes/channels.php') {
         return true;
     }
 
