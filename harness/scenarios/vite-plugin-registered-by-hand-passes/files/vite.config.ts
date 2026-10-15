@@ -48,6 +48,7 @@ export default defineConfig({
         rules: {
             'strictly/no-hardcoded-urls': 'error',
             'strictly/require-suppression-reason': 'error',
+            'strictly/typed-broadcasts': 'error',
             'strictly/typed-form-fields': 'error',
             'strictly/typed-forms': 'error',
             'strictly/typed-inertia-components': 'error',
