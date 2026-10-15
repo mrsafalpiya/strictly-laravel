@@ -127,7 +127,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
 | [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
 | [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
-| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
+| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | closed |
+| [P-163](#p-163) | Text no lang file defines can't be told from a misspelled key | translations | accepted gap |
 | [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
 | [P-140](#p-140) | A `VITE_*` variable `.env.example` lists can be unset when Vite builds | exposed config | closed |
@@ -1542,11 +1543,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found translating the Testbed App's flash messages (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `FlashData::success(__('projects.flash.saevd', ['key' => $project->key]))` passes PHPStan and the tests; the toast shows the raw key. A param misspelled in `__()`'s replacements leaves the `:key` placeholder unfilled the same way.
 
 **Manual workaround:** a feature test that asserts the flashed message's text.
+
+**Closed by:** the PHPStan rule [`TranslationRule`](../packages/laravel/src/PHPStan/TranslationRule.php) checks `__()`, `trans()`, `trans_choice()`, `Lang::get()`, `Lang::choice()` and the Translator's `get()` and `choice()` as `tsc` checks `t()` and `choice()` ([P-055](#p-055), [P-056](#p-056), [P-136](#p-136)), against the default locale's messages as `strictly:generate` reads them (PHP lang files with nested and subdirectory keys, and the JSON file) over Laravel's own lang files (`validation.*`, `auth.*`, `passwords.*`, `pagination.*`), which the translator falls back to when the app hasn't published them ([P-138](#p-138)). A key neither defines fails with `Translation key 'projects.flash.saevd' isn't defined in locale en.` (`strictly.translationKey`). The replacements must be exactly the message's `:params`, matched as on the client (`:key`, `:Key` and `:KEY` are the param `key`): `Translation 'projects.flash.saved' needs the param 'key'.` and `… takes no param 'kye'.` (`strictly.translationParams`); `trans_choice()` may leave out `count`, which it fills from the number, and a closure replacement fills a `<tag>`, not a `:param`. A pluralised message goes through a choice call and any other through a get call (`Translation 'issues.count' is pluralised: use trans_choice().`, `strictly.translationPlural`), as `choice()` and `t()` on the client: `__()` renders every form, and `trans_choice()` has none to pick. A key, or replacements, that PHPStan can't resolve to literals (a union of literal keys is fine, each is checked) can't be checked, so it is reported as `strictly.translationDynamic`, which a suppression with its reason accepts (ADR-0007), just as `t()` takes no `string` key. A package's namespaced key (`billing::invoices.title`) isn't checked, as its lang files aren't read. Each analysed file depends on the default locale's lang files through PHPStan's result cache, so editing a lang file re-checks the calls. Rule-test kit cases: `packages/laravel/tests/PHPStan/TranslationRuleTest.php`. Scenarios: `translation-calls-in-php-pass-phpstan`, `translation-key-misspelled-in-php-fails-phpstan`, `translation-param-misspelled-in-php-fails-phpstan`.
+
+### P-163
+
+**Text no lang file defines can't be told from a misspelled key**
+
+- **Type Boundary:** translations
+- **Source:** found checking translation keys in PHP (#48)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** the Base Kit flashes `__('Profile updated.')` and has no `lang/en.json`; Laravel's translator renders text it has no message for as it is. `__('Profile updatd.')` passes PHPStan the same way, and so does a misspelled text key that `lang/en.json` defines, which then renders untranslated in every locale.
+
+**Manual workaround:** give the message a `group.item` key (`__('settings.flash.profile_updated')`), which must be defined.
+
+**Reasoning:** Laravel documents text as its own key ("translation strings as keys") and renders it when no lang file defines it, and the Base Kit relies on that. So [P-137](#p-137)'s rule reports only an undefined key shaped like a lang file's (`group.item`, dot-separated with no whitespace), and accepts other text, checking only that its own `:params` are passed. Requiring every text to be defined would fail every app that uses the convention, and the Base Kit, until each such text is copied into `lang/en.json` unchanged.
 
 ### P-138
 
