@@ -103,7 +103,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
-| [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
+| [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | closed |
 | [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | closed |
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | accepted gap |
 | [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | closed |
@@ -1196,11 +1196,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** eval-02 §3, §4 and §9
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Inertia::scroll($paginator)` sends the paginator's own flat JSON, while a paginator inside a Data class is typed `{ data, links, meta }`; the infinite-scroll prop's type is wrong.
 
 **Manual workaround:** `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, X>> */ public ScrollProp $items` with `new ScrollProp(X::collect($cursorPaginator, CursorPaginatedDataCollection::class), …)` (type-safety rule 10).
+
+**Closed by:** the existing checks, proven to catch both ways of sending a raw paginator from a Page class. Filling a `ScrollProp<PaginatedDataCollection<…>>` property with `Inertia::scroll($paginator)` fails PHPStan, since the facade returns `ScrollProp<mixed>` (`… Inertia\ScrollProp<mixed> given.`), and so does `new ScrollProp($paginator)` (`… Inertia\ScrollProp<Illuminate\Pagination\LengthAwarePaginator<…>> given.`). Typing the property as the raw paginator instead (`ScrollProp<LengthAwarePaginator<int, X>>`) passes PHPStan, but its generated type is `{ data, links, meta }`, so the Contract of the feature test that renders the page fails `tsc` on the flat keys (`'"current_page"' does not exist in type …`), and Contract Coverage makes sure some test renders it. The typed way is unchanged. Scenarios: `inertia-scroll-into-typed-scroll-prop-fails-phpstan`, `scroll-prop-of-raw-paginator-fails-contract`, `scroll-prop-typed-as-its-items-passes`, `scroll-prop-every-item-shape-passes-coverage`.
 
 ### P-043
 
