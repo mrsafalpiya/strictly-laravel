@@ -84,7 +84,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
-| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | open |
+| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | closed |
+| [P-155](#p-155) | An input whose `rules()` take a route model is validated only through its route | validation errors | accepted gap |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
@@ -885,11 +886,28 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** validation errors
 - **Source:** found porting Tracklane's Workspaces area into the Testbed App (#23)
 - **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`). Editing a comment is another: only its author may (`CommentPolicy::update`), so `UpdateCommentData::authorize()` reads `$request->route('comment')` the same way.
 
 **Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
+
+**Closed by:** an InputData's `authorize()` and `rules()` (a nested InputData's `rules()` too) receive, for each parameter typed as a model (any `UrlRoutable`), the model the current route binds to the parameter of the same name; every other parameter still resolves through the container ([`RouteModelArguments`](../packages/laravel/src/Workarounds/LaravelData/RouteModelArguments.php), called by InputData's pipeline in place of laravel-data's `AuthorizedDataPipe` and by the `DataValidationRulesResolver` the service provider binds). It never falls back to an empty model: a parameter the route has no parameter of that name for, a route parameter left unbound (the action doesn't take the model, so it stays the raw key), or a call outside a request's route (`validate()` from a command or a unit test, [P-155](#p-155)) throws a `LogicException` naming the parameter and the route; a nullable parameter receives `null` for an optional route parameter the URL left out. The PHPStan rule `strictly.routeModelParameter` ([`RouteModelParameterRule`](../packages/laravel/src/PHPStan/RouteModelParameterRule.php)) rejects a model parameter of `authorize()` or `rules()` on any other Data class (a query class, a plain Data class), where it would still be a new, empty model. The Testbed App's `UpdateMemberData`, `UpdateCommentData`, `UpdateIssueData` and `UpdateLabelData` take the models as parameters. Scenarios: `bound-models-in-input-authorize-and-rules-passes`, `input-model-parameter-not-on-route-fails-test`, `model-parameter-in-query-rules-fails-phpstan`.
+
+### P-155
+
+**An input whose `rules()` take a route model is validated only through its route**
+
+- **Type Boundary:** validation errors
+- **Source:** found while closing [P-126](#p-126)
+- **Upstream:** by design (laravel-data's `validate()` and `validateAndCreate()` take only the payload)
+- **Status:** accepted gap
+
+**Reproduction:** `UpdateLabelData::rules(Label $label)` gets the route's `{label}`. Validating that input outside a request to its route, with `UpdateLabelData::validate($payload)` from a command, a queued job or a unit test, has no route to take the label from, so it throws `…::rules() takes App\Models\Label $label, the model the current route binds to {label}, but there is no current route.` An input without model parameters validates anywhere, as before.
+
+**Manual workaround:** validate the input through a request to its route (a feature test). Where the same rules are needed elsewhere, put them in a static method that takes the model and call it from both `rules()` and the other caller.
+
+**Reasoning:** laravel-data gives `validate()` no way to pass the model, and falling back to an empty one is what P-126 removed. Inputs are validated by the request that carries them, and that path has the route.
 
 ## Enums
 
