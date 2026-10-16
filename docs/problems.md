@@ -182,6 +182,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
 | [P-124](#p-124) | `ci:check` fails in a fresh clone because feature tests need a Vite build | every Type Boundary | closed |
 | [P-146](#p-146) | AI coding agents are taught the untyped way | every Type Boundary | closed |
+| [P-203](#p-203) | Nothing runs PHPStan on the Composer package's own code | every Type Boundary | closed |
 
 ## Routes
 
@@ -2392,6 +2393,21 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** paste the type-safety standard (the Reference Implementation's `docs/type-safety.md`, kept as [`research/type-safety.md`][type-safety]) into the app's `CLAUDE.md` and keep it in step with each release by hand.
 
 **Closed by:** the Composer package requires `laravel/boost` and ships a Boost core guideline (`resources/boost/guidelines/core.md`: the condensed standard, what checks what, and that it overrides Boost's generic Inertia guidance) and one skill per workflow (`resources/boost/skills/strictly-*/SKILL.md`), which Boost reads from the installed package, so they update with it. Boost installs a third-party package's guidance only when the app's `boost.json` lists it, and the Base Kit gitignores `boost.json` along with every agent file Boost writes; [`BoostGuidance`](../packages/laravel/src/Boost/BoostGuidance.php) adds the package to `boost.json` before `boost:install` and `boost:update` run, so no guidance is selected or committed by hand. The installer hook `Composer scripts: boost:update after composer update` ([`BoostUpdateScript`](../packages/laravel/src/Install/BoostUpdateScript.php)) runs `boost:update` after `composer update`, as `laravel new` does for an app it installs Boost in. Each skill's worked example is a scenario that passes the full `ci:check`, and `harness/tests/boost-guidance.test.ts` fails when a skill's code drifts from its scenario, quotes a diagnostic no breaking scenario produces, or names a lint rule or PHPStan identifier that doesn't exist. Scenarios: `skill-add-page-example-passes`, `skill-add-form-example-passes`, `skill-add-query-filters-example-passes`, `skill-add-json-endpoint-example-passes`, `skill-add-deferred-props-example-passes`, `skill-add-broadcast-event-example-passes`, `skill-add-translation-example-passes`, `skill-close-coverage-gap-example-passes`, `skill-close-coverage-gap-example-gap-fails-coverage`. Harness tests: "Boost installs the package's core guideline and every skill, and nothing it writes is committed (P-146)" and "composer update runs boost:update; an app that lost that script fails ci:check:install until strictly:install restores it (P-146)".
+
+### P-203
+
+**Nothing runs PHPStan on the Composer package's own code**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #66, after #65 shipped a type error in a Problem marked closed
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** change a method in `packages/laravel/src` so that it returns a type its signature rejects, as `LiteralRuleInferrer::rule()` did before #65 (declared `?ValidationAttribute`, returned laravel-data's `Rule`). The root checks pass: `pnpm typecheck` is `tsc` on the harness and the oxlint plugin, `pnpm lint:php` is Pint, and `pnpm test:php` runs the PHPStan rules' tests. So does every app's `ci:check:phpstan`, which analyses the app, not the package in `vendor/`. The error reaches users unless some scenario happens to run that line. The first run of PHPStan on the package found 68 errors.
+
+**Manual workaround:** run PHPStan on `packages/laravel/src` by hand, with an app's settings, from the Testbed App.
+
+**Closed by:** `pnpm analyse:php`, which runs PHPStan on `packages/laravel/src` with the root [`phpstan.neon`](../phpstan.neon). It includes the package's `extension.neon` itself, so the package gets what an app gets: level max, strict rules, bleeding edge, full type coverage, Larastan, and the Strictly Laravel rules. Only `strictly.inertiaRender` and `strictly.inertiaFlash` fire on the package's own code, at `Page::render()` and `Flash::flash()`, the calls those rules send apps to, and each takes a suppression with its reason (ADR-0007). Larastan boots a Testbench app with the package's service provider registered (`testbench.yaml`). The analysis also covers `packages/laravel/tests/Analysis`, classes that use `BroadcastsData` and `RecordsContracts` as an app does, since PHPStan analyses a trait only in a class that uses it. There is no baseline: the 68 errors are fixed, and new code must pass. CI's root-checks job runs `pnpm analyse:php` next to `pnpm test:php` (`.github/workflows/ci.yml`). This is a check on the package's own code, so no app-level harness scenario proves it. With #65's fix reverted, `pnpm analyse:php` fails with ``Method StrictlyLaravel\Workarounds\LaravelData\LiteralRuleInferrer::rule() should return Spatie\LaravelData\Attributes\Validation\ValidationAttribute|null but returns Spatie\LaravelData\Attributes\Validation\Rule|null.``
 
 ## Findings not registered
 
