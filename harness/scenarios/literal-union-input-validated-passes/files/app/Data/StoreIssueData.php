@@ -11,6 +11,7 @@ final class StoreIssueData extends InputData
      * @param  list<string>  $labels
      * @param  list<IssueStatus>  $statuses
      * @param  'monday'|'sunday'  $weekStartsOn
+     * @param  list<'low'|'high'>  $priorities
      */
     public function __construct(
         public string $title,
@@ -18,6 +19,7 @@ final class StoreIssueData extends InputData
         public array $labels,
         public array $statuses,
         public string $weekStartsOn,
+        public array $priorities,
     ) {}
 
     /**

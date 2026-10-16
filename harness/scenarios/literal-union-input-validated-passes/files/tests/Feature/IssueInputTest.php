@@ -20,6 +20,7 @@ function validIssue(array $overrides = []): array
         'labels' => ['backend'],
         'statuses' => ['todo'],
         'weekStartsOn' => 'monday',
+        'priorities' => ['low'],
         ...$overrides,
     ];
 }
@@ -34,4 +35,8 @@ test('a literal union input accepts only its literals', function () {
     $this->postJson('/issues', validIssue(['weekStartsOn' => 'tuesday']))
         ->assertUnprocessable()
         ->assertOnlyJsonValidationErrors(['weekStartsOn' => 'The selected week starts on is invalid.']);
+});
+
+test('a list of literals input accepts items that are its literals', function () {
+    $this->postJson('/issues', validIssue(['priorities' => ['low', 'high']]))->assertNoContent();
 });

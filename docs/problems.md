@@ -649,7 +649,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `LiteralTypesRuleInferrer` adds `in:monday,sunday` from the PHPDoc literal union.
 
-**Closed by:** [`LiteralRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/LiteralRuleInferrer.php) adds `in:` from the PHPDoc literal union the TypeScript is generated from, read where typescript-transformer reads it ([`PropertyAnnotation`](../packages/laravel/src/TypeScript/PropertyAnnotation.php)): string, int and float literals, class constants and enum cases, optionally `|null`; a list of literals has every item validated. A `true`/`false` literal adds no rule: [P-098](#p-098). Scenarios: `literal-union-input-validated-passes`, `value-outside-literal-union-fails-test`.
+**Closed by:** [`LiteralRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/LiteralRuleInferrer.php) adds `in:` from the PHPDoc literal union the TypeScript is generated from, read where typescript-transformer reads it ([`PropertyAnnotation`](../packages/laravel/src/TypeScript/PropertyAnnotation.php)): string, int and float literals, class constants and enum cases, optionally `|null`; a list of literals has every item validated. A `true`/`false` literal adds no rule: [P-098](#p-098). Scenarios: `literal-union-input-validated-passes` (a literal union and a list of literals, `list<'low'|'high'>`), `value-outside-literal-union-fails-test`, `literal-list-item-outside-union-fails-test`.
 
 ### P-098
 
