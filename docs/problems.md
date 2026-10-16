@@ -81,7 +81,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
 | [P-167](#p-167) | A closure route can take a FormRequest or read the request's input | form payloads | closed |
-| [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | accepted gap |
+| [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | open |
 | [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | closed |
 | [P-157](#p-157) | A model key named unlike one and validated by no `exists` rule needs no `#[KeyOf]` | form payloads | accepted gap |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
@@ -160,6 +160,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
 | [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
+| [P-190](#p-190) | An app's tool config can switch a Strictly Laravel rule off for every file | every Type Boundary | open |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | closed |
@@ -317,7 +318,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** take query classes, and read query strings, in controller actions only (as for inputs, [P-097](#p-097), and responses, [P-109](#p-109)).
 
-**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a query class: `The closure route GET projects takes App\Data\ProjectFiltersData, a query class, but Wayfinder types a route function's query option only from a controller action: no route function can send its keys.` `strictly.queryRead` ([P-106](#p-106)) also rejects reading the query string anywhere in a closure route: `A closure route reads the query string from the request, where nothing types it: a route function sends only the keys of a controller action's query class.` Scenarios: `closure-routes-without-data-classes-pass`, `query-class-in-closure-route-fails-phpstan`.
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a query class: `The closure route GET projects takes App\Data\ProjectFiltersData, a query class, but Wayfinder types a route function's query option only from a controller action: no route function can send its keys.` `strictly.queryRead` ([P-106](#p-106)) also rejects reading the query string anywhere in a closure route: `A closure route reads the query string from the request with query(), where nothing types it: a route function sends only the keys of a controller action's query class.` Scenarios: `closure-routes-without-data-classes-pass`, `query-class-in-closure-route-fails-phpstan`.
 
 ### P-171
 
@@ -593,7 +594,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** make every Data class nested in an input that has `rules()` extend InputData too.
 
-**Closed by:** the PHPStan rule `strictly.inputData` also rejects, in every input and query class, a property that nests a Data class with `rules()` not extending InputData ([`NestedInputDataRule`](../packages/laravel/src/PHPStan/NestedInputDataRule.php)): as the property's type, an item of a list, a map or a `DataCollection` of it, or a `#[DataCollectionOf]` class, at any depth. The message names the nested class (and the classes it is nested through). A nested class that extends InputData carries `#[MergeValidationRules]`, so its `rules()` are merged with its inferred ones; a plain Data class that carries the attribute itself, or through a parent class (laravel-data reads parents' attributes too), merges them the same way and passes. Scenarios: `nested-data-with-rules-fails-phpstan`, `nested-input-data-rules-merged-passes`, `nested-data-merging-its-own-rules-passes`.
+**Closed by:** the PHPStan rule `strictly.nestedInputData` rejects, in every input and query class, a property that nests a Data class with `rules()` not extending InputData ([`NestedInputDataRule`](../packages/laravel/src/PHPStan/NestedInputDataRule.php)): as the property's type, an item of a list, a map or a `DataCollection` of it, or a `#[DataCollectionOf]` class, at any depth. The message names the nested class (and the classes it is nested through). A nested class that extends InputData carries `#[MergeValidationRules]`, so its `rules()` are merged with its inferred ones; a plain Data class that carries the attribute itself, or through a parent class (laravel-data reads parents' attributes too), merges them the same way and passes. Scenarios: `nested-data-with-rules-fails-phpstan`, `nested-input-data-rules-merged-passes`, `nested-data-merging-its-own-rules-passes`.
 
 ### P-018
 
@@ -744,6 +745,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** type the property `CarbonImmutable`.
 
 **Closed by:** [`InterfaceTypedDateCast`](../packages/laravel/src/Workarounds/LaravelData/InterfaceTypedDateCast.php), laravel-data's `DateTimeInterfaceCast` reading a property typed by an interface that `CarbonImmutable` implements as a `CarbonImmutable`. [`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php) makes it the global cast for `DateTimeInterface` while the app's `config/data.php` keeps laravel-data's; an app that casts dates with a class of its own keeps it. Its format rule is the one [P-075](#p-075) infers. A `#[WithCast(DateTimeInterfaceCast::class, …)]` on an interface-typed property still uses laravel-data's own cast. Scenario: `datetime-input-validated-passes` (a `CarbonInterface` and a `?DateTimeInterface` property round-trip through a controller action).
+
 ### P-024
 
 **Actions can read request keys their input type doesn't declare**
@@ -811,13 +813,11 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-112](#p-112)
 - **Upstream:** none
-- **Status:** accepted gap
+- **Status:** open
 
 **Reproduction:** a controller action without an input class hands the request to another class (`$this->projects->create($request)`, a job, an action class) that reads `$request->input('name')`; or reads the request through a value PHPStan doesn't type as one (`app('request')` in code typed `mixed`). `strictly.inputRead` sees reads only in a controller's own methods and closures, on a value typed as a `Request`. The same holds for a vendor action that reads input and that `config/strictly.php` declares nothing for ([P-025](#p-025)): vendor code isn't analysed.
 
 **Manual workaround:** take the input class in the action and pass it, not the request, to the code that needs the payload.
-
-**Reasoning:** middleware, a FormRequest's own methods, Fortify's customisation callbacks (`Fortify::authenticateUsing()`) and other framework hooks read the request by design, so a rule can't reject every read outside a controller; and which action a service's read serves is only known at runtime. The typed way hands such code the input class, and the reads a feature test reaches are still recorded in the action's Contract when it has one ([P-024](#p-024)). The Base Kit's undeclared Fortify actions (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes) take no payload.
 
 ### P-128
 
@@ -2070,6 +2070,19 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** check in the guard's body every field its predicate claims, and review guards as closely as casts.
 
 **Reasoning:** narrowing an `unknown` ([P-062](#p-062)) needs a guard whenever the check doesn't fit in one expression, and the predicate is how TypeScript lets a function narrow. Lint can't compare a predicate with its body (oxlint's own rules have no such check, and JS plugins are syntactic, [P-070](#p-070)), so rejecting written predicates would reject the narrowing P-068 asks for.
+
+### P-190
+
+**An app's tool config can switch a Strictly Laravel rule off for every file**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** code review of #52
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `'strictly/typed-forms': 'off'` or `'typescript/consistent-type-assertions': ['error', { assertionStyle: 'as' }]` in `vite.config.ts`'s lint `rules` (or in a `lint.overrides` entry for a file glob), or an `ignoreErrors` entry for a `strictly.*` identifier in `phpstan.neon`, turns the rule off with no reason, and `ci:check` passes, `ci:check:install` included: the installer adds a lint rule only when the config doesn't name it (`ViteLintPlugin::addRules()`), whatever its setting, and never reads `ignoreErrors`. ADR-0007 allows only a per-line suppression with a written reason.
+
+**Manual workaround:** review lint config and `phpstan.neon` changes for a Strictly Laravel rule switched off.
 
 ### P-070
 
