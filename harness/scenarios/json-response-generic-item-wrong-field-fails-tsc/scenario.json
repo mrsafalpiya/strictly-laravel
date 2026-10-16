@@ -1,0 +1,6 @@
+{
+    "problem": "P-197",
+    "description": "Reading a field IssueData doesn't have from the items of a JSON endpoint that returns ListingData<IssueData>, through the result useRouteHttp derives from the route, fails tsc on that field.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS2339: Property 'summary' does not exist on type 'IssueData'." }
+}

@@ -1,0 +1,5 @@
+{
+    "problem": "P-197",
+    "description": "A JSON endpoint whose action returns a generic Data class declared as @return ListingData<IssueData> brands its route functions with ListingData<IssueData>, so a page reads its items as IssueData through useRouteHttp; its feature test's responses cover IssueData's shapes, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
