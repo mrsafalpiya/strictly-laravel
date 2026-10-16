@@ -160,7 +160,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
 | [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
-| [P-190](#p-190) | An app's tool config can switch a Strictly Laravel rule off for every file | every Type Boundary | open |
+| [P-190](#p-190) | An app's tool config can switch a Strictly Laravel rule off for every file | every Type Boundary | closed |
+| [P-199](#p-199) | A file left out of PHPStan or lint escapes every Strictly Laravel rule | every Type Boundary | accepted gap |
+| [P-200](#p-200) | An `ignoreErrors` message pattern that pins too little of a rule's message isn't recognised | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | closed |
@@ -2080,11 +2082,44 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** code review of #52
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `'strictly/typed-forms': 'off'` or `'typescript/consistent-type-assertions': ['error', { assertionStyle: 'as' }]` in `vite.config.ts`'s lint `rules` (or in a `lint.overrides` entry for a file glob), or an `ignoreErrors` entry for a `strictly.*` identifier in `phpstan.neon`, turns the rule off with no reason, and `ci:check` passes, `ci:check:install` included: the installer adds a lint rule only when the config doesn't name it (`ViteLintPlugin::addRules()`), whatever its setting, and never reads `ignoreErrors`. ADR-0007 allows only a per-line suppression with a written reason.
 
 **Manual workaround:** review lint config and `phpstan.neon` changes for a Strictly Laravel rule switched off.
+
+**Closed by:** `strictly:install` (and so `ci:check:install`) refuses such a setting, and never rewrites it. Each lint hook ([`ViteLintPlugin`](../packages/laravel/src/Install/ViteLintPlugin.php)) compares the setting of every rule it turns on, wherever the lint config names it (`rules` or a `lint.overrides` entry), with the one it writes, ignoring whitespace, quote style and trailing commas: a rule without options is on as `'error'`, `2`, `['error']` or `[2]`, and one with options (`typescript/consistent-type-assertions`) needs exactly the Overlay's. Anything else fails the hook with ``vite.config.ts turns `strictly/typed-forms` off; Strictly Laravel has no toggles (ADR-0007): remove the setting, and suppress single lines with `// oxlint-disable-next-line strictly/typed-forms -- reason`.`` (``turns … down to a warning`` or ``sets `…` to `…`, not `…` `` for other settings). A commented-out setting counts as missing, so the hook adds the rule again. A rule a later hook turns on through the same code is checked the same way. The new hook `phpstan.neon: no Strictly Laravel rule ignored` ([`PhpstanIgnores`](../packages/laravel/src/Install/PhpstanIgnores.php)) reads `phpstan.neon` and every file of the app it includes (a baseline among them: a baseline entry hides a rule's errors with no reason too) and fails on an `ignoreErrors` entry that ignores a `strictly.*` rule, by `identifier`/`identifiers`, or, in an entry that names no identifier, by a `message`, `messages`, `rawMessage` or `rawMessages` that can match one of the rule's messages ([`RuleMessages`](../packages/laravel/src/PHPStan/RuleMessages.php), which every rule test checks the rule's messages against), with or without `path`/`paths`: ``phpstan.neon ignores `strictly.jsonResponse` errors; Strictly Laravel has no toggles (ADR-0007): remove the entry, and suppress single lines with `// @phpstan-ignore strictly.jsonResponse (reason)`.`` Entries for other errors stay allowed. What it can't see: a file left out of analysis altogether ([P-199](#p-199)) and a message pattern that pins too little of a rule's message ([P-200](#p-200)). Scenarios: `lint-rule-switched-off-fails-install-check`, `phpstan-rule-ignored-fails-install-check`, `rules-left-on-reinstall-passes`; the Overlay's PHPUnit tests `ViteLintPluginTest` and `PhpstanIgnoresTest` cover the other forms.
+
+### P-199
+
+**A file left out of PHPStan or lint escapes every Strictly Laravel rule**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #59
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `excludePaths: [app/Http/Controllers/Legacy]` in `phpstan.neon`, a `paths` list without `app/`, or a glob in the Vite+ lint config's `ignorePatterns` (`'resources/js/pages/legacy/**'`) leaves those files out of PHPStan or oxlint, so no `strictly.*` or `strictly/*` rule sees them, and `ci:check` passes.
+
+**Manual workaround:** review changes to `paths`, `excludePaths` and `ignorePatterns`.
+
+**Reasoning:** leaving files out is how a project keeps generated and vendored code out of its tools, and the Base Kit does it itself (`resources/js/components/ui/*`, Wayfinder's output, `vendor/**`). Which files are app code is the app's to say, so the installer can't tell a legitimate exclusion from a rule switched off ([P-190](#p-190)); `tsc`, the feature tests and Contract Coverage still see those files.
+
+### P-200
+
+**An `ignoreErrors` message pattern that pins too little of a rule's message isn't recognised**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #59
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** an `ignoreErrors` entry with no identifier whose `message` matches a Strictly Laravel rule's errors without spelling out at least 12 characters of the message's own text, such as `'#.*#'`, `'#be final#'`, or one whose words sit in an alternation inside a group (`'#^(?:Data class|Interface) .+#'`), passes `ci:check:install` and ignores those errors.
+
+**Manual workaround:** give every `ignoreErrors` entry an `identifier`, which PHPStan 2 also writes into a baseline, and review a message-only entry.
+
+**Reasoning:** the installer can't run every regex against every message a rule can produce. It reads a pattern as text with gaps and asks it to match at least 12 characters of a rule's message ([`IgnoredMessage`](../packages/laravel/src/Install/IgnoredMessage.php)); with less, a pattern for another tool's error, whose class names fit the part of a rule's message that varies, would be refused too. A catch-all such as `#.*#` ignores every tool's errors and stands out in review.
+
 
 ### P-070
 

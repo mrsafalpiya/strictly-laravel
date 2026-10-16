@@ -1,0 +1,9 @@
+{
+    "problem": "P-190",
+    "description": "An app whose lint config keeps every Strictly Laravel rule on, in other forms and in a lint.overrides entry too, and whose phpstan.neon and baseline ignore only other errors, runs strictly:install again without error, and ci:check:install passes.",
+    "step": "install",
+    "reinstall": true,
+    "expect": {
+        "outcome": "pass"
+    }
+}
