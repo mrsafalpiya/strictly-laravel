@@ -93,6 +93,8 @@ harness/scenarios/<name>/
 
 Unknown keys are rejected. The examples are `example-typed-code-passes` and `example-type-error-fails-tsc`.
 
+A fixture app has the Base Kit's dependencies and the two Overlay packages, nothing else, and a scenario can't install a package. A scenario whose code calls a package the Base Kit doesn't install, such as `@laravel/echo-react` (an optional peer of the npm package, which `php artisan install:broadcasting` adds), declares the part of that package's API it calls in a `.d.ts` under `files/`, naming the version it copies and why it is there (`echo-channel-whispers-passes`, `echo-private-listen-fails-lint`). Without it every value from the package is an error type, which the type-aware rules against an unsafe `any` reject (P-175, P-193), so a passing scenario would fail and a breaking one would report those errors next to its own. Installing the package instead would cost a `pnpm install` in every such app, or would give every fixture a dependency the Base Kit lacks, so the fresh install would no longer check the Base Kit as it ships. The Testbed App installs the real package and lints the same calls against its own types.
+
 ## Adding scenarios for a Problem
 
 1. Reproduce the Problem in a scratch app (`pnpm harness`, then edit `.fixtures/fresh-install`) until you know the exact edit and the diagnostic the fix should produce.
