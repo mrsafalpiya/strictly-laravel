@@ -1,0 +1,6 @@
+{
+    "problem": "P-148",
+    "description": "Listening on the channel object Echo's useChannel() hands out, with any event name and a hand-typed payload, fails lint.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Echo's channel `listen()` takes any event name and a hand-typed payload" }
+}

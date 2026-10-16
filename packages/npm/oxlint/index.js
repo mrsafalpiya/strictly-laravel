@@ -4,7 +4,7 @@
  * (vite.config.ts → lint.jsPlugins) and turns every rule on as an error; suppress one only with a written reason
  * (ADR-0007). oxlint's JS plugins get no type information, so the rules match syntax (P-070).
  *
- * @import { Context, Plugin, Rule, ESTree, Visitor } from '@oxlint/plugins'
+ * @import { Context, Plugin, Rule, ESTree, Scope, Visitor } from '@oxlint/plugins'
  */
 
 /**
@@ -716,31 +716,242 @@ function joinsPresence(node) {
     return visibility.type === 'TemplateLiteral' && visibility.expressions.length === 0 && visibility.quasis[0]?.value.cooked === 'presence';
 }
 
+/** P-148: what `echo()` (Echo's instance) hands out a channel object from, by method. */
+const echoChannelMethods = new Set(['private', 'channel', 'join', 'encryptedPrivate']);
+
+/** P-148: a channel object's methods that return the channel itself, so a chain of them stays on it. */
+const chainedChannelMethods = new Set([
+    'listen',
+    'listenToAll',
+    'notification',
+    'here',
+    'joining',
+    'leaving',
+    'whisper',
+    'listenForWhisper',
+    'stopListening',
+    'stopListeningToAll',
+    'stopListeningForNotification',
+    'stopListeningForWhisper',
+    'subscribed',
+    'error',
+    'on',
+]);
+
+const listenMessage = (/** @type {string} */ method) =>
+    `Echo's channel \`${method}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`;
+const presenceMessage = (/** @type {string} */ method) =>
+    `Echo's channel \`${method}()\` types a presence channel's members by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`;
+
 /**
- * P-052, P-053, P-142, P-145: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
- * `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data
- * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type,
- * and its `useEchoNotification()` and `useEchoModel()` read broadcast notifications and model broadcasts, whose
- * payloads have no generated type, so calling any of them when imported from `@laravel/echo-react` (by name, renamed or
- * through a namespace import) is rejected: a notification or model change broadcasts an app event with a
+ * P-148: a channel object's listening methods, each with what to use instead. Its other methods (whispers, leaving,
+ * `stopListening()`, `subscribed()`, `error()`) carry no typed data and stay allowed.
+ */
+const channelListeners = new Map([
+    ['listen', listenMessage],
+    ['listenToAll', listenMessage],
+    [
+        'notification',
+        (/** @type {string} */ method) =>
+            `Echo's channel \`${method}()\` reads a broadcast notification's hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside the notification, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`,
+    ],
+    ['here', presenceMessage],
+    ['joining', presenceMessage],
+    ['leaving', presenceMessage],
+]);
+
+/**
+ * `node` without the wrappers that leave its value alone: `a?.b` (a chain), `a!` and parentheses.
+ *
+ * @param {ESTree.Node} node
+ * @returns {ESTree.Node}
+ */
+function unwrapped(node) {
+    while (node.type === 'ChainExpression' || node.type === 'TSNonNullExpression' || node.type === 'ParenthesizedExpression') {
+        node = node.expression;
+    }
+
+    return node;
+}
+
+/**
+ * P-052, P-053, P-142, P-145, P-148: broadcast events are listened for through `useChannelEvent(channel, event,
+ * callback)` from `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from
+ * the event's Data class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any
+ * payload type, and its `useEchoNotification()` and `useEchoModel()` read broadcast notifications and model broadcasts,
+ * whose payloads have no generated type, so calling any of them when imported from `@laravel/echo-react` (by name,
+ * renamed or through a namespace import) is rejected: a notification or model change broadcasts an app event with a
  * `BroadcastsData` payload alongside. A presence channel's members are followed through `usePresence(channel, { here,
  * joining, leaving })`, which types them from the Data class the channel's callback returns, so Echo's
  * `usePresenceChannel()`, whose channel's `here()`, `joining()` and `leaving()` take hand-typed members, is rejected
  * too, and so is its `useChannel(name, 'presence')`, which hands out the same channel. Its other hooks stay allowed:
  * channels and connection state carry no typed data.
  *
+ * The channel objects Echo hands out listen the same untyped way, so listening on one (`listen()`, `listenToAll()`,
+ * `notification()`, `here()`, `joining()`, `leaving()`) is rejected when the rule can trace it (P-148): a chain rooted
+ * in `echo()` (`echo().private(…)`, `.channel(…)`, `.join(…)`, `.encryptedPrivate(…)`, and `echo().listen(…)` itself),
+ * `.channel()` on what one of the hooks returns, or a `const` bound to either, destructured `channel` included, that
+ * is in scope where it is used. A channel object passed as an argument or stored elsewhere escapes it (P-191).
+ *
  * @type {Rule}
  */
 const typedBroadcasts = {
     meta: {
         type: 'problem',
-        docs: { description: "Listen for broadcast events through useChannelEvent(), and follow presence members through usePresence(), instead of Echo's untyped hooks." },
+        docs: { description: "Listen for broadcast events through useChannelEvent(), and follow presence members through usePresence(), instead of Echo's untyped hooks and channel objects." },
     },
     create(context) {
         /** Local name → imported name, for the hooks imported from `@laravel/echo-react`. */
         const imported = new Map();
         /** Local names of namespace imports of `@laravel/echo-react`. */
         const namespaces = new Set();
+
+        /**
+         * What `@laravel/echo-react` export a callee names (by name, renamed or through a namespace import), if any.
+         *
+         * @param {ESTree.Node} callee
+         * @returns {string | null}
+         */
+        const echoReactExport = (callee) => {
+            const local = nameOf(callee);
+
+            if (local !== null) {
+                return imported.get(local) ?? null;
+            }
+
+            return callee.type === 'MemberExpression' && !callee.computed && namespaces.has(nameOf(callee.object) ?? '') ? nameOf(callee.property) : null;
+        };
+
+        /**
+         * Why a call to one of Echo's hooks is rejected, or null when it isn't.
+         *
+         * @param {string} hook
+         * @param {ESTree.CallExpression} node
+         * @returns {string | null}
+         */
+        const rejection = (hook, node) => {
+            const framework = frameworkBroadcastHooks.get(hook);
+
+            if (untypedEchoHooks.has(hook)) {
+                return `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`;
+            }
+
+            if (hook === untypedPresenceHook || (hook === 'useChannel' && joinsPresence(node))) {
+                return `Echo's \`${hook === untypedPresenceHook ? `${hook}()` : "useChannel(name, 'presence')"}\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`;
+            }
+
+            if (framework !== undefined) {
+                return `Echo's \`${hook}()\` reads ${framework.reads} hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside ${framework.alongside}, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`;
+            }
+
+            return null;
+        };
+
+        /**
+         * P-148: what an expression is, as far as Echo goes: its instance (`echo()`), what one of its hooks returns
+         * (`hook`), a function that returns a channel object (`channel getter`, the `channel` a hook returns), or a
+         * channel object. A hook already rejected for itself counts as none, so its channel isn't reported again.
+         *
+         * @param {ESTree.Node} expression
+         * @param {number} [depth]
+         * @returns {'echo' | 'hook' | 'channel getter' | 'channel' | null}
+         */
+        const echoKind = (expression, depth = 0) => {
+            const node = unwrapped(expression);
+
+            if (depth > 16) {
+                return null;
+            }
+
+            if (node.type === 'Identifier') {
+                return constKind(node, depth + 1);
+            }
+
+            if (node.type !== 'CallExpression') {
+                return null;
+            }
+
+            const callee = unwrapped(node.callee);
+            const exported = echoReactExport(callee);
+
+            if (exported === 'echo') {
+                return 'echo';
+            }
+
+            if (exported !== null) {
+                return exported.startsWith('use') && rejection(exported, node) === null ? 'hook' : null;
+            }
+
+            if (callee.type === 'MemberExpression') {
+                const method = callee.computed ? null : nameOf(callee.property);
+                const receiver = echoKind(callee.object, depth + 1);
+
+                if (
+                    method !== null &&
+                    ((receiver === 'echo' && echoChannelMethods.has(method)) ||
+                        (receiver === 'hook' && method === 'channel') ||
+                        (receiver === 'channel' && chainedChannelMethods.has(method)))
+                ) {
+                    return 'channel';
+                }
+
+                return null;
+            }
+
+            return echoKind(callee, depth + 1) === 'channel getter' ? 'channel' : null;
+        };
+
+        /**
+         * P-148: what a `const` in scope where `identifier` is used is bound to: `const x = …` takes the kind of its
+         * initializer, and `const { channel } = …` (renamed or not) on a hook's return is a channel getter.
+         *
+         * @param {ESTree.Node} identifier
+         * @param {number} depth
+         * @returns {'echo' | 'hook' | 'channel getter' | 'channel' | null}
+         */
+        const constKind = (identifier, depth) => {
+            const name = nameOf(identifier);
+
+            if (name === null) {
+                return null;
+            }
+
+            let scope = /** @type {Scope | null} */ (context.sourceCode.getScope(identifier));
+            let variable = null;
+
+            while (scope !== null && variable === null) {
+                variable = scope.set.get(name) ?? null;
+                scope = scope.upper;
+            }
+
+            const definition = variable?.defs.length === 1 ? variable.defs[0] : undefined;
+            const declarator = definition?.node;
+
+            if (
+                definition?.type !== 'Variable' ||
+                definition.parent?.type !== 'VariableDeclaration' ||
+                definition.parent.kind !== 'const' ||
+                declarator?.type !== 'VariableDeclarator' ||
+                declarator.init === null ||
+                declarator.init === undefined
+            ) {
+                return null;
+            }
+
+            if (declarator.id.type === 'Identifier') {
+                return echoKind(declarator.init, depth);
+            }
+
+            if (declarator.id.type !== 'ObjectPattern') {
+                return null;
+            }
+
+            const destructured = declarator.id.properties.find(
+                (property) => property.type === 'Property' && !property.computed && nameOf(property.value) === name && nameOf(property.key) === 'channel',
+            );
+
+            return destructured !== undefined && echoKind(declarator.init, depth) === 'hook' ? 'channel getter' : null;
+        };
 
         return {
             ImportDeclaration(node) {
@@ -761,36 +972,30 @@ const typedBroadcasts = {
                 }
             },
             CallExpression(node) {
-                const callee = node.callee;
-                const local = nameOf(callee);
-                const hook =
-                    local !== null
-                        ? imported.get(local)
-                        : callee.type === 'MemberExpression' && !callee.computed && namespaces.has(nameOf(callee.object) ?? '')
-                          ? nameOf(callee.property)
-                          : null;
+                const callee = unwrapped(node.callee);
+                const hook = echoReactExport(callee);
 
-                if (hook === null || hook === undefined) {
+                if (hook !== null) {
+                    const message = rejection(hook, node);
+
+                    if (message !== null) {
+                        context.report({ node, message });
+                    }
+
                     return;
                 }
 
-                const framework = frameworkBroadcastHooks.get(hook);
+                const method = callee.type === 'MemberExpression' && !callee.computed ? nameOf(callee.property) : null;
+                const listener = method === null ? undefined : channelListeners.get(method);
 
-                if (untypedEchoHooks.has(hook)) {
-                    context.report({
-                        node,
-                        message: `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
-                    });
-                } else if (hook === untypedPresenceHook || (hook === 'useChannel' && joinsPresence(node))) {
-                    context.report({
-                        node,
-                        message: `Echo's \`${hook === untypedPresenceHook ? `${hook}()` : "useChannel(name, 'presence')"}\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`,
-                    });
-                } else if (framework !== undefined) {
-                    context.report({
-                        node,
-                        message: `Echo's \`${hook}()\` reads ${framework.reads} hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside ${framework.alongside}, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`,
-                    });
+                if (method === null || listener === undefined || callee.type !== 'MemberExpression') {
+                    return;
+                }
+
+                const receiver = echoKind(callee.object);
+
+                if (receiver === 'channel' || (receiver === 'echo' && method === 'listen')) {
+                    context.report({ node, message: listener(method) });
                 }
             },
         };

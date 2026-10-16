@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 
 import { RuleTester } from 'oxlint/plugins-dev';
@@ -203,6 +204,17 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             "import { usePresenceChannel } from './hooks/presence'; usePresenceChannel(name);",
             "import { useChannel } from '@laravel/echo-react'; useChannel(`issues.${issue.id}`); useChannel(`issues.${issue.id}`, 'private');",
             "import { useChannel } from './hooks/channel'; useChannel(name, 'presence');",
+            // P-148: what an Echo channel object does besides listening stays allowed: there is no typed replacement.
+            "import { echo, useSocketId } from '@laravel/echo-react'; echo().socketId(); useSocketId(); echo().leave('issues.1'); echo().leaveChannel('private-issues.1');",
+            "import { useChannel, usePublicChannel } from '@laravel/echo-react'; useChannel(name).leaveChannel(); usePublicChannel(name).leave(); useChannel(name).channel()?.stopListening('.CommentPosted');",
+            "import { useChannel } from '@laravel/echo-react'; const { channel } = useChannel(name); channel()?.whisper('typing', { name }); channel()?.listenForWhisper('typing', cb);",
+            "import { echo } from '@laravel/echo-react'; echo().private(name).whisper('typing', {}).listenForWhisper('typing', cb).subscribed(cb).error(cb);",
+            "import { echo } from './echo'; echo().private('issues.1').listen('CommentPosted', cb);",
+            "import { useChannel } from './hooks/channel'; useChannel(name).channel()?.listen('CommentPosted', cb);",
+            // P-191: a channel object handed to a function escapes the rule.
+            "import { useChannel } from '@laravel/echo-react'; function follow(channel) { channel?.listen('CommentPosted', cb); } follow(useChannel(name).channel());",
+            // The Overlay's own `usePresence()` joins through Echo's `useChannel()` and follows the members on its channel.
+            readFileSync(new URL('../../packages/npm/echo/index.js', import.meta.url), 'utf8'),
         ],
         invalid: [
             {
@@ -253,6 +265,59 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             },
             { code: "import { useChannel as useEchoChannel } from '@laravel/echo-react'; useEchoChannel(name, `presence`);", errors: 1 },
             { code: "import * as Echo from '@laravel/echo-react'; Echo.useChannel(name, 'presence');", errors: 1 },
+            // P-148: listening on a channel object from `.channel()` on a hook's return, or from a chain rooted in `echo()`.
+            {
+                code: "import { useChannel } from '@laravel/echo-react'; useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's channel `listen\(\)` takes any event name and a hand-typed payload: use `useChannelEvent\(channel, event, callback\)` from `@\/generated\/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data class\./,
+                    },
+                ],
+            },
+            { code: "import { usePublicChannel } from '@laravel/echo-react'; usePublicChannel('status').channel()?.listen('.StatusUpdated', cb);", errors: 1 },
+            { code: "import { useChannel } from '@laravel/echo-react'; useChannel(name).channel?.()?.listenToAll(cb);", errors: 1 },
+            {
+                code: "import { echo } from '@laravel/echo-react'; echo().private('issues.1').listen('CommentPosted', (e: { body: string }) => {});",
+                errors: [{ message: /Echo's channel `listen\(\)` takes any event name and a hand-typed payload: use `useChannelEvent\(channel, event, callback\)`/ }],
+            },
+            { code: "import { echo } from '@laravel/echo-react'; echo().channel('status').listen('.StatusUpdated', cb);", errors: 1 },
+            { code: "import { echo } from '@laravel/echo-react'; echo().encryptedPrivate(name).listen('CommentPosted', cb);", errors: 1 },
+            { code: "import { echo } from '@laravel/echo-react'; echo().listen('status', '.StatusUpdated', cb);", errors: 1 },
+            {
+                code: "import { echo } from '@laravel/echo-react'; echo().private(`App.Models.User.${user.id}`).notification((n: { title: string }) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's channel `notification\(\)` reads a broadcast notification's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the notification, and listen for it with `useChannelEvent\(channel, event, callback\)` from `@\/generated\/broadcasting`/,
+                    },
+                ],
+            },
+            {
+                code: "import { echo } from '@laravel/echo-react'; echo().join(name).here((members: { name: string }[]) => {}).joining(cb).leaving(cb);",
+                // Each call in the chain is reported, the outermost first.
+                errors: [
+                    { message: /Echo's channel `leaving\(\)` types a presence channel's members by hand/ },
+                    { message: /Echo's channel `joining\(\)` types a presence channel's members by hand/ },
+                    {
+                        message:
+                            /Echo's channel `here\(\)` types a presence channel's members by hand: use `usePresence\(channel, \{ here, joining, leaving \}\)` from `@\/generated\/broadcasting`, which types its members from the Data class the channel's callback returns\./,
+                    },
+                ],
+            },
+            { code: "import { echo } from '@laravel/echo-react'; echo().private(name).listenForWhisper('typing', cb).listen('CommentPosted', cb);", errors: 1 },
+            // A `const` bound to a channel object, a hook's return or `echo()`, in the same scope or an enclosing one.
+            {
+                code: "import { useChannel } from '@laravel/echo-react'; import { useEffect } from 'react'; function Comments() { const { channel } = useChannel(name); useEffect(() => { channel()?.listen('CommentPosted', cb); }, [channel]); }",
+                errors: 1,
+            },
+            { code: "import { usePublicChannel } from '@laravel/echo-react'; const { channel: statusChannel } = usePublicChannel('status'); statusChannel()?.listen('.StatusUpdated', cb);", errors: 1 },
+            { code: "import { useChannel } from '@laravel/echo-react'; const comments = useChannel(name); comments.channel()?.notification(cb);", errors: 1 },
+            { code: "import { useChannel } from '@laravel/echo-react'; const comments = useChannel(name).channel(); comments?.listen('CommentPosted', cb);", errors: 1 },
+            { code: "import { echo } from '@laravel/echo-react'; const issues = echo().private(name); issues.listen('CommentPosted', cb);", errors: 1 },
+            { code: "import { echo } from '@laravel/echo-react'; const connection = echo(); connection.join(name).joining(cb);", errors: 1 },
+            { code: "import { echo as getEcho } from '@laravel/echo-react'; getEcho().private(name).listen('CommentPosted', cb);", errors: 1 },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.echo().private(name).listen('CommentPosted', cb); Echo.useChannel(name).channel()?.listen('CommentPosted', cb);", errors: 2 },
         ],
     });
 });
