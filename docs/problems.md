@@ -160,6 +160,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
 | [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
 | [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
+| [P-190](#p-190) | An app's tool config can switch a Strictly Laravel rule off for every file | every Type Boundary | open |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
 | [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | closed |
@@ -2070,6 +2071,19 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** check in the guard's body every field its predicate claims, and review guards as closely as casts.
 
 **Reasoning:** narrowing an `unknown` ([P-062](#p-062)) needs a guard whenever the check doesn't fit in one expression, and the predicate is how TypeScript lets a function narrow. Lint can't compare a predicate with its body (oxlint's own rules have no such check, and JS plugins are syntactic, [P-070](#p-070)), so rejecting written predicates would reject the narrowing P-068 asks for.
+
+### P-190
+
+**An app's tool config can switch a Strictly Laravel rule off for every file**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** code review of #52
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `'strictly/typed-forms': 'off'` or `'typescript/consistent-type-assertions': ['error', { assertionStyle: 'as' }]` in `vite.config.ts`'s lint `rules` (or in a `lint.overrides` entry for a file glob), or an `ignoreErrors` entry for a `strictly.*` identifier in `phpstan.neon`, turns the rule off with no reason, and `ci:check` passes, `ci:check:install` included: the installer adds a lint rule only when the config doesn't name it (`ViteLintPlugin::addRules()`), whatever its setting, and never reads `ignoreErrors`. ADR-0007 allows only a per-line suppression with a written reason.
+
+**Manual workaround:** review lint config and `phpstan.neon` changes for a Strictly Laravel rule switched off.
 
 ### P-070
 
