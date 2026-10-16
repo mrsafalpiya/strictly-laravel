@@ -24,6 +24,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Adding a Problem.** Copy an entry, take the next free ID, add a row to the index, and give a reproduction concrete enough to become a breaking scenario.
 
+**Checking it.** `harness/tests/problem-register.test.ts` (one of `pnpm test`'s fast test files; `node --test harness/tests/problem-register.test.ts` runs it alone) fails, naming the Problem, when an index row has no entry or an entry no index row, an ID appears twice, a row's status differs from its entry's **Status**, a status isn't one of the three above, a `closed` entry lacks **Closed by** or an `accepted gap` lacks **Reasoning**. Run it after adding a Problem or changing a status, since both edit two places.
+
 **Sources** cited by the entries:
 
 - **overview**: [`research/reference-overview.md`][overview]
@@ -1257,7 +1259,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** eval-02 §3
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a deferred prop built with `Inertia::defer(fn () => …)` generates `stats: ProjectStatsData | undefined` with the key required; on first load the key is absent.
 
@@ -1287,7 +1289,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** overview §2; ecosystem B.2; type-safety rule 9
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `router.reload({ only: ['stast'] })`, `<Deferred data="stast">`, `<WhenVisible data="…">`, `<InfiniteScroll data="…">` all compile; Inertia's `<Deferred data: string | string[]>` isn't keyed to the page's props. `router.optimistic<TProps>()` takes any type. A renamed prop silently loads nothing.
 
@@ -1302,7 +1304,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props (partial reloads)
 - **Source:** eval-02 §3
 - **Upstream:** none (expected Inertia behaviour)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a partial reload with `only: ['project.stats']` returns only that subtree; checking it as the full page props fails, and checking it loosely proves nothing. Separately, a requested key missing from the response goes unnoticed.
 
