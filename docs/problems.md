@@ -130,7 +130,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | closed |
 | [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
-| [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
+| [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | closed |
+| [P-191](#p-191) | An Echo channel object the lint rule can't trace still listens untyped | broadcasting | accepted gap |
+| [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
@@ -1619,11 +1621,41 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-142](#p-142)
 - **Upstream:** by design: `@laravel/echo-react`'s `useChannel()` returns Echo's channel, whose `listen()` and `notification()` take any name and callback
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => …)`, or `.notification((n: { title: string }) => …)` on it, or the same on `echo().private(…)`, compiles and passes lint: `strictly/typed-broadcasts` rejects only Echo's listening hooks, not the channel objects its other hooks and `echo()` return.
 
 **Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only, and leave Echo's channel objects to joining and leaving.
+
+**Closed by:** the oxlint rule `strictly/typed-broadcasts` ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)) also rejects `listen()`, `listenToAll()`, `notification()`, `here()`, `joining()` and `leaving()` on a channel object from `@laravel/echo-react` (imported by name, renamed or through a namespace import): `.channel()` on what one of its hooks returns (`useChannel(…).channel()?.listen(…)`, `usePublicChannel(…)`), a chain rooted in `echo()` (`echo().private(…)`, `.channel(…)`, `.join(…)`, `.encryptedPrivate(…)`, through the channel's own chainable methods, and `echo().listen(channel, event, callback)` itself), or a `const` in scope bound to either, a destructured `const { channel } = useChannel(…)` (renamed or not) included. ``Echo's channel `listen()` takes any event name and a hand-typed payload: use `useChannelEvent(channel, event, callback)` from `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data class.``; `notification()` points at an app event alongside the notification ([P-142](#p-142)), and `here()`, `joining()` and `leaving()` at `usePresence(channel, { here, joining, leaving })`. A hook the rule already rejects (`useEcho()`, `usePresenceChannel()`, `useChannel(name, 'presence')`) isn't reported a second time for its channel. Whispers, `stopListening()`, `subscribed()`, `error()`, leaving and `socketId()` stay allowed: they carry no broadcast event's data. The Overlay's own `usePresence()` ([`echo/index.js`](../packages/npm/echo/index.js)) passes the rule. What that leaves is [P-191](#p-191) and [P-192](#p-192). Scenarios: `use-channel-listen-fails-lint`, `echo-private-listen-fails-lint`, and the passing `echo-channel-whispers-passes`, `broadcast-event-names-typed-passes`, `presence-members-typed-passes`, `skill-add-broadcast-event-example-passes`.
+
+### P-191
+
+**An Echo channel object the lint rule can't trace still listens untyped**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-148](#p-148)
+- **Upstream:** none (oxlint JS plugins get no type information)
+- **Status:** accepted gap
+
+**Reproduction:** `function follow(channel: Channel) { channel.listen('CommentPostd', (e: { body: string }) => …) }` called with `follow(useChannel(name).channel())`, a channel kept in a `let`, a ref, state or an object property (`const feed = useRef(echo().private(name))`, then `feed.current.listen(…)`), a channel from a module that re-exports Echo's hooks, or an Echo instance the app builds itself (`new Echo(…)` from `laravel-echo`, `window.Echo`): each listens with any event name and a hand-typed payload and passes lint. So does Pusher's raw `on(event, callback)` on a channel.
+
+**Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only; review code that hands Echo's channel objects around.
+
+**Reasoning:** the rule matches syntax ([P-070](#p-070)): it follows a channel object only through a chain of calls and `const` bindings it can see in the file. Following one through a parameter, a ref or module state needs the types oxlint's JS plugins don't have. The typed helpers cover every listening case, so code that stores Echo's channel or passes it on has stepped away from them on purpose. `on()` also binds Pusher's own protocol events, which have no typed counterpart, so rejecting it would leave no way to read them.
+
+### P-192
+
+**Whisper names and payloads are hand-typed**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-148](#p-148)
+- **Upstream:** by design: Echo's `whisper(eventName, data)` and `listenForWhisper(event, callback)` take any name and any data
+- **Status:** open
+
+**Reproduction:** one component calls `channel()?.whisper('typing', { name })` and another `channel()?.listenForWhisper('typng', (e: { user: string }) => …)`. Both pass `tsc` and lint: the name is misspelt and the payload's type disagrees with what is sent, so the listener never fires, or reads a field that isn't there. Whispers go from client to client without the server, so no PHP class describes them and no Contract records them.
+
+**Manual workaround:** keep each whisper's name and payload type in one shared TypeScript module and import it on both sides.
 
 ## Translations
 

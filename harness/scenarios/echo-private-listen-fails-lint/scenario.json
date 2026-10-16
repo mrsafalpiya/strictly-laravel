@@ -1,0 +1,6 @@
+{
+    "problem": "P-148",
+    "description": "Listening on a channel from Echo's echo().private(), with any event name and a hand-typed payload, fails lint.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Echo's channel `listen()` takes any event name and a hand-typed payload: use `useChannelEvent(channel, event, callback)`" }
+}
