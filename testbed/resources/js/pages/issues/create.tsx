@@ -1,5 +1,4 @@
 import { Head } from '@inertiajs/react';
-import { selectedKey } from '@/lib/keys';
 import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +22,7 @@ import { store } from '@/routes/issues';
 import { isDateOnly } from '@/generated';
 import type { PageProps } from '@/generated';
 import { useRouteForm } from '@mrsafalpiya/strictly-laravel/react';
+import { selectedKey } from '@mrsafalpiya/strictly-laravel/routes';
 
 const NONE = '__none';
 

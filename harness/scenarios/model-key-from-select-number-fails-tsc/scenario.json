@@ -1,0 +1,9 @@
+{
+    "problem": "P-128",
+    "description": "Filling an input's #[KeyOf(User::class)] assignee from a <Select> with Number(value) fails tsc: a select's value is a string, and Number() makes it a plain number, which no model's key is.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'number | null' is not assignable to type '(number & { readonly [keyOf]: \"User.id\"; }) | null'."
+    }
+}

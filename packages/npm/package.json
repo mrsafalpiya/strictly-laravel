@@ -28,7 +28,8 @@
             "default": "./react/index.js"
         },
         "./routes": {
-            "types": "./routes/index.d.ts"
+            "types": "./routes/index.d.ts",
+            "default": "./routes/index.js"
         },
         "./translations": {
             "types": "./translations/index.d.ts",

@@ -1,0 +1,5 @@
+{
+    "problem": "P-128",
+    "description": "A <Select> of members fills an input's #[KeyOf(User::class)] assignee with selectedKey() from @mrsafalpiya/strictly-laravel/routes, which looks the select's string value up among the members' keys the server sent and so keeps the brand without a cast, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}
