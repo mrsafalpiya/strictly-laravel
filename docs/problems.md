@@ -118,6 +118,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
 | [P-179](#p-179) | A closure route that answers JSON without a Data class isn't rejected | JSON endpoints | closed |
 | [P-180](#p-180) | JSON an action builds itself has no response type | JSON endpoints | accepted gap |
+| [P-197](#p-197) | A JSON endpoint that returns a generic Data class fails `tsc` in its route functions | JSON endpoints | open |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
@@ -153,7 +154,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | closed |
 | [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | closed |
-| [P-185](#p-185) | Contract Coverage doesn't look inside a generic Data class's template-typed items | every Type Boundary | open |
+| [P-185](#p-185) | Contract Coverage doesn't look inside a generic Data class's template-typed items | every Type Boundary | closed |
 | [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
 | [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
 | [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
@@ -1428,6 +1429,19 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Reasoning:** a `JsonResponse` is the explicit way to answer JSON no Data class describes (a health check, a payload a third party dictates), and the client already can't read it without narrowing, so it fails loudly rather than silently. Rejecting it would leave such endpoints only a suppression; what `strictly.jsonResponse` rejects are the return types that look typed in PHP (`list<ProjectData>`, `?ProjectData`) yet reach the client as `unknown` ([P-108](#p-108)).
 
+### P-197
+
+**A JSON endpoint that returns a generic Data class fails `tsc` in its route functions**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-185](#p-185)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `/** @return ListingData<IssueData> */ public function show(): ListingData`, with `ListingData` a generic Data class (`@template TItem of Data`). Its route functions are branded with the action's native return type, `WithResponse<import('@/generated').ListingData>` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)), so `ci:check:tsc` fails in the generated `resources/js/actions/…` and `resources/js/routes/…` files with `error TS2314: Generic type 'ListingData' requires 1 type argument(s).` The response's Contract and Contract Coverage read the same native type, so the `@return` type argument reaches neither: Contract Coverage walks the items as the template's bound ([P-185](#p-185)).
+
+**Manual workaround:** return a non-generic Data class (`IssueListingData` with `list<IssueData>`), or one whose property is the generic class with its type argument (`BacklogData` with `/** @var ListingData<IssueData> */ public ListingData $backlog`), which Contract Coverage walks with it.
+
 ### P-050
 
 **Vendor JSON endpoints have no Source of Truth**
@@ -1983,11 +1997,13 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** found while closing [P-084](#p-084)
 - **Upstream:** none (laravel-data describes a `list<TItem>` property as an array with no item class, since a template type is no class)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a generic Data class `/** @template TItem of Data */ final class ListingData extends Data` with `/** @param list<TItem> $items */`, sent as `/** @param ListingData<IssueData> $backlog */`. laravel-data describes `items` as an `Array` with no Data class, so Contract Coverage checks only that the list isn't always empty and never walks its items: an `IssueData.assignee` only ever `null` there passes `strictly:coverage --strict`. A union type argument (`ListingData<IssueData|MilestoneData>`) passes `strictly.dataShape` too, since the rule checks the generic class's own `list<TItem>` and leaves the template's argument to each use ([P-084](#p-084)).
 
 **Manual workaround:** render the same Data class in a prop Contract Coverage does walk, or use a non-generic Data class per item type (`IssueListingData` with `list<IssueData>`).
+
+**Closed by:** [`TemplateArgument`](../packages/laravel/src/Coverage/TemplateArgument.php) binds each template of a generic Data class to the type argument of the use being walked, read from the PHPDoc type its TypeScript type is generated from: a page prop's or a Data property's (`/** @param ListingData<IssueData> $backlog */`), or a list's item (`list<ListingData<IssueData>>`). The bindings are passed down, so a template a generic class hands on to another (`BoardData<IssueData>` with `@param list<ListingData<TItem>> $columns`) is bound at any depth. [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php) walks a template-typed property (`TItem`, `list<TItem>`, `array<string, TItem>`) as that Data class, its variants if the argument is a union, and keeps a template-typed list's emptiness per use (`ListingData<IssueData>.items is only ever empty`), since each use is its own TypeScript type. An item's nullable field only ever `null` now fails: `✗ IssueData.assignee is only ever null (at backlog › backlog.items[].assignee): …`. A use with no type argument, which PHPStan (`missingType.generics`) and `tsc` (TS2314) already reject, falls back to the template's bound when that is one Data class; otherwise Contract Coverage reports the property instead of passing it: `✗ ListingData.items holds TItem with no Data class (at backlog › backlog.items): give ListingData a type argument where it is used (ListingData<SomeData>), or bound TItem by one Data class, …`. `strictly.dataShape` ([`DataShapeRule`](../packages/laravel/src/PHPStan/DataShapeRule.php)) now resolves a generic Data class's template-typed properties with each use's type arguments, so `ListingData<IssueData|MilestoneData>` fails with the message and tip `list<IssueData|MilestoneData>` gets, as does an argument that makes the item a list. The templates and their bounds are read by [`ClassTemplates`](../packages/laravel/src/TypeScript/ClassTemplates.php), which the generated types' template bounds ([P-062](#p-062)) now share. A JSON endpoint's `@return ListingData<IssueData>` is not read: such an endpoint fails `tsc` first ([P-197](#p-197)), and Contract Coverage walks its response with the templates' bounds. Scenarios: `generic-data-item-only-null-fails-coverage`, `generic-data-every-item-shape-passes-coverage`, `generic-data-nested-item-only-null-fails-coverage`, `generic-data-bound-item-only-null-fails-coverage`, `generic-data-without-type-argument-fails-coverage`, `generic-data-union-type-argument-fails-phpstan`; the rule-test kit's `DataShapeRuleTest` covers a union argument, one handed on through a nested generic class, a scalar union, a list argument, a template used as a value and a self-referential generic class.
 
 ### P-125
 

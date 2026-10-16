@@ -1,0 +1,9 @@
+{
+    "problem": "P-185",
+    "description": "A generic Data class whose template is a list's item type, used with a union type argument (ListingData<IssueData|MilestoneData>), whose members Contract Coverage can't tell apart in a list: PHPStan fails with strictly.dataShape's union message, as for list<IssueData|MilestoneData>.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "App\\Pages\\BacklogPage::$backlog holds items of a union type"
+    }
+}
