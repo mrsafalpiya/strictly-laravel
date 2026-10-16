@@ -81,7 +81,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
 | [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
 | [P-167](#p-167) | A closure route can take a FormRequest or read the request's input | form payloads | closed |
-| [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | accepted gap |
+| [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | open |
 | [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | closed |
 | [P-157](#p-157) | A model key named unlike one and validated by no `exists` rule needs no `#[KeyOf]` | form payloads | accepted gap |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
@@ -812,13 +812,11 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-112](#p-112)
 - **Upstream:** none
-- **Status:** accepted gap
+- **Status:** open
 
 **Reproduction:** a controller action without an input class hands the request to another class (`$this->projects->create($request)`, a job, an action class) that reads `$request->input('name')`; or reads the request through a value PHPStan doesn't type as one (`app('request')` in code typed `mixed`). `strictly.inputRead` sees reads only in a controller's own methods and closures, on a value typed as a `Request`. The same holds for a vendor action that reads input and that `config/strictly.php` declares nothing for ([P-025](#p-025)): vendor code isn't analysed.
 
 **Manual workaround:** take the input class in the action and pass it, not the request, to the code that needs the payload.
-
-**Reasoning:** middleware, a FormRequest's own methods, Fortify's customisation callbacks (`Fortify::authenticateUsing()`) and other framework hooks read the request by design, so a rule can't reject every read outside a controller; and which action a service's read serves is only known at runtime. The typed way hands such code the input class, and the reads a feature test reaches are still recorded in the action's Contract when it has one ([P-024](#p-024)). The Base Kit's undeclared Fortify actions (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes) take no payload.
 
 ### P-128
 
