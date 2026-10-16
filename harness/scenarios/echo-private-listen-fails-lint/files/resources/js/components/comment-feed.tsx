@@ -8,11 +8,11 @@ export function CommentFeed({ issueId }: { issueId: number }) {
 
     // The event's payload, typed by hand.
     useEffect(() => {
-        const issue = echo().private(`issues.${issueId}`);
-
-        issue.listen('CommentPosted', (comment: Comment) =>
-            setComments((current) => [...current, comment]),
-        );
+        echo()
+            .private(`issues.${issueId}`)
+            .listen('CommentPosted', (comment: Comment) =>
+                setComments((current) => [...current, comment]),
+            );
 
         return () => echo().leave(`issues.${issueId}`);
     }, [issueId]);
