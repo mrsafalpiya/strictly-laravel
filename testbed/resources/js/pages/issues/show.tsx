@@ -3,7 +3,6 @@ import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { selectedKey } from '@/lib/keys';
 import { ActivityItem } from '@/components/activity/activity-item';
 import { CommentThread } from '@/components/comments/comment-thread';
 import { LabelPill } from '@/components/domain/label-pill';
@@ -34,6 +33,7 @@ import { isDateOnly } from '@/generated';
 import { channel, useChannelEvent } from '@/generated/broadcasting';
 import type { PageProps, UpdateIssueData } from '@/generated';
 import { forPage, submit, visit } from '@mrsafalpiya/strictly-laravel/react';
+import { selectedKey } from '@mrsafalpiya/strictly-laravel/routes';
 
 const page = forPage<'issues/show'>();
 

@@ -130,7 +130,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
 | [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | closed |
 | [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
-| [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
+| [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | closed |
+| [P-191](#p-191) | An Echo channel object the lint rule can't trace still listens untyped | broadcasting | accepted gap |
+| [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
@@ -836,7 +838,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** name the field after the model it belongs to and check the call sites in review; the input's `exists` rules (`App\Rules\WorkspaceRules`) at least reject keys that belong to no row of the workspace.
 
-**Closed by:** model keys branded by their model and field (ADR-0009). A Data property declared [`#[KeyOf(User::class)]`](../packages/laravel/src/Data/KeyOf.php), in an input, query or output class, is generated as `Key<'User', 'id', number>` from the npm package's [`routes` types](../packages/npm/routes/index.d.ts) (per item for a list; `#[KeyOf(Issue::class, 'number')]` for a key by another field than the primary key). A Data class built from a model brands its own primary key the same way, and the fields its routes bind it by ([P-003](#p-003)), so `issue.id` is `Key<'Issue', 'id', number>` and `issue.number` is `Key<'Issue', 'number', number>` ([`RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php), [`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Filling a bulk action's `#[KeyOf(Issue::class)] $ids` from the issues' numbers fails `tsc` with `error TS2322: Type 'number & { readonly [keyOf]: "Issue.number"; }' is not assignable to type 'number & { readonly [keyOf]: "Issue.id"; }'.`, and an issue's id for a `#[KeyOf(User::class)]` assignee with TS2345. The PHPStan rule `strictly.keyOf` ([`KeyOfRule`](../packages/laravel/src/PHPStan/KeyOfRule.php)) makes the attribute required on every property of a Data class named `…Id`, `…Ids`, `…_id` or `…_ids` or validated by an `exists` rule (in `rules()`, or laravel-data's `#[Exists]`), except the class's own primary key: `App\Data\BulkUpdateIssuesData::$ids is validated by an exists rule but declares no model, so TypeScript takes any value for it: another model's key, or another field's, fits.` A value that is no model's key takes a suppression with a reason. Contracts check a key as its plain value, and the feature tests check every key the server sends exists ([P-116](#p-116)). The Testbed App's inputs (`BulkUpdateIssuesData.ids`, `StoreIssueData.projectId`, `assigneeId`, `labelIds`, `cycleId`, `parentId`, and the rest the rule found) declare their models, and its selects look their value up among the options' keys (`selectedKey()`) instead of `Number(value)`. What the rule can't see is [P-157](#p-157). Scenarios: `model-keys-typed-from-output-to-input-passes`, `model-key-of-another-field-fails-tsc`, `model-key-of-another-model-fails-tsc`, `model-key-undeclared-fails-phpstan`.
+**Closed by:** model keys branded by their model and field (ADR-0009). A Data property declared [`#[KeyOf(User::class)]`](../packages/laravel/src/Data/KeyOf.php), in an input, query or output class, is generated as `Key<'User', 'id', number>` from the npm package's [`routes` types](../packages/npm/routes/index.d.ts) (per item for a list; `#[KeyOf(Issue::class, 'number')]` for a key by another field than the primary key). A Data class built from a model brands its own primary key the same way, and the fields its routes bind it by ([P-003](#p-003)), so `issue.id` is `Key<'Issue', 'id', number>` and `issue.number` is `Key<'Issue', 'number', number>` ([`RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php), [`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Filling a bulk action's `#[KeyOf(Issue::class)] $ids` from the issues' numbers fails `tsc` with `error TS2322: Type 'number & { readonly [keyOf]: "Issue.number"; }' is not assignable to type 'number & { readonly [keyOf]: "Issue.id"; }'.`, and an issue's id for a `#[KeyOf(User::class)]` assignee with TS2345. The PHPStan rule `strictly.keyOf` ([`KeyOfRule`](../packages/laravel/src/PHPStan/KeyOfRule.php)) makes the attribute required on every property of a Data class named `…Id`, `…Ids`, `…_id` or `…_ids` or validated by an `exists` rule (in `rules()`, or laravel-data's `#[Exists]`), except the class's own primary key: `App\Data\BulkUpdateIssuesData::$ids is validated by an exists rule but declares no model, so TypeScript takes any value for it: another model's key, or another field's, fits.` A value that is no model's key takes a suppression with a reason. Contracts check a key as its plain value, and the feature tests check every key the server sends exists ([P-116](#p-116)). The Testbed App's inputs (`BulkUpdateIssuesData.ids`, `StoreIssueData.projectId`, `assigneeId`, `labelIds`, `cycleId`, `parentId`, and the rest the rule found) declare their models, and its selects look their value up among the options' keys instead of `Number(value)`. A select's value is a string, and `Number(value)` makes it a plain number, which fails `tsc` with `error TS2322: Type 'number | null' is not assignable to type '(number & { readonly [keyOf]: "User.id"; }) | null'.`; the npm package's [`selectedKey(keys, value)`](../packages/npm/routes/index.js) (`@mrsafalpiya/strictly-laravel/routes`) returns the one of the keys the server sent whose string the value is, brand and all, or `null` for any other value (a "none" item), so no cast is needed. What the rule can't see is [P-157](#p-157). Scenarios: `model-keys-typed-from-output-to-input-passes`, `model-key-select-looked-up-passes`, `model-key-of-another-field-fails-tsc`, `model-key-of-another-model-fails-tsc`, `model-key-from-select-number-fails-tsc`, `model-key-undeclared-fails-phpstan`.
 
 ### P-157
 
@@ -1621,11 +1623,41 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-142](#p-142)
 - **Upstream:** by design: `@laravel/echo-react`'s `useChannel()` returns Echo's channel, whose `listen()` and `notification()` take any name and callback
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => …)`, or `.notification((n: { title: string }) => …)` on it, or the same on `echo().private(…)`, compiles and passes lint: `strictly/typed-broadcasts` rejects only Echo's listening hooks, not the channel objects its other hooks and `echo()` return.
 
 **Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only, and leave Echo's channel objects to joining and leaving.
+
+**Closed by:** the oxlint rule `strictly/typed-broadcasts` ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)) also rejects `listen()`, `listenToAll()`, `notification()`, `here()`, `joining()` and `leaving()` on a channel object from `@laravel/echo-react` (imported by name, renamed or through a namespace import): `.channel()` on what one of its hooks returns (`useChannel(…).channel()?.listen(…)`, `usePublicChannel(…)`), a chain rooted in `echo()` (`echo().private(…)`, `.channel(…)`, `.join(…)`, `.encryptedPrivate(…)`, through the channel's own chainable methods, and `echo().listen(channel, event, callback)` itself), or a `const` in scope bound to either, a destructured `const { channel } = useChannel(…)` (renamed or not) included. ``Echo's channel `listen()` takes any event name and a hand-typed payload: use `useChannelEvent(channel, event, callback)` from `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data class.``; `notification()` points at an app event alongside the notification ([P-142](#p-142)), and `here()`, `joining()` and `leaving()` at `usePresence(channel, { here, joining, leaving })`. A hook the rule already rejects (`useEcho()`, `usePresenceChannel()`, `useChannel(name, 'presence')`) isn't reported a second time for its channel. Whispers, `stopListening()`, `subscribed()`, `error()`, leaving and `socketId()` stay allowed: they carry no broadcast event's data. The Overlay's own `usePresence()` ([`echo/index.js`](../packages/npm/echo/index.js)) passes the rule. What that leaves is [P-191](#p-191) and [P-192](#p-192). Scenarios: `use-channel-listen-fails-lint`, `echo-private-listen-fails-lint`, and the passing `echo-channel-whispers-passes`, `broadcast-event-names-typed-passes`, `presence-members-typed-passes`, `skill-add-broadcast-event-example-passes`.
+
+### P-191
+
+**An Echo channel object the lint rule can't trace still listens untyped**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-148](#p-148)
+- **Upstream:** none (oxlint JS plugins get no type information)
+- **Status:** accepted gap
+
+**Reproduction:** `function follow(channel: Channel) { channel.listen('CommentPostd', (e: { body: string }) => …) }` called with `follow(useChannel(name).channel())`, a channel kept in a `let`, a ref, state or an object property (`const feed = useRef(echo().private(name))`, then `feed.current.listen(…)`), a channel from a module that re-exports Echo's hooks, or an Echo instance the app builds itself (`new Echo(…)` from `laravel-echo`, `window.Echo`): each listens with any event name and a hand-typed payload and passes lint. So does Pusher's raw `on(event, callback)` on a channel.
+
+**Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only; review code that hands Echo's channel objects around.
+
+**Reasoning:** the rule matches syntax ([P-070](#p-070)): it follows a channel object only through a chain of calls and `const` bindings it can see in the file. Following one through a parameter, a ref or module state needs the types oxlint's JS plugins don't have. The typed helpers cover every listening case, so code that stores Echo's channel or passes it on has stepped away from them on purpose. `on()` also binds Pusher's own protocol events, which have no typed counterpart, so rejecting it would leave no way to read them.
+
+### P-192
+
+**Whisper names and payloads are hand-typed**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-148](#p-148)
+- **Upstream:** by design: Echo's `whisper(eventName, data)` and `listenForWhisper(event, callback)` take any name and any data
+- **Status:** open
+
+**Reproduction:** one component calls `channel()?.whisper('typing', { name })` and another `channel()?.listenForWhisper('typng', (e: { user: string }) => …)`. Both pass `tsc` and lint: the name is misspelt and the payload's type disagrees with what is sent, so the listener never fires, or reads a field that isn't there. Whispers go from client to client without the server, so no PHP class describes them and no Contract records them.
+
+**Manual workaround:** keep each whisper's name and payload type in one shared TypeScript module and import it on both sides.
 
 ## Translations
 

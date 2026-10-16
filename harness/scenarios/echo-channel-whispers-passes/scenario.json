@@ -1,0 +1,6 @@
+{
+    "problem": "P-148",
+    "description": "Whispering, leaving and reading the socket id through Echo's channel objects, which carry no broadcast event's data, still passes lint.",
+    "step": "lint",
+    "expect": { "outcome": "pass" }
+}
