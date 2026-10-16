@@ -6,8 +6,8 @@
         "build": "php artisan strictly:generate && vp build",
         "build:ssr": "php artisan strictly:generate && vp build && vp build --ssr",
         "dev": "vp dev",
-        "check": "vp check",
-        "check:fix": "vp check --fix",
+        "check": "php artisan strictly:generate && vp check",
+        "check:fix": "php artisan strictly:generate && vp check --fix",
         "types:check": "php artisan strictly:generate && tsc --noEmit"
     },
     "dependencies": {

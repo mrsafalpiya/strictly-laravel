@@ -1,0 +1,5 @@
+{
+    "problem": "P-175",
+    "description": "Reading JSON.parse() and Response.json() as unknown and narrowing them with checks before they reach a ProjectData variable, argument or return value passes ci:check.",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,6 @@
+{
+    "problem": "P-175",
+    "description": "Passing the any that Response.json() resolves to as an argument typed ProjectData fails the lint step through typescript/no-unsafe-argument.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type ProjectData." }
+}

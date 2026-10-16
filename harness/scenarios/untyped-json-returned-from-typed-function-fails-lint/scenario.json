@@ -1,0 +1,6 @@
+{
+    "problem": "P-175",
+    "description": "Returning the any that Response.json() resolves to from a function typed Promise<ProjectData> fails the lint step through typescript/no-unsafe-return.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(no-unsafe-return): Unsafe return of a value of type `Promise<any>`." }
+}

@@ -1,0 +1,7 @@
+{
+    "problem": "P-175",
+    "description": "Running strictly:install again adds the rules against an unsafe any to the lint config of an app installed before they existed, which then rejects JSON.parse read into a typed variable.",
+    "reinstall": true,
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(no-unsafe-assignment): Unsafe assignment of an any value." }
+}

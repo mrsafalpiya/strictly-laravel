@@ -158,7 +158,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
 | [P-068](#p-068) | Type assertions override generated types | every Type Boundary | closed |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
-| [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
+| [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | closed |
+| [P-194](#p-194) | An `any` reaching a typed callback parameter or a non-async function's `Promise` escapes lint | every Type Boundary | accepted gap |
+| [P-193](#p-193) | Type-aware lint run before the types are generated reads every generated type as `any` | every Type Boundary | closed |
 | [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
 | [P-190](#p-190) | An app's tool config can switch a Strictly Laravel rule off for every file | every Type Boundary | closed |
 | [P-199](#p-199) | A file left out of PHPStan or lint escapes every Strictly Laravel rule | every Type Boundary | accepted gap |
@@ -1895,7 +1897,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** a Vite plugin (`vite-plugins/php-types.ts`) that regenerates on PHP changes under `app/`, plus `File::ensureDirectoryExists()` before generating; build, typecheck and CI regenerate first.
 
-**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010), or `.env.example` is saved, [P-058](#p-058)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)) or a class that gets a type can't be loaded ([P-073](#p-073)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can't be loaded or two that generate the same type name keep the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010), or `.env.example` is saved, [P-058](#p-058)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)) or a class that gets a type can't be loaded ([P-073](#p-073)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can't be loaded or two that generate the same type name keep the last good types", "generated TypeScript is gitignored, and ci:check, lint, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
 
 ### P-065
 
@@ -2030,7 +2032,7 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 
 **Manual workaround:** the `type-safety/no-type-assertions` lint rule rejects `as`, `<T>x` and `!` (not `as const`) outside the boundary modules ([P-069](#p-069)).
 
-**Closed by:** the installer hook `vite.config.ts: oxlint rejects type and non-null assertions` ([`ViteLintPlugin::rejectAssertions()`](../packages/laravel/src/Install/ViteLintPlugin.php)) turns on oxlint's own `typescript/consistent-type-assertions` (with `assertionStyle: 'never'`, which still allows `as const`) and `typescript/no-non-null-assertion` in the app's Vite+ lint config. `props.project as ProjectData` and `<UserData>meta` fail `ci:check:lint` with `typescript(consistent-type-assertions): Do not use any type assertions.`, and `auth.user!.name` with `typescript(no-non-null-assertion): Forbidden non-null assertion.` App code narrows with a check instead (`=== null`, `typeof`, a type guard for an `unknown`, [P-062](#p-062)); a cast that is really needed takes a suppression with its reason (ADR-0007). The vendored shadcn/ui components in `resources/js/components/ui/`, which cast CSS variables to `React.CSSProperties`, are already outside lint (the Base Kit's `ignorePatterns`), and the Overlay's own casts live in the npm package ([P-069](#p-069)), so app code needs no other exemption. Kit Conversion narrows the appearance `use-appearance.tsx` reads from `localStorage` with a check against the `Appearance` values, and types `use-current-url.ts`'s `whenCurrentUrl()` with overloads instead of `null as TIfFalse`. What still asserts without a cast: an `any` ([P-175](#p-175)) and a hand-written type guard ([P-176](#p-176)). Scenarios: `type-assertion-on-page-prop-fails-lint`, `angle-bracket-assertion-on-unknown-fails-lint`, `non-null-assertion-fails-lint`, `narrowed-instead-of-asserted-passes`, `assertion-rules-added-by-reinstall-fails-lint`.
+**Closed by:** the installer hook `vite.config.ts: oxlint rejects assertions and unsafe any` ([`ViteLintPlugin::rejectAssertions()`](../packages/laravel/src/Install/ViteLintPlugin.php)) turns on oxlint's own `typescript/consistent-type-assertions` (with `assertionStyle: 'never'`, which still allows `as const`) and `typescript/no-non-null-assertion` in the app's Vite+ lint config. `props.project as ProjectData` and `<UserData>meta` fail `ci:check:lint` with `typescript(consistent-type-assertions): Do not use any type assertions.`, and `auth.user!.name` with `typescript(no-non-null-assertion): Forbidden non-null assertion.` App code narrows with a check instead (`=== null`, `typeof`, a type guard for an `unknown`, [P-062](#p-062)); a cast that is really needed takes a suppression with its reason (ADR-0007). The vendored shadcn/ui components in `resources/js/components/ui/`, which cast CSS variables to `React.CSSProperties`, are already outside lint (the Base Kit's `ignorePatterns`), and the Overlay's own casts live in the npm package ([P-069](#p-069)), so app code needs no other exemption. Kit Conversion narrows the appearance `use-appearance.tsx` reads from `localStorage` with a check against the `Appearance` values, and types `use-current-url.ts`'s `whenCurrentUrl()` with overloads instead of `null as TIfFalse`. An `any` reaching typed code fails lint too ([P-175](#p-175)); what still asserts without a cast is a hand-written type guard ([P-176](#p-176)). Scenarios: `type-assertion-on-page-prop-fails-lint`, `angle-bracket-assertion-on-unknown-fails-lint`, `non-null-assertion-fails-lint`, `narrowed-instead-of-asserted-passes`, `assertion-rules-added-by-reinstall-fails-lint`.
 
 ### P-069
 
@@ -2059,6 +2061,38 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Reproduction:** `const project: ProjectData = JSON.parse(text)`, or a third-party function typed as returning `any`, compiles and passes lint: TypeScript lets `any` flow into any type, so the value is cast without `as`, and the rules against type assertions ([P-068](#p-068)) don't see it.
 
 **Manual workaround:** read such a value as `unknown` (`const parsed: unknown = JSON.parse(text)`) and narrow it.
+
+**Closed by:** the installer hook `vite.config.ts: oxlint rejects assertions and unsafe any` ([`ViteLintPlugin::rejectAssertions()`](../packages/laravel/src/Install/ViteLintPlugin.php), the hook of [P-068](#p-068)) also turns on oxlint's type-aware `typescript/no-unsafe-assignment`, `no-unsafe-return`, `no-unsafe-argument`, `no-unsafe-member-access` and `no-unsafe-call` as errors (`UNSAFE_ANY_RULES`; the Base Kit already lints with `typeAware: true`). `const project: ProjectData = JSON.parse(text)` fails `ci:check:lint` with `typescript(no-unsafe-assignment): Unsafe assignment of an any value.`, passing `await response.json()` to a `ProjectData` parameter with `typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type ProjectData.`, returning `response.json()` from an `async` function typed `Promise<ProjectData>` with ``typescript(no-unsafe-return): Unsafe return of a value of type `Promise<any>`.``, and `JSON.parse(text).title` with ``typescript(no-unsafe-member-access): Unsafe member access .title on an `any` value.`` App code reads such a value as `unknown` and narrows it; an `any` that is really needed takes a suppression with its reason (ADR-0007). Member access and calls are on too because nothing tripped them: the latest Base Kit, Tracklane in the Testbed App, every generated file, the npm package's types and every harness scenario pass all five rules unchanged (the npm package's `any`s are the `Record<string, any>` constraints Inertia's form types need and the parameter of `PageOptimisticUpdate`, a callback Inertia calls; none is a value app code reads). The rules need the generated types, so `check` now generates first ([P-193](#p-193)). What still escapes them: [P-194](#p-194). Scenarios: `json-parse-into-typed-variable-fails-lint`, `untyped-json-passed-as-typed-argument-fails-lint`, `untyped-json-returned-from-typed-function-fails-lint`, `member-access-on-untyped-json-fails-lint`, `json-read-as-unknown-and-narrowed-passes`, `unsafe-any-rules-added-by-reinstall-fails-lint`.
+
+### P-194
+
+**An `any` reaching a typed callback parameter or a non-async function's `Promise` escapes lint**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #56
+- **Upstream:** none filed (typescript-eslint's `no-unsafe-*` rules, which oxlint's type-aware rules port)
+- **Status:** accepted gap
+
+**Reproduction:** `response.json().then((project: ProjectData) => show(project))` and `function readProject(response: Response): Promise<ProjectData> { return response.json(); }` (not `async`) pass `ci:check:lint` with [P-175](#p-175)'s rules on: no `no-unsafe-*` rule checks the `any` a `Promise<any>` resolves to against a callback's annotated parameter, and `no-unsafe-return` checks a returned `Promise<any>` only in an `async` function.
+
+**Manual workaround:** `await` the value into an `unknown` (`const body: unknown = await response.json()`) and narrow it.
+
+**Reasoning:** the rules are oxlint's ports of typescript-eslint's, and neither has a rule for these two flows; a JS plugin rule can't see types ([P-070](#p-070)). Both start from an untyped API that app code rarely calls directly (Inertia, Wayfinder and the npm package's helpers type every request), and the `await` form the workaround names is the one the rules do check.
+
+### P-193
+
+**Type-aware lint run before the types are generated reads every generated type as `any`**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #56
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** in a fresh clone, or a `ci:check:lint` run on its own, `@/generated` doesn't exist yet, so every value typed by it is an error type, which type-aware oxlint reads as `any`: `pnpm run check` warns on `ProjectData | null` (`typescript(no-redundant-type-constituents)`), and with [P-175](#p-175)'s rules fails on most of the Base Kit (``Unsafe member access .name on an `error` typed value.``).
+
+**Manual workaround:** run `php artisan strictly:generate` before linting.
+
+**Closed by:** the installer hook `package.json scripts: build, check and types:check generate first` ([`GenerateFirst`](../packages/laravel/src/Install/GenerateFirst.php)) now also makes `check` (which `ci:check:lint` runs) and `check:fix` run `php artisan strictly:generate` first, as `build` and `types:check` already did. Harness test: "generated TypeScript is gitignored, and ci:check, lint, typecheck and build regenerate it in a fresh clone".
 
 ### P-176
 
