@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Harness typecheck, Pint and PHPStan rule tests
+    name: Harness typecheck, Pint, PHPStan rule tests and package analysis
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -40,6 +40,9 @@ jobs:
 
       - name: PHPStan rule tests (Composer package)
         run: pnpm test:php
+
+      - name: PHPStan on the Composer package's own code
+        run: pnpm analyse:php
 
   testbed:
     # The Testbed App (Tracklane on the Base Kit and the Overlay, both packages linked from packages/): its ci:check,

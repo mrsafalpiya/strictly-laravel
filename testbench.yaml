@@ -1,0 +1,4 @@
+# The app Larastan boots for `pnpm analyse:php` (phpstan.neon), with the package's service provider registered as an
+# app's package discovery would, so its console commands' arguments and options are typed.
+providers:
+    - StrictlyLaravel\StrictlyServiceProvider

@@ -20,6 +20,7 @@ use Spatie\LaravelData\Support\DataProperty;
 use Spatie\TypeScriptTransformer\Actions\FindClassNameFqcnAction;
 use Spatie\TypeScriptTransformer\PhpNodes\PhpClassNode;
 use StrictlyLaravel\TypeScript\ClassTemplates;
+use StrictlyLaravel\TypeScript\PhpDocTypeTranspiler;
 use StrictlyLaravel\TypeScript\PropertyAnnotation;
 
 /**
@@ -91,6 +92,22 @@ final readonly class TemplateArgument
         $type = self::resolve($item ?? $node, $annotation->scope, $owner, $arguments, 0);
 
         return $type->generic ? ['type' => $type, 'items' => $item !== null] : null;
+    }
+
+    /**
+     * The templates of a generic Data class bound by the type arguments a PHPDoc type writes it with, such as a JSON
+     * endpoint's `@return ListingData<IssueData>` (Problem P-197), read in the scope that declares that type.
+     *
+     * @param  class-string<Data>  $class
+     * @param  list<TypeNode>  $typeArguments
+     * @return array<string, self>
+     */
+    public static function bind(string $class, array $typeArguments, PhpClassNode $scope): array
+    {
+        /** @var class-string $owner the type arguments may name its own templates */
+        $owner = $scope->getName();
+
+        return self::data($class, $typeArguments, $scope, $owner, [], 0)->arguments;
     }
 
     /**
@@ -197,7 +214,7 @@ final readonly class TemplateArgument
             $class = self::className($type->type->name, $scope);
 
             return $class !== null && self::isConcreteData($class)
-                ? self::data($class, $type->genericTypes, $scope, $owner, $arguments, $depth + 1)
+                ? self::data($class, array_values($type->genericTypes), $scope, $owner, $arguments, $depth + 1)
                 : new self((string) $type);
         }
 
@@ -278,6 +295,8 @@ final readonly class TemplateArgument
 
     /**
      * @param  class-string  $class
+     *
+     * @phpstan-assert-if-true class-string<Data> $class
      */
     private static function isConcreteData(string $class): bool
     {
@@ -298,8 +317,6 @@ final readonly class TemplateArgument
      */
     private static function className(string $name, PhpClassNode $scope): ?string
     {
-        $class = (new FindClassNameFqcnAction)->execute($scope, $name);
-
-        return class_exists($class) || interface_exists($class) ? $class : null;
+        return PhpDocTypeTranspiler::loadable((new FindClassNameFqcnAction)->execute($scope, $name));
     }
 }

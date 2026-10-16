@@ -1,0 +1,11 @@
+# PHPStan on the Composer package's own code (`pnpm analyse:php`, Problem P-203), with the settings and rules an app
+# gets from the package's extension: level max, strict rules, bleeding edge, full type coverage, and the Strictly
+# Laravel rules. Larastan boots a Testbench app for it (testbench.yaml registers the package's service provider).
+includes:
+    - packages/laravel/extension.neon
+
+parameters:
+    paths:
+        - packages/laravel/src
+        # Classes that use the package's traits as an app does: PHPStan analyses a trait only in a class that uses it.
+        - packages/laravel/tests/Analysis

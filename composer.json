@@ -4,12 +4,21 @@
     "type": "project",
     "license": "MIT",
     "require-dev": {
+        "inertiajs/inertia-laravel": "^3.0",
+        "larastan/larastan": "^3.9",
+        "laravel/boost": "^2.10",
         "laravel/installer": "^5.32",
         "laravel/pint": "^1.32",
+        "laravel/wayfinder": "^0.1.14",
         "nette/neon": "^3.4",
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest-plugin-phpstan": "^5.2",
         "phpstan/phpstan": "^2.3",
+        "phpstan/phpstan-strict-rules": "^2.1",
         "phpunit/phpunit": "^13.4",
-        "spatie/laravel-data": "^4.23"
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-typescript-transformer": "^3.3",
+        "tomasvotruba/type-coverage": "^2.5"
     },
     "autoload-dev": {
         "psr-4": {
@@ -17,11 +26,13 @@
             "StrictlyLaravel\\Tests\\": "packages/laravel/tests/"
         },
         "classmap": [
-            "packages/laravel/tests/PHPStan/data/",
-            "packages/laravel/tests/PHPStan/stubs/"
+            "packages/laravel/tests/PHPStan/data/"
         ]
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": false
+        }
     }
 }

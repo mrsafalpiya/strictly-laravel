@@ -14,7 +14,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 |---|---|
 | `open` | Not yet closed by the Overlay. The manual workaround is what an app does today, or what the Reference Implementation did by hand. |
 | `accepted gap` | Deliberately left open. The entry carries the **Reasoning**, and the gap is documented for app developers. |
-| `closed` | The Overlay closes it. The entry names the harness scenarios that prove it (a passing one for the typed way, a breaking one for the Problem) under **Closed by**. |
+| `closed` | The Overlay closes it. The entry names the harness scenarios that prove it (a passing one for the typed way, a breaking one for the Problem) under **Closed by**. A Problem in the Composer package's own code rather than in an app (P-203) has no app to run a scenario on: it is closed by a root check (`pnpm analyse:php`, `pnpm test:php`), which **Closed by** names instead, with how it fails on the Problem. |
 
 **Fields.** Each entry has: Type Boundary (one of the glossary's, or "every Type Boundary" for Problems in generation or verification as a whole), Source, Upstream, Status, Reproduction and Manual workaround. Accepted gaps add Reasoning; closed Problems add Closed by.
 
@@ -23,6 +23,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 **Reference Implementation names.** Manual workarounds use the Reference Implementation's names: `config/types.php`, the `type-safety/*` lint rules, the `@/lib/*` modules, and the template's and Tracklane's classes and files. That code was retired once the Overlay had extracted it (#31), so these names describe what it did; its overview and standard are kept in the research docs (below). In the Overlay the config is `config/strictly.php` and suppressible rules are `strictly/<rule>` (oxlint) and `strictly.<rule>` (PHPStan), per ADR-0007.
 
 **Adding a Problem.** Copy an entry, take the next free ID, add a row to the index, and give a reproduction concrete enough to become a breaking scenario.
+
+**Checking it.** `harness/tests/problem-register.test.ts` (one of `pnpm test`'s fast test files; `node --test harness/tests/problem-register.test.ts` runs it alone) fails, naming the Problem, when an index row has no entry or an entry no index row, an ID appears twice, a row's status differs from its entry's **Status**, a status isn't one of the three above, a `closed` entry lacks **Closed by** or an `accepted gap` lacks **Reasoning**. Run it after adding a Problem or changing a status, since both edit two places.
 
 **Sources** cited by the entries:
 
@@ -118,8 +120,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | closed |
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
 | [P-179](#p-179) | A closure route that answers JSON without a Data class isn't rejected | JSON endpoints | closed |
+| [P-202](#p-202) | A closure route that returns a Data class in a union isn't rejected | JSON endpoints | closed |
 | [P-180](#p-180) | JSON an action builds itself has no response type | JSON endpoints | accepted gap |
-| [P-197](#p-197) | A JSON endpoint that returns a generic Data class fails `tsc` in its route functions | JSON endpoints | open |
+| [P-197](#p-197) | A JSON endpoint that returns a generic Data class fails `tsc` in its route functions | JSON endpoints | closed |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
@@ -134,7 +137,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | closed |
 | [P-191](#p-191) | An Echo channel object the lint rule can't trace still listens untyped | broadcasting | accepted gap |
-| [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | open |
+| [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | accepted gap |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
@@ -179,6 +182,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-082](#p-082) | A release's app-side change the installer can't make goes unnoticed | every Type Boundary | closed |
 | [P-124](#p-124) | `ci:check` fails in a fresh clone because feature tests need a Vite build | every Type Boundary | closed |
 | [P-146](#p-146) | AI coding agents are taught the untyped way | every Type Boundary | closed |
+| [P-203](#p-203) | Nothing runs PHPStan on the Composer package's own code | every Type Boundary | closed |
 
 ## Routes
 
@@ -647,7 +651,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `LiteralTypesRuleInferrer` adds `in:monday,sunday` from the PHPDoc literal union.
 
-**Closed by:** [`LiteralRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/LiteralRuleInferrer.php) adds `in:` from the PHPDoc literal union the TypeScript is generated from, read where typescript-transformer reads it ([`PropertyAnnotation`](../packages/laravel/src/TypeScript/PropertyAnnotation.php)): string, int and float literals, class constants and enum cases, optionally `|null`; a list of literals has every item validated. A `true`/`false` literal adds no rule: [P-098](#p-098). Scenarios: `literal-union-input-validated-passes`, `value-outside-literal-union-fails-test`.
+**Closed by:** [`LiteralRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/LiteralRuleInferrer.php) adds `in:` from the PHPDoc literal union the TypeScript is generated from, read where typescript-transformer reads it ([`PropertyAnnotation`](../packages/laravel/src/TypeScript/PropertyAnnotation.php)): string, int and float literals, class constants and enum cases, optionally `|null`; a list of literals has every item validated. A `true`/`false` literal adds no rule: [P-098](#p-098). Scenarios: `literal-union-input-validated-passes` (a literal union and a list of literals, `list<'low'|'high'>`), `value-outside-literal-union-fails-test`, `literal-list-item-outside-union-fails-test`.
 
 ### P-098
 
@@ -1257,7 +1261,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** eval-02 §3
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a deferred prop built with `Inertia::defer(fn () => …)` generates `stats: ProjectStatsData | undefined` with the key required; on first load the key is absent.
 
@@ -1287,7 +1291,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** overview §2; ecosystem B.2; type-safety rule 9
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `router.reload({ only: ['stast'] })`, `<Deferred data="stast">`, `<WhenVisible data="…">`, `<InfiniteScroll data="…">` all compile; Inertia's `<Deferred data: string | string[]>` isn't keyed to the page's props. `router.optimistic<TProps>()` takes any type. A renamed prop silently loads nothing.
 
@@ -1302,7 +1306,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props (partial reloads)
 - **Source:** eval-02 §3
 - **Upstream:** none (expected Inertia behaviour)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a partial reload with `only: ['project.stats']` returns only that subtree; checking it as the full page props fails, and checking it loosely proves nothing. Separately, a requested key missing from the response goes unnoticed.
 
@@ -1434,6 +1438,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Closed by:** `strictly.closureRoute` ([`ClosureRouteRule`](../packages/laravel/src/PHPStan/ClosureRouteRule.php)) also rejects a closure route whose return type, declared or inferred (`fn () => Project::all()`), is or holds something Laravel answers as JSON that no Data class types: `array` or `iterable`, a Collection, a laravel-data collection, a paginator, a model or an API resource (anything `Arrayable`, `Jsonable`, `JsonSerializable`, `ArrayObject` or `stdClass` that is neither a Data class nor a response), `The closure route GET projects/recent returns array, which Laravel sends as JSON that nothing types: Wayfinder types a route function's response only from a controller action that returns a Data class, so useRouteHttp() types its result unknown, and no Contract checks it.` Its tip points at a controller action that returns one Data class holding the value. The test is the one `strictly.jsonResponse` reads controller actions with ([P-108](#p-108)), one helper for both rules ([`UntypedJson`](../packages/laravel/src/PHPStan/UntypedJson.php)). Pages, redirects, `Response`, downloads, views, strings and a `JsonResponse` ([P-048](#p-048)) stay allowed. The PHPStan rule-test kit covers a declared `array`, an inferred Collection, a model, a union with a redirect and the allowed responses. Scenarios: `closure-routes-without-data-classes-pass` (a closure route returning a `JsonResponse` passes), `json-from-closure-route-fails-phpstan`.
 
+### P-202
+
+**A closure route that returns a Data class in a union isn't rejected**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-179](#p-179) (#57)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `Route::get('stats', fn (): StatsData|RedirectResponse => …)->name('stats')`, or a closure whose return paths PHPStan infers as such a union: `strictly.closureRoute` rejected a Data class ([P-109](#p-109)) only when the whole return type was one, and a Data class isn't untyped JSON ([P-179](#p-179)), so the route passed. `RouteResponse` reads a union return type as declaring no response, so `useRouteHttp(stats())` types its result `unknown`, as in P-109. On a controller action, `strictly.jsonResponse` already rejects it ([P-108](#p-108)).
+
+**Manual workaround:** return JSON from controller actions only.
+
+**Closed by:** `strictly.closureRoute` ([`ClosureRouteRule`](../packages/laravel/src/PHPStan/ClosureRouteRule.php)) rejects a closure route whose return type, declared or inferred, holds a Data class other than a Page class anywhere: on its own, nullable or in a union, with P-109's message and tip: `The closure route GET stats returns App\Data\StatsData|Illuminate\Http\RedirectResponse, but Wayfinder types a route function's response only from a controller action: useRouteHttp() types its result unknown.` What counts as such a Data class is one helper both rules use, [`DataResponse`](../packages/laravel/src/PHPStan/DataResponse.php) (a Data class, as `RouteResponse` reads one, that isn't a Page), so `strictly.closureRoute` and `strictly.jsonResponse` can't drift. Page classes on their own, nullable or in a union (`DashboardPage|RedirectResponse`) stay allowed, as do the responses P-179 allows. The PHPStan rule-test kit covers a declared union, a nullable Data class, a union inferred from two return paths and the allowed Page unions. Scenarios: `data-union-response-from-closure-route-fails-phpstan`, `closure-routes-without-data-classes-pass` (a closure route returning `DashboardPage|RedirectResponse` passes).
+
 ### P-180
 
 **JSON an action builds itself has no response type**
@@ -1456,11 +1475,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** found while closing [P-185](#p-185)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `/** @return ListingData<IssueData> */ public function show(): ListingData`, with `ListingData` a generic Data class (`@template TItem of Data`). Its route functions are branded with the action's native return type, `WithResponse<import('@/generated').ListingData>` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)), so `ci:check:tsc` fails in the generated `resources/js/actions/…` and `resources/js/routes/…` files with `error TS2314: Generic type 'ListingData' requires 1 type argument(s).` The response's Contract and Contract Coverage read the same native type, so the `@return` type argument reaches neither: Contract Coverage walks the items as the template's bound ([P-185](#p-185)).
 
 **Manual workaround:** return a non-generic Data class (`IssueListingData` with `list<IssueData>`), or one whose property is the generic class with its type argument (`BacklogData` with `/** @var ListingData<IssueData> */ public ListingData $backlog`), which Contract Coverage walks with it.
+
+**Closed by:** [`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php) reads the action's `@return` when it writes the native return class with type arguments (`@return ListingData<IssueData>` on `: ListingData`), with typescript-transformer's PHPDoc reader and the transpiler the generated Data class types come from ([`DataClassTransformer`](../packages/laravel/src/TypeScript/DataClassTransformer.php)). That one result brands the route functions (`WithResponse<import('@/generated').ListingData<import('@/generated').IssueData>>`), types the response's JSON Contract, and gives Contract Coverage the templates bound by [`TemplateArgument`](../packages/laravel/src/Coverage/TemplateArgument.php), so the items are walked as `IssueData` and a gap names it: `✗ IssueData.assignee is only ever null (at GET /backlog/issues › items[].assignee): …`. A `@return` with no type argument, or none at all, leaves the response the native class: PHPStan (`missingType.generics`) and `tsc` (TS2314) reject it, and Contract Coverage falls back to the template's bound ([P-185](#p-185)). There is deliberately no generator default for the template (`TItem extends IssueData = IssueData`), which would hide that error. Scenarios: `json-response-generic-data-typed-passes`, `json-response-generic-item-wrong-field-fails-tsc`, `json-response-generic-item-only-null-fails-coverage`.
 
 ### P-050
 
@@ -1685,11 +1706,13 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-148](#p-148)
 - **Upstream:** by design: Echo's `whisper(eventName, data)` and `listenForWhisper(event, callback)` take any name and any data
-- **Status:** open
+- **Status:** accepted gap
 
 **Reproduction:** one component calls `channel()?.whisper('typing', { name })` and another `channel()?.listenForWhisper('typng', (e: { user: string }) => …)`. Both pass `tsc` and lint: the name is misspelt and the payload's type disagrees with what is sent, so the listener never fires, or reads a field that isn't there. Whispers go from client to client without the server, so no PHP class describes them and no Contract records them.
 
 **Manual workaround:** keep each whisper's name and payload type in one shared TypeScript module and import it on both sides.
+
+**Reasoning:** a whisper goes from one client to another through the WebSocket server without reaching the app, so no PHP class describes it and there is no Source of Truth to generate its name and payload from (ADR-0002). Declaring each whisper's Data class in PHP would make that class describe a message PHP never sends, a new kind of Source of Truth that needs its own ADR, on top of a generator change, a hook and a lint rule. Declaring whispers in TypeScript instead (a `defineWhispers<{ typing: { name: string } }>()` helper) would put a Source of Truth outside PHP, against ADR-0002. Whispers are rare (typing indicators, live cursors), so neither is worth it yet. Revisit with PHP-declared whispers if the Testbed App or a real app starts using them: an attribute on the channel class next to ADR-0010's `#[BroadcastChannel]`, naming each whisper's Data class; a generated `ChannelWhispers` in `@/generated/broadcasting`; a `useWhisper(channel, name)` hook; and `strictly/typed-broadcasts` rejecting raw `whisper()` and `listenForWhisper()`.
 
 ## Translations
 
@@ -2023,7 +2046,7 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 
 **Manual workaround:** render the same Data class in a prop Contract Coverage does walk, or use a non-generic Data class per item type (`IssueListingData` with `list<IssueData>`).
 
-**Closed by:** [`TemplateArgument`](../packages/laravel/src/Coverage/TemplateArgument.php) binds each template of a generic Data class to the type argument of the use being walked, read from the PHPDoc type its TypeScript type is generated from: a page prop's or a Data property's (`/** @param ListingData<IssueData> $backlog */`), or a list's item (`list<ListingData<IssueData>>`). The bindings are passed down, so a template a generic class hands on to another (`BoardData<IssueData>` with `@param list<ListingData<TItem>> $columns`) is bound at any depth. [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php) walks a template-typed property (`TItem`, `list<TItem>`, `array<string, TItem>`) as that Data class, its variants if the argument is a union, and keeps a template-typed list's emptiness per use (`ListingData<IssueData>.items is only ever empty`), since each use is its own TypeScript type. An item's nullable field only ever `null` now fails: `✗ IssueData.assignee is only ever null (at backlog › backlog.items[].assignee): …`. A use with no type argument, which PHPStan (`missingType.generics`) and `tsc` (TS2314) already reject, falls back to the template's bound when that is one Data class; otherwise Contract Coverage reports the property instead of passing it: `✗ ListingData.items holds TItem with no Data class (at backlog › backlog.items): give ListingData a type argument where it is used (ListingData<SomeData>), or bound TItem by one Data class, …`. `strictly.dataShape` ([`DataShapeRule`](../packages/laravel/src/PHPStan/DataShapeRule.php)) now resolves a generic Data class's template-typed properties with each use's type arguments, so `ListingData<IssueData|MilestoneData>` fails with the message and tip `list<IssueData|MilestoneData>` gets, as does an argument that makes the item a list. The templates and their bounds are read by [`ClassTemplates`](../packages/laravel/src/TypeScript/ClassTemplates.php), which the generated types' template bounds ([P-062](#p-062)) now share. A JSON endpoint's `@return ListingData<IssueData>` is not read: such an endpoint fails `tsc` first ([P-197](#p-197)), and Contract Coverage walks its response with the templates' bounds. Scenarios: `generic-data-item-only-null-fails-coverage`, `generic-data-every-item-shape-passes-coverage`, `generic-data-nested-item-only-null-fails-coverage`, `generic-data-bound-item-only-null-fails-coverage`, `generic-data-without-type-argument-fails-coverage`, `generic-data-union-type-argument-fails-phpstan`; the rule-test kit's `DataShapeRuleTest` covers a union argument, one handed on through a nested generic class, a scalar union, a list argument, a template used as a value and a self-referential generic class.
+**Closed by:** [`TemplateArgument`](../packages/laravel/src/Coverage/TemplateArgument.php) binds each template of a generic Data class to the type argument of the use being walked, read from the PHPDoc type its TypeScript type is generated from: a page prop's or a Data property's (`/** @param ListingData<IssueData> $backlog */`), or a list's item (`list<ListingData<IssueData>>`). The bindings are passed down, so a template a generic class hands on to another (`BoardData<IssueData>` with `@param list<ListingData<TItem>> $columns`) is bound at any depth. [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php) walks a template-typed property (`TItem`, `list<TItem>`, `array<string, TItem>`) as that Data class, its variants if the argument is a union, and keeps a template-typed list's emptiness per use (`ListingData<IssueData>.items is only ever empty`), since each use is its own TypeScript type. An item's nullable field only ever `null` now fails: `✗ IssueData.assignee is only ever null (at backlog › backlog.items[].assignee): …`. A use with no type argument, which PHPStan (`missingType.generics`) and `tsc` (TS2314) already reject, falls back to the template's bound when that is one Data class; otherwise Contract Coverage reports the property instead of passing it: `✗ ListingData.items holds TItem with no Data class (at backlog › backlog.items): give ListingData a type argument where it is used (ListingData<SomeData>), or bound TItem by one Data class, …`. `strictly.dataShape` ([`DataShapeRule`](../packages/laravel/src/PHPStan/DataShapeRule.php)) now resolves a generic Data class's template-typed properties with each use's type arguments, so `ListingData<IssueData|MilestoneData>` fails with the message and tip `list<IssueData|MilestoneData>` gets, as does an argument that makes the item a list. The templates and their bounds are read by [`ClassTemplates`](../packages/laravel/src/TypeScript/ClassTemplates.php), which the generated types' template bounds ([P-062](#p-062)) now share. A JSON endpoint's response is walked with the type arguments of its action's `@return ListingData<IssueData>` the same way ([P-197](#p-197)). Scenarios: `generic-data-item-only-null-fails-coverage`, `generic-data-every-item-shape-passes-coverage`, `generic-data-nested-item-only-null-fails-coverage`, `generic-data-bound-item-only-null-fails-coverage`, `generic-data-without-type-argument-fails-coverage`, `generic-data-union-type-argument-fails-phpstan`; the rule-test kit's `DataShapeRuleTest` covers a union argument, one handed on through a nested generic class, a scalar union, a list argument, a template used as a value and a self-referential generic class.
 
 ### P-125
 
@@ -2370,6 +2393,21 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** paste the type-safety standard (the Reference Implementation's `docs/type-safety.md`, kept as [`research/type-safety.md`][type-safety]) into the app's `CLAUDE.md` and keep it in step with each release by hand.
 
 **Closed by:** the Composer package requires `laravel/boost` and ships a Boost core guideline (`resources/boost/guidelines/core.md`: the condensed standard, what checks what, and that it overrides Boost's generic Inertia guidance) and one skill per workflow (`resources/boost/skills/strictly-*/SKILL.md`), which Boost reads from the installed package, so they update with it. Boost installs a third-party package's guidance only when the app's `boost.json` lists it, and the Base Kit gitignores `boost.json` along with every agent file Boost writes; [`BoostGuidance`](../packages/laravel/src/Boost/BoostGuidance.php) adds the package to `boost.json` before `boost:install` and `boost:update` run, so no guidance is selected or committed by hand. The installer hook `Composer scripts: boost:update after composer update` ([`BoostUpdateScript`](../packages/laravel/src/Install/BoostUpdateScript.php)) runs `boost:update` after `composer update`, as `laravel new` does for an app it installs Boost in. Each skill's worked example is a scenario that passes the full `ci:check`, and `harness/tests/boost-guidance.test.ts` fails when a skill's code drifts from its scenario, quotes a diagnostic no breaking scenario produces, or names a lint rule or PHPStan identifier that doesn't exist. Scenarios: `skill-add-page-example-passes`, `skill-add-form-example-passes`, `skill-add-query-filters-example-passes`, `skill-add-json-endpoint-example-passes`, `skill-add-deferred-props-example-passes`, `skill-add-broadcast-event-example-passes`, `skill-add-translation-example-passes`, `skill-close-coverage-gap-example-passes`, `skill-close-coverage-gap-example-gap-fails-coverage`. Harness tests: "Boost installs the package's core guideline and every skill, and nothing it writes is committed (P-146)" and "composer update runs boost:update; an app that lost that script fails ci:check:install until strictly:install restores it (P-146)".
+
+### P-203
+
+**Nothing runs PHPStan on the Composer package's own code**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #66, after #65 shipped a type error in a Problem marked closed
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** change a method in `packages/laravel/src` so that it returns a type its signature rejects, as `LiteralRuleInferrer::rule()` did before #65 (declared `?ValidationAttribute`, returned laravel-data's `Rule`). The root checks pass: `pnpm typecheck` is `tsc` on the harness and the oxlint plugin, `pnpm lint:php` is Pint, and `pnpm test:php` runs the PHPStan rules' tests. So does every app's `ci:check:phpstan`, which analyses the app, not the package in `vendor/`. The error reaches users unless some scenario happens to run that line. The first run of PHPStan on the package found 68 errors.
+
+**Manual workaround:** run PHPStan on `packages/laravel/src` by hand, with an app's settings, from the Testbed App.
+
+**Closed by:** `pnpm analyse:php`, which runs PHPStan on `packages/laravel/src` with the root [`phpstan.neon`](../phpstan.neon). It includes the package's `extension.neon` itself, so the package gets what an app gets: level max, strict rules, bleeding edge, full type coverage, Larastan, and the Strictly Laravel rules. Only `strictly.inertiaRender` and `strictly.inertiaFlash` fire on the package's own code, at `Page::render()` and `Flash::flash()`, the calls those rules send apps to, and each takes a suppression with its reason (ADR-0007). Larastan boots a Testbench app with the package's service provider registered (`testbench.yaml`). The analysis also covers `packages/laravel/tests/Analysis`, classes that use `BroadcastsData` and `RecordsContracts` as an app does, since PHPStan analyses a trait only in a class that uses it. There is no baseline: the 68 errors are fixed, and new code must pass. CI's root-checks job runs `pnpm analyse:php` next to `pnpm test:php` (`.github/workflows/ci.yml`). This is a check on the package's own code, so no app-level harness scenario proves it. With #65's fix reverted, `pnpm analyse:php` fails with ``Method StrictlyLaravel\Workarounds\LaravelData\LiteralRuleInferrer::rule() should return Spatie\LaravelData\Attributes\Validation\ValidationAttribute|null but returns Spatie\LaravelData\Attributes\Validation\Rule|null.``
 
 ## Findings not registered
 

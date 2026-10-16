@@ -6,8 +6,10 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\DataConfig;
 use stdClass;
 use StrictlyLaravel\Broadcasting\BroadcastEvent;
+use StrictlyLaravel\Inertia\Flash;
 use StrictlyLaravel\Inertia\GlobalDataClasses;
 use StrictlyLaravel\Inertia\Page;
+use StrictlyLaravel\Inertia\Shared;
 use StrictlyLaravel\Routes\RouteResponse;
 
 /**
@@ -55,7 +57,7 @@ final readonly class ContractCoverage
      * @param  array<string, class-string<Page>>  $pages  page component => Page class (PageLocations::pages())
      * @param  GlobalDataClasses|null  $global  the shared props and flash Data classes (GlobalDataClasses::in())
      * @param  array<string, class-string>  $formEndpoints  endpoint => input Data class (FormEndpoints::all())
-     * @param  array<string, string>  $jsonEndpoints  endpoint => response Data class or declared TypeScript type (JsonEndpoints::all())
+     * @param  array<string, RouteResponse>  $jsonEndpoints  endpoint => response (JsonEndpoints::all())
      * @param  list<array{action: string, kind: 'input'|'query', class: class-string, endpoints: list<string>}>  $vendorPayloads  the declared vendor inputs and queries (VendorDeclarations::payloads())
      * @param  array<string, BroadcastEvent>  $broadcasts  the broadcast events by the name Echo listens for them (BroadcastEvents::in())
      * @param  list<string>  $publicChannels  the patterns of the public channels config/strictly.php declares (PublicChannels::declared())
@@ -92,9 +94,10 @@ final readonly class ContractCoverage
 
         foreach ($records as $record) {
             $input = $record->input ?? null;
+            $endpoint = $record->endpoint ?? '';
 
             if ($record->kind === 'form' && ($record->accepted ?? null) instanceof stdClass && is_string($input) && is_subclass_of($input, Data::class)) {
-                $accepted[$input][(string) ($record->endpoint ?? '')][] = $record->accepted;
+                $accepted[$input][is_string($endpoint) ? $endpoint : ''][] = $record->accepted;
             }
         }
 
@@ -157,7 +160,7 @@ final readonly class ContractCoverage
             $seen = [];
 
             foreach ($requested as $endpoint) {
-                $seen += $used[$kind][$endpoint];
+                $seen += $used[$kind][$endpoint] ?? [];
             }
 
             foreach ($this->config->getDataClass($payload['class'])->properties as $property) {
@@ -185,7 +188,7 @@ final readonly class ContractCoverage
 
     /**
      * @param  list<stdClass>  $records
-     * @param  class-string|null  $class
+     * @param  class-string<Shared>|null  $class
      * @return list<Gap>
      */
     private function shared(array $records, ?string $class, ShapeCoverage $shapes): array
@@ -218,7 +221,7 @@ final readonly class ContractCoverage
 
     /**
      * @param  list<stdClass>  $records
-     * @param  class-string|null  $class
+     * @param  class-string<Flash>|null  $class
      * @return list<Gap>
      */
     private function flash(array $records, ?string $class, ShapeCoverage $shapes): array
@@ -358,7 +361,7 @@ final readonly class ContractCoverage
 
     /**
      * @param  list<stdClass>  $records
-     * @param  array<string, string>  $endpoints
+     * @param  array<string, RouteResponse>  $endpoints
      * @return list<Gap>
      */
     private function jsonEndpoints(array $records, array $endpoints, ShapeCoverage $shapes): array
@@ -373,23 +376,24 @@ final readonly class ContractCoverage
 
         $gaps = [];
 
-        foreach ($endpoints as $endpoint => $class) {
+        foreach ($endpoints as $endpoint => $response) {
+            $dataClass = $response->dataClass();
+
             if (! isset($responses[$endpoint])) {
                 $gaps[] = new Gap(
                     "{$endpoint}: no feature test calls this JSON endpoint",
                     [],
-                    sprintf('add a feature test that calls %s and gets a successful %s response', $endpoint, RouteResponse::dataClass($class) ?? "`{$class}`"),
+                    sprintf('add a feature test that calls %s and gets a successful %s response', $endpoint, $dataClass ?? "`{$response->declared}`"),
                     unexercised: true,
                 );
 
                 continue;
             }
 
-            // A vendor response declared as a TypeScript type has no shapes to observe (Problem P-051).
-            $dataClass = RouteResponse::dataClass($class);
-
+            // A vendor response declared as a TypeScript type has no shapes to observe (Problem P-051). A generic Data
+            // class is walked with the type arguments of the action's `@return` (Problem P-197).
             if ($dataClass !== null) {
-                $shapes->observe($dataClass, $responses[$endpoint], new Origin($endpoint, "calls {$endpoint}"));
+                $shapes->observe($dataClass, $responses[$endpoint], new Origin($endpoint, "calls {$endpoint}"), arguments: $response->arguments);
             }
         }
 
@@ -411,7 +415,9 @@ final readonly class ContractCoverage
                 $payloads[$record->event][] = $record->payload ?? null;
 
                 foreach (is_array($record->patterns ?? null) ? $record->patterns : [] as $pattern) {
-                    $patterns[$record->event][(string) $pattern] = true;
+                    if (is_string($pattern)) {
+                        $patterns[$record->event][$pattern] = true;
+                    }
                 }
             }
         }
