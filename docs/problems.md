@@ -318,7 +318,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** take query classes, and read query strings, in controller actions only (as for inputs, [P-097](#p-097), and responses, [P-109](#p-109)).
 
-**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a query class: `The closure route GET projects takes App\Data\ProjectFiltersData, a query class, but Wayfinder types a route function's query option only from a controller action: no route function can send its keys.` `strictly.queryRead` ([P-106](#p-106)) also rejects reading the query string anywhere in a closure route: `A closure route reads the query string from the request, where nothing types it: a route function sends only the keys of a controller action's query class.` Scenarios: `closure-routes-without-data-classes-pass`, `query-class-in-closure-route-fails-phpstan`.
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a query class: `The closure route GET projects takes App\Data\ProjectFiltersData, a query class, but Wayfinder types a route function's query option only from a controller action: no route function can send its keys.` `strictly.queryRead` ([P-106](#p-106)) also rejects reading the query string anywhere in a closure route: `A closure route reads the query string from the request with query(), where nothing types it: a route function sends only the keys of a controller action's query class.` Scenarios: `closure-routes-without-data-classes-pass`, `query-class-in-closure-route-fails-phpstan`.
 
 ### P-171
 
