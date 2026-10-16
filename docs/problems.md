@@ -120,6 +120,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | closed |
 | [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
 | [P-179](#p-179) | A closure route that answers JSON without a Data class isn't rejected | JSON endpoints | closed |
+| [P-202](#p-202) | A closure route that returns a Data class in a union isn't rejected | JSON endpoints | closed |
 | [P-180](#p-180) | JSON an action builds itself has no response type | JSON endpoints | accepted gap |
 | [P-197](#p-197) | A JSON endpoint that returns a generic Data class fails `tsc` in its route functions | JSON endpoints | open |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
@@ -1435,6 +1436,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** return JSON from controller actions only, as one Data class.
 
 **Closed by:** `strictly.closureRoute` ([`ClosureRouteRule`](../packages/laravel/src/PHPStan/ClosureRouteRule.php)) also rejects a closure route whose return type, declared or inferred (`fn () => Project::all()`), is or holds something Laravel answers as JSON that no Data class types: `array` or `iterable`, a Collection, a laravel-data collection, a paginator, a model or an API resource (anything `Arrayable`, `Jsonable`, `JsonSerializable`, `ArrayObject` or `stdClass` that is neither a Data class nor a response), `The closure route GET projects/recent returns array, which Laravel sends as JSON that nothing types: Wayfinder types a route function's response only from a controller action that returns a Data class, so useRouteHttp() types its result unknown, and no Contract checks it.` Its tip points at a controller action that returns one Data class holding the value. The test is the one `strictly.jsonResponse` reads controller actions with ([P-108](#p-108)), one helper for both rules ([`UntypedJson`](../packages/laravel/src/PHPStan/UntypedJson.php)). Pages, redirects, `Response`, downloads, views, strings and a `JsonResponse` ([P-048](#p-048)) stay allowed. The PHPStan rule-test kit covers a declared `array`, an inferred Collection, a model, a union with a redirect and the allowed responses. Scenarios: `closure-routes-without-data-classes-pass` (a closure route returning a `JsonResponse` passes), `json-from-closure-route-fails-phpstan`.
+
+### P-202
+
+**A closure route that returns a Data class in a union isn't rejected**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-179](#p-179) (#57)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `Route::get('stats', fn (): StatsData|RedirectResponse => …)->name('stats')`, or a closure whose return paths PHPStan infers as such a union: `strictly.closureRoute` rejected a Data class ([P-109](#p-109)) only when the whole return type was one, and a Data class isn't untyped JSON ([P-179](#p-179)), so the route passed. `RouteResponse` reads a union return type as declaring no response, so `useRouteHttp(stats())` types its result `unknown`, as in P-109. On a controller action, `strictly.jsonResponse` already rejects it ([P-108](#p-108)).
+
+**Manual workaround:** return JSON from controller actions only.
+
+**Closed by:** `strictly.closureRoute` ([`ClosureRouteRule`](../packages/laravel/src/PHPStan/ClosureRouteRule.php)) rejects a closure route whose return type, declared or inferred, holds a Data class other than a Page class anywhere: on its own, nullable or in a union, with P-109's message and tip: `The closure route GET stats returns App\Data\StatsData|Illuminate\Http\RedirectResponse, but Wayfinder types a route function's response only from a controller action: useRouteHttp() types its result unknown.` What counts as such a Data class is one helper both rules use, [`DataResponse`](../packages/laravel/src/PHPStan/DataResponse.php) (a Data class, as `RouteResponse` reads one, that isn't a Page), so `strictly.closureRoute` and `strictly.jsonResponse` can't drift. Page classes on their own, nullable or in a union (`DashboardPage|RedirectResponse`) stay allowed, as do the responses P-179 allows. The PHPStan rule-test kit covers a declared union, a nullable Data class, a union inferred from two return paths and the allowed Page unions. Scenarios: `data-union-response-from-closure-route-fails-phpstan`, `closure-routes-without-data-classes-pass` (a closure route returning `DashboardPage|RedirectResponse` passes).
 
 ### P-180
 
