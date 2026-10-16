@@ -688,10 +688,36 @@ const untypedEchoHooks = new Set(['useEcho', 'useEchoPresence', 'useEchoPublic']
  * P-142: Echo's React hooks that read a framework broadcast (a notification's `toBroadcast()`, a model's
  * `BroadcastsEvents`), whose payload no Data class types, keyed by what the app broadcasts alongside instead.
  */
+const notificationBroadcast = { reads: "a broadcast notification's", alongside: 'the notification' };
 const frameworkBroadcastHooks = new Map([
-    ['useEchoNotification', { reads: "a broadcast notification's", alongside: 'the notification' }],
+    ['useEchoNotification', notificationBroadcast],
     ['useEchoModel', { reads: "a model broadcast's", alongside: 'the model change' }],
 ]);
+
+/** What listens for a broadcast event instead of Echo's hooks and channel objects. */
+const useChannelEvent = '`useChannelEvent(channel, event, callback)` from `@/generated/broadcasting`';
+
+/**
+ * `typed-broadcasts`' messages, each about one of Echo's hooks (`` `useEcho()` ``) or a channel object's method
+ * (`` channel `listen()` ``).
+ */
+const echoMessages = {
+    /** @param {string} subject */
+    untypedEvent: (subject) =>
+        `Echo's ${subject} takes any event name and a hand-typed payload: use ${useChannelEvent}, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
+    /**
+     * @param {string} subject
+     * @param {string} typedByHand  what the subject types by hand
+     */
+    untypedMembers: (subject, typedByHand) =>
+        `Echo's ${subject} ${typedByHand}: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`,
+    /**
+     * @param {string} subject
+     * @param {{ reads: string, alongside: string }} framework
+     */
+    frameworkPayload: (subject, framework) =>
+        `Echo's ${subject} reads ${framework.reads} hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside ${framework.alongside}, and listen for it with ${useChannelEvent}, which types its payload from the event's Data class.`,
+};
 
 /** P-145: Echo's React hook that hands out a presence channel, whose members' data its callbacks type by hand. */
 const untypedPresenceHook = 'usePresenceChannel';
@@ -738,10 +764,9 @@ const chainedChannelMethods = new Set([
     'on',
 ]);
 
-const listenMessage = (/** @type {string} */ method) =>
-    `Echo's channel \`${method}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`;
+const listenMessage = (/** @type {string} */ method) => echoMessages.untypedEvent(`channel \`${method}()\``);
 const presenceMessage = (/** @type {string} */ method) =>
-    `Echo's channel \`${method}()\` types a presence channel's members by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`;
+    echoMessages.untypedMembers(`channel \`${method}()\``, "types a presence channel's members by hand");
 
 /**
  * P-148: a channel object's listening methods, each with what to use instead. Its other methods (whispers, leaving,
@@ -750,11 +775,7 @@ const presenceMessage = (/** @type {string} */ method) =>
 const channelListeners = new Map([
     ['listen', listenMessage],
     ['listenToAll', listenMessage],
-    [
-        'notification',
-        (/** @type {string} */ method) =>
-            `Echo's channel \`${method}()\` reads a broadcast notification's hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside the notification, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`,
-    ],
+    ['notification', (/** @type {string} */ method) => echoMessages.frameworkPayload(`channel \`${method}()\``, notificationBroadcast)],
     ['here', presenceMessage],
     ['joining', presenceMessage],
     ['leaving', presenceMessage],
@@ -833,15 +854,18 @@ const typedBroadcasts = {
             const framework = frameworkBroadcastHooks.get(hook);
 
             if (untypedEchoHooks.has(hook)) {
-                return `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`;
+                return echoMessages.untypedEvent(`\`${hook}()\``);
             }
 
             if (hook === untypedPresenceHook || (hook === 'useChannel' && joinsPresence(node))) {
-                return `Echo's \`${hook === untypedPresenceHook ? `${hook}()` : "useChannel(name, 'presence')"}\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`;
+                return echoMessages.untypedMembers(
+                    `\`${hook === untypedPresenceHook ? `${hook}()` : "useChannel(name, 'presence')"}\``,
+                    'hands out a presence channel whose members are typed by hand',
+                );
             }
 
             if (framework !== undefined) {
-                return `Echo's \`${hook}()\` reads ${framework.reads} hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside ${framework.alongside}, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`;
+                return echoMessages.frameworkPayload(`\`${hook}()\``, framework);
             }
 
             return null;
