@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Data;
+
+use Spatie\LaravelData\Data;
+
+final class MilestoneData extends Data
+{
+    public function __construct(
+        public string $title,
+        public ?string $dueOn,
+    ) {}
+}

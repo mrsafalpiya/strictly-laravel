@@ -1,0 +1,8 @@
+{
+    "problem": "P-185",
+    "description": "A generic Data class used with no type argument (PHPStan's missingType.generics suppressed) whose template's bound is laravel-data's Data base class: Contract Coverage can't tell what its items are, and fails ci:check on the property instead of passing it silently.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ ListingData.items holds TItem with no Data class (at backlog › backlog.items): give ListingData a type argument where it is used (ListingData<SomeData>), or bound TItem by one Data class, so Contract Coverage can check what it holds."
+    }
+}
