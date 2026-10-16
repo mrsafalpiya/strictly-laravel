@@ -3,8 +3,10 @@
 use App\Data\BoardData;
 use App\Data\IssueData;
 use App\Data\ListingData;
+use App\Data\ProjectData;
 use App\Pages\BacklogPage;
 use App\Pages\BoardPage;
+use App\Pages\ProjectPage;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -37,4 +39,12 @@ test('the board lists assigned and unassigned issues in its columns', function (
     ));
 
     $this->get('board')->assertOk();
+});
+
+test('the project lists assigned and unassigned issues in its backlog', function () {
+    Route::get('project', fn (): ProjectPage => new ProjectPage(
+        project: new ProjectData(name: 'Launch', backlog: new ListingData(column: 'Backlog', items: issues())),
+    ));
+
+    $this->get('project')->assertOk();
 });
