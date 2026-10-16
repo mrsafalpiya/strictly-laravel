@@ -1,0 +1,5 @@
+{
+    "problem": "P-168",
+    "description": "A controller action that takes an input class and passes it to an app action class, and one without an input class that passes the action class only what it needs from the request ($request->user()), pass the full ci:check.",
+    "expect": { "outcome": "pass" }
+}
