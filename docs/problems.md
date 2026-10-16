@@ -2122,7 +2122,7 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** issue #52
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `const project: ProjectData = JSON.parse(text)`, or a third-party function typed as returning `any`, compiles and passes lint: TypeScript lets `any` flow into any type, so the value is cast without `as`, and the rules against type assertions ([P-068](#p-068)) don't see it.
 
