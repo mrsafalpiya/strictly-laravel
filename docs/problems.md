@@ -14,7 +14,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 |---|---|
 | `open` | Not yet closed by the Overlay. The manual workaround is what an app does today, or what the Reference Implementation did by hand. |
 | `accepted gap` | Deliberately left open. The entry carries the **Reasoning**, and the gap is documented for app developers. |
-| `closed` | The Overlay closes it. The entry names the harness scenarios that prove it (a passing one for the typed way, a breaking one for the Problem) under **Closed by**. |
+| `closed` | The Overlay closes it. The entry names the harness scenarios that prove it (a passing one for the typed way, a breaking one for the Problem) under **Closed by**. A Problem in the Composer package's own code rather than in an app (P-203) has no app to run a scenario on: it is closed by a root check (`pnpm analyse:php`, `pnpm test:php`), which **Closed by** names instead, with how it fails on the Problem. |
 
 **Fields.** Each entry has: Type Boundary (one of the glossary's, or "every Type Boundary" for Problems in generation or verification as a whole), Source, Upstream, Status, Reproduction and Manual workaround. Accepted gaps add Reasoning; closed Problems add Closed by.
 
