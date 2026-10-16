@@ -2158,7 +2158,7 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 
 **Manual workaround:** run `php artisan strictly:generate` before linting.
 
-**Closed by:** the installer hook `package.json scripts: build, check and types:check generate first` ([`GenerateFirst`](../packages/laravel/src/Install/GenerateFirst.php)) now also makes `check` (which `ci:check:lint` runs) and `check:fix` run `php artisan strictly:generate` first, as `build` and `types:check` already did. Harness test: "generated TypeScript is gitignored, and ci:check, lint, typecheck and build regenerate it in a fresh clone".
+**Closed by:** the installer hook `package.json scripts: build, check and types:check generate first` ([`GenerateFirst`](../packages/laravel/src/Install/GenerateFirst.php)) now also makes `check` (which `ci:check:lint` runs) and `check:fix` run `php artisan strictly:generate` first, as `build` and `types:check` already did. An app whose `check` script lost it fails `ci:check:install`, naming the hook, until `strictly:install` runs again ([P-080](#p-080)). Scenarios: `lint-in-fresh-clone-reads-generated-types-passes`, `check-script-without-generate-fails-install-check`; harness test "generated TypeScript is gitignored, and ci:check, lint, typecheck and build regenerate it in a fresh clone".
 
 ### P-176
 

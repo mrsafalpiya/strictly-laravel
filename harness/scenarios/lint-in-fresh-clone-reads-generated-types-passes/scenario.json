@@ -1,0 +1,7 @@
+{
+    "problem": "P-193",
+    "description": "In a fresh clone, where the gitignored generated TypeScript doesn't exist yet, ci:check:lint generates it before linting, so the type-aware rules read a generated Data type as itself instead of as any.",
+    "step": "lint",
+    "delete": ["resources/js/generated", "resources/js/wayfinder", "resources/js/routes", "resources/js/actions"],
+    "expect": { "outcome": "pass" }
+}

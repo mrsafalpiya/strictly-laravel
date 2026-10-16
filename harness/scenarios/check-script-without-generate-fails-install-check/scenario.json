@@ -1,0 +1,9 @@
+{
+    "problem": "P-193",
+    "description": "An app whose check script lints without generating the types first, so a fresh clone's type-aware lint would read every generated type as any, fails ci:check until strictly:install is run again.",
+    "step": "install",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Strictly Laravel is not fully applied to this app: package.json scripts: build, check and types:check generate first (missing). Run `php artisan strictly:install`"
+    }
+}
