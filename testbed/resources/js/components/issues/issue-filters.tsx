@@ -1,6 +1,5 @@
 import { Search, X } from 'lucide-react';
 import { useState } from 'react';
-import { selectedKey } from '@/lib/keys';
 import { StatusIcon } from '@/components/domain/status-icon';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { index } from '@/routes/issues';
 import type { IssueFiltersData, IssueFormOptionsData } from '@/generated';
 import { visit } from '@mrsafalpiya/strictly-laravel/react';
+import { selectedKey } from '@mrsafalpiya/strictly-laravel/routes';
 
 const ALL = '__all';
 

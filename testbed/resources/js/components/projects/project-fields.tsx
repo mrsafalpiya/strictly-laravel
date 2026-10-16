@@ -1,4 +1,3 @@
-import { selectedKey } from '@/lib/keys';
 import { Field } from '@/components/field';
 import { ColorPicker } from '@/components/projects/color-picker';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { UpdateProjectData, UserSummaryData } from '@/generated';
 import { t } from '@/generated/translations';
+import { selectedKey } from '@mrsafalpiya/strictly-laravel/routes';
 
 const NONE = '__none';
 
