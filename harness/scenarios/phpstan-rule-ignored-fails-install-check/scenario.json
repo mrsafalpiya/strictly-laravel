@@ -1,0 +1,9 @@
+{
+    "problem": "P-190",
+    "description": "An app whose phpstan.neon ignores a Strictly Laravel PHPStan rule's errors by identifier fails ci:check:install, which says to suppress single lines with a reason instead.",
+    "step": "install",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "phpstan.neon ignores `strictly.jsonResponse` errors; Strictly Laravel has no toggles (ADR-0007)"
+    }
+}
