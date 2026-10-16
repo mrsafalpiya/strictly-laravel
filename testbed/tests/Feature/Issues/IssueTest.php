@@ -308,7 +308,8 @@ test('the activity on the issue page has an entry of every kind an issue gets', 
     $record->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: null, to: $someone));
     $record->handle($workspace, $user, $issue, new AssigneeChangedPayload(from: $someone, to: null));
     // Recorded by the Collaboration area's comments. (`member_joined` is a workspace's, shown in the activity feed.)
-    $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: 1, excerpt: 'Looks good'));
+    $comment = Comment::factory()->create(['issue_id' => $issue->id, 'user_id' => $user->id]);
+    $record->handle($workspace, $user, $issue, new CommentedPayload(commentId: $comment->id, excerpt: 'Looks good'));
 
     $this->actingAs($user)
         ->get(route('issues.show', [$workspace, $project, $issue]))

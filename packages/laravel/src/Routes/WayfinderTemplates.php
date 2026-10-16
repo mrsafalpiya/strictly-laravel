@@ -20,20 +20,23 @@ use ReflectionClass;
  *     public function index(ProjectFiltersData $filters)   (a QueryData)
  *       → index(options?: QueryOptions<ProjectFiltersData>): `index({ query: { sort: 'name' } })` typed by it
  *
+ *     public function edit()   (no QueryData, or a closure)
+ *       → edit(options?: NoQueryOptions): `edit({ query: { tab: 'password' } })` fails
+ *
  * The package's resources/wayfinder directory is prepended to the `wayfinder` view namespace, so its `method`
  * template is used instead of Wayfinder's. Rather than a copy that would drift from upstream, it renders Wayfinder's
  * own template and adds the brands to each return type (method()); a template it doesn't override (such as
  * `docblock`) is still Wayfinder's.
  *
  * Its `function-arguments` template does the same for the route parameters: a parameter bound to a model takes only
- * that model's route key (functionArguments(), Problem P-003):
+ * that model's key by the field the route binds it by (functionArguments(), Problems P-003, P-128):
  *
  *     public function show(Project $project)
- *       → show(args: { project: RouteKey<'Project', number> | { id: RouteKey<'Project', number> } } | …)
+ *       → show(args: { project: Key<'Project', 'id', number> | { id: Key<'Project', 'id', number> } } | …)
  *
- * A Type Boundary that brands routes with more (a JSON endpoint's response) adds its brand in brands(). A GET action's
- * query class retypes the last argument, `options`, in the rendered output (withQueryOptions()), which
- * functionArguments() leaves as Wayfinder writes it.
+ * A Type Boundary that brands routes with more (a JSON endpoint's response) adds its brand in brands(). The action's
+ * query class, or its lack of one, retypes the last argument, `options`, in the rendered output (withQueryOptions()),
+ * which functionArguments() leaves as Wayfinder writes it.
  */
 final class WayfinderTemplates
 {
@@ -81,9 +84,9 @@ final class WayfinderTemplates
 
     /**
      * Wayfinder's `function-arguments` template rendered with the template's data, with every route parameter bound to
-     * an Eloquent model (its action type-hints `Project $project`) typed as that model's route key,
-     * `RouteKey<'Project', number>` (RouteKeys), instead of any number or any object with an `id`. Everything after the
-     * parameters (the `options` argument) is Wayfinder's.
+     * an Eloquent model (its action type-hints `Project $project`) typed as that model's key by the field the route
+     * binds it by, `Key<'Project', 'id', number>` (RouteKeys), instead of any number or any object with an `id`.
+     * Everything after the parameters (the `options` argument) is Wayfinder's.
      *
      * @param  array<string, mixed>  $data
      */
@@ -123,9 +126,10 @@ final class WayfinderTemplates
     {
         $type = function (Parameter $parameter): string {
             $model = RouteKeys::boundModel($parameter->bound);
-            $type = $model === null
+            // Wayfinder resolves the key to the binding field, or the model's route key name when the route names none.
+            $type = $model === null || $parameter->key === null
                 ? $parameter->types
-                : sprintf("import('%s').RouteKey<'%s', %s>", self::TYPES_MODULE, class_basename($model), $parameter->types);
+                : (new RouteKey($model, $parameter->key))->typeScript($parameter->types);
 
             return $parameter->key === null ? $type : sprintf('%s | { %s: %s }', $type, $parameter->key, $type);
         };
@@ -169,20 +173,28 @@ final class WayfinderTemplates
     /**
      * Problem P-006: the route functions of an action that takes a query Data class (RouteQuery) type their `options`
      * argument by it, `options?: QueryOptions<ProjectFiltersData>` instead of Wayfinder's `RouteQueryOptions` (any
-     * key, any value). Wayfinder writes that argument last in every route function (`function-arguments`), so this
-     * keeps working when another template override changes the arguments before it.
+     * key, any value).
+     *
+     * Problem P-106: the route functions of every other route (an action without a query class, a closure, a vendor
+     * action config/strictly.php declares no query class for) take `options?: NoQueryOptions`, which no query string
+     * fits, so `dashboard({ query: { tab: 'stats' } })` fails `tsc`.
+     *
+     * Wayfinder writes that argument last in every route function (`function-arguments`), so this keeps working when
+     * another template override changes the arguments before it.
      */
     private static function withQueryOptions(string $rendered, string $controller, string $method, mixed $options): string
     {
-        $query = RouteQuery::ofAction($controller, $method);
-
-        if ($query === null || ! is_string($options) || $options === '') {
+        if (! is_string($options) || $options === '') {
             return $rendered;
         }
 
+        $query = RouteQuery::ofAction($controller, $method);
+
         return (string) preg_replace(
             '/\b'.preg_quote($options, '/').'\?: RouteQueryOptions\b/',
-            sprintf("%s?: import('%s').QueryOptions<%s>", $options, self::TYPES_MODULE, self::generatedType($query)),
+            $query === null
+                ? sprintf("%s?: import('%s').NoQueryOptions", $options, self::TYPES_MODULE)
+                : sprintf("%s?: import('%s').QueryOptions<%s>", $options, self::TYPES_MODULE, self::generatedType($query)),
             $rendered,
         );
     }

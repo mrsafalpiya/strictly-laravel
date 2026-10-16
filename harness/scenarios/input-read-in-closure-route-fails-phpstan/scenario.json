@@ -1,0 +1,9 @@
+{
+    "problem": "P-167",
+    "description": "A closure route that reads its payload from the request ($request->string('name')), so no type describes the keys it reads and no typed form can send them, fails PHPStan (strictly.inputRead).",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "A closure route reads input from the request with string()"
+    }
+}

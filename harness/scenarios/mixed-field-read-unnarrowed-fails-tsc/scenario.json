@@ -1,0 +1,6 @@
+{
+    "problem": "P-062",
+    "description": "A Data class property typed mixed is generated as unknown, so reading a field of it without narrowing fails tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "fail", "errorContains": "error TS18046: 'issue.meta' is of type 'unknown'." }
+}

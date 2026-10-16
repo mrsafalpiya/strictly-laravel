@@ -1,0 +1,6 @@
+{
+    "problem": "P-137",
+    "description": "Translation calls in PHP that name the default locale's keys with their :params pass PHPStan: a nested PHP key, a pluralised one through trans_choice() (which fills :count), a JSON key, Laravel's own validation.required that the app hasn't published, and text no lang file defines.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

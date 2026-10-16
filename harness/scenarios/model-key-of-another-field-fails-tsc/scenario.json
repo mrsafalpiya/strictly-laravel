@@ -1,0 +1,9 @@
+{
+    "problem": "P-128",
+    "description": "Filling a bulk action's #[KeyOf(Issue::class)] ids from the issues' numbers (the field their route binds by) instead of their ids fails tsc, although both are numbers of the same model.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2322: Type 'number & { readonly [keyOf]: \"Issue.number\"; }' is not assignable to type 'number & { readonly [keyOf]: \"Issue.id\"; }'."
+    }
+}

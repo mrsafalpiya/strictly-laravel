@@ -1,0 +1,5 @@
+{
+    "problem": "P-084",
+    "description": "The page prop's array shape modelled as a Data class (list<ProjectSummaryData>, with a public ?string $lead), which PHPStan accepts and Contract Coverage checks item by item: the feature tests send a lead and none, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

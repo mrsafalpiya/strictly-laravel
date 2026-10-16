@@ -1,0 +1,6 @@
+{
+    "problem": "P-145",
+    "description": "Following a presence channel's members through Echo's own useChannel(name, 'presence'), whose member data is typed by hand, fails lint.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "Echo's `useChannel(name, 'presence')` hands out a presence channel whose members are typed by hand" }
+}

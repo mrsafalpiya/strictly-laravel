@@ -1,0 +1,5 @@
+{
+    "problem": "P-108",
+    "description": "A JSON endpoint that answers a list returns one Data class holding it (RecentProjectsData with a list<ProjectData> property): PHPStan accepts it, useRouteHttp() types the list, the feature test records the response as a Contract, Contract Coverage sees the list filled, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react';
 import { useState } from 'react';
+import { selectedKey } from '@/lib/keys';
 import { StatusIcon } from '@/components/domain/status-icon';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -124,7 +125,10 @@ export function IssueFilters({
                     }
                     onValueChange={(value) =>
                         apply({
-                            assigneeId: value === ALL ? null : Number(value),
+                            assigneeId: selectedKey(
+                                options.members.map((member) => member.id),
+                                value,
+                            ),
                         })
                     }
                 >

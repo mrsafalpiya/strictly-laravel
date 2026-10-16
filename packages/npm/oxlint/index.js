@@ -685,19 +685,56 @@ const requireSuppressionReason = {
 const untypedEchoHooks = new Set(['useEcho', 'useEchoPresence', 'useEchoPublic']);
 
 /**
- * P-052, P-053: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
+ * P-142: Echo's React hooks that read a framework broadcast (a notification's `toBroadcast()`, a model's
+ * `BroadcastsEvents`), whose payload no Data class types, keyed by what the app broadcasts alongside instead.
+ */
+const frameworkBroadcastHooks = new Map([
+    ['useEchoNotification', { reads: "a broadcast notification's", alongside: 'the notification' }],
+    ['useEchoModel', { reads: "a model broadcast's", alongside: 'the model change' }],
+]);
+
+/** P-145: Echo's React hook that hands out a presence channel, whose members' data its callbacks type by hand. */
+const untypedPresenceHook = 'usePresenceChannel';
+
+/**
+ * P-145: whether a call to Echo's `useChannel()` asks for a presence channel (`useChannel(name, 'presence')`), which
+ * hands it out as `usePresenceChannel()` does. Another visibility, or one only known at runtime, is left alone.
+ *
+ * @param {ESTree.CallExpression} node
+ */
+function joinsPresence(node) {
+    const visibility = node.arguments[1];
+
+    if (visibility === undefined) {
+        return false;
+    }
+
+    if (visibility.type === 'Literal') {
+        return visibility.value === 'presence';
+    }
+
+    return visibility.type === 'TemplateLiteral' && visibility.expressions.length === 0 && visibility.quasis[0]?.value.cooked === 'presence';
+}
+
+/**
+ * P-052, P-053, P-142, P-145: broadcast events are listened for through `useChannelEvent(channel, event, callback)` from
  * `@/generated/broadcasting`, which takes only an event the app broadcasts and types its payload from the event's Data
- * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type, so
- * calling them when imported from `@laravel/echo-react` (by name, renamed or through a namespace import) is rejected.
- * Its other hooks stay allowed: channels, presence members and connection state carry no event payload, and broadcast
- * notifications and model broadcasts have no generated type yet (P-142).
+ * class. Echo's own `useEcho()`, `useEchoPresence()` and `useEchoPublic()` take any event name and any payload type,
+ * and its `useEchoNotification()` and `useEchoModel()` read broadcast notifications and model broadcasts, whose
+ * payloads have no generated type, so calling any of them when imported from `@laravel/echo-react` (by name, renamed or
+ * through a namespace import) is rejected: a notification or model change broadcasts an app event with a
+ * `BroadcastsData` payload alongside. A presence channel's members are followed through `usePresence(channel, { here,
+ * joining, leaving })`, which types them from the Data class the channel's callback returns, so Echo's
+ * `usePresenceChannel()`, whose channel's `here()`, `joining()` and `leaving()` take hand-typed members, is rejected
+ * too, and so is its `useChannel(name, 'presence')`, which hands out the same channel. Its other hooks stay allowed:
+ * channels and connection state carry no typed data.
  *
  * @type {Rule}
  */
 const typedBroadcasts = {
     meta: {
         type: 'problem',
-        docs: { description: "Listen for broadcast events through useChannelEvent() instead of Echo's untyped hooks." },
+        docs: { description: "Listen for broadcast events through useChannelEvent(), and follow presence members through usePresence(), instead of Echo's untyped hooks." },
     },
     create(context) {
         /** Local name → imported name, for the hooks imported from `@laravel/echo-react`. */
@@ -733,10 +770,26 @@ const typedBroadcasts = {
                           ? nameOf(callee.property)
                           : null;
 
-                if (hook !== null && hook !== undefined && untypedEchoHooks.has(hook)) {
+                if (hook === null || hook === undefined) {
+                    return;
+                }
+
+                const framework = frameworkBroadcastHooks.get(hook);
+
+                if (untypedEchoHooks.has(hook)) {
                     context.report({
                         node,
                         message: `Echo's \`${hook}()\` takes any event name and a hand-typed payload: use \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which takes only an event the app broadcasts and types its payload from the event's Data class.`,
+                    });
+                } else if (hook === untypedPresenceHook || (hook === 'useChannel' && joinsPresence(node))) {
+                    context.report({
+                        node,
+                        message: `Echo's \`${hook === untypedPresenceHook ? `${hook}()` : "useChannel(name, 'presence')"}\` hands out a presence channel whose members are typed by hand: use \`usePresence(channel, { here, joining, leaving })\` from \`@/generated/broadcasting\`, which types its members from the Data class the channel's callback returns.`,
+                    });
+                } else if (framework !== undefined) {
+                    context.report({
+                        node,
+                        message: `Echo's \`${hook}()\` reads ${framework.reads} hand-typed payload: broadcast an app event with a \`BroadcastsData\` payload alongside ${framework.alongside}, and listen for it with \`useChannelEvent(channel, event, callback)\` from \`@/generated/broadcasting\`, which types its payload from the event's Data class.`,
                     });
                 }
             },

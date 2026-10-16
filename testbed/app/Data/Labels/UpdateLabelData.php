@@ -4,6 +4,7 @@ namespace App\Data\Labels;
 
 use App\Enums\Color;
 use App\Models\Label;
+use App\Models\Workspace;
 use App\Support\Workspaces\CurrentWorkspace;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -29,16 +30,12 @@ final class UpdateLabelData extends InputData
     /**
      * @return array<string, array<int, mixed>>
      */
-    public static function rules(): array
+    public static function rules(Workspace $workspace, Label $label): array
     {
-        $workspace = app(CurrentWorkspace::class)->workspace();
-        // rules() has no access to the route's bound models: read the label from the current route.
-        $label = request()->route('label');
-
         return [
             'name' => [Rule::unique('labels', 'name')
                 ->where('workspace_id', $workspace->id)
-                ->ignore($label instanceof Label ? $label->id : null)],
+                ->ignore($label->id)],
         ];
     }
 }

@@ -1,0 +1,5 @@
+{
+    "problem": "P-136",
+    "description": "A pluralised message renders with choice(): ranges, the plain two-form syntax and other :params, in every locale with its own forms, while t() keeps the messages without forms, and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

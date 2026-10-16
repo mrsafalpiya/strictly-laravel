@@ -1,0 +1,6 @@
+{
+    "problem": "P-136",
+    "description": "A locale whose plural rule has one form (Japanese) may leave a message unpluralised where the default locale's is: trans_choice() and choice() take its only form for every count, so the locale parity test passes.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

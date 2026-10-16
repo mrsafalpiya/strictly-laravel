@@ -1,0 +1,9 @@
+{
+    "problem": "P-106",
+    "description": "A closure route's route function takes no query string either, merged or not: dashboard({ mergeQuery: { tab: 'stats' } }) fails tsc.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'."
+    }
+}

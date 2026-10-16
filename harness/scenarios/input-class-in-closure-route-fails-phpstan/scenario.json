@@ -1,0 +1,9 @@
+{
+    "problem": "P-097",
+    "description": "A closure route that takes an input class, whose route function Wayfinder can't brand with it, so no typed form can send its payload, fails PHPStan (strictly.closureRoute).",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "The closure route POST projects takes App\\Data\\StoreProjectData"
+    }
+}

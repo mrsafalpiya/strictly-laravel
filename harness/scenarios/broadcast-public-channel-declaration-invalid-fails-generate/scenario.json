@@ -1,0 +1,6 @@
+{
+    "problem": "P-143",
+    "description": "A public channel declaration that binds a model to a parameter its pattern doesn't have fails strictly:generate, naming the declaration.",
+    "step": "generate",
+    "expect": { "outcome": "fail", "errorContains": "public_channels.projects.{project}.public.projct: the pattern has no parameter {projct}." }
+}

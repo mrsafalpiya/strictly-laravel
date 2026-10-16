@@ -4,6 +4,6 @@
     "step": "tsc",
     "expect": {
         "outcome": "fail",
-        "errorContains": "show.tsx(9,37): error TS2345: Argument of type 'number' is not assignable to parameter of type '(string & { readonly [routeKeyOf]: \"Project\"; })"
+        "errorContains": "show.tsx(9,37): error TS2345: Argument of type 'number' is not assignable to parameter of type '(string & { readonly [keyOf]: \"Project.id\"; })"
     }
 }

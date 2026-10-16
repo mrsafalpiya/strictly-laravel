@@ -1,4 +1,4 @@
-import type { AnyRouteKey } from '../routes/index.js';
+import type { AnyKey } from '../routes/index.js';
 
 /**
  * The type a recorded Contract of a value of type T is checked against: what the server can send for T as JSON. The
@@ -13,10 +13,11 @@ import type { AnyRouteKey } from '../routes/index.js';
  * such a value by key still gives `undefined`, as its type allows. Nothing else is relaxed: a non-empty list sent for a
  * map, or `[]` for an object with a required property, still fails.
  *
- * A route key (`RouteKey<'Project', number>`) is checked as its plain value: JSON can't carry the brand, which the
- * types derive from the PHP code instead. The feature tests check the value is an existing key of its model.
+ * A model key (`Key<'Project', 'id', number>`, a route key included) is checked as its plain value: JSON can't carry
+ * the brand, which the types derive from the PHP code instead. The feature tests check the value is an existing key of
+ * its model.
  */
-export type Contract<T> = T extends AnyRouteKey
+export type Contract<T> = T extends AnyKey
     ? T extends string
         ? string
         : number

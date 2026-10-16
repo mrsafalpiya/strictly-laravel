@@ -234,7 +234,7 @@ final class AppName
         });
     });
 
-    test('the strictness flags and the oxlint plugin reach a tsconfig.json and lint config the app edited', async () => {
+    test('the strictness flags, the oxlint plugin and the rules against assertions (P-068) reach a tsconfig.json and lint config the app edited', async () => {
         const app = await createApp('ts-strictness-edited-config', { install: false });
         const tsconfig = join(app.dir, 'tsconfig.json');
         const viteConfig = join(app.dir, 'vite.config.ts');
@@ -259,6 +259,8 @@ final class AppName
         for (const rule of Object.keys(plugin.rules)) {
             assert.ok(lintConfig.includes(`'strictly/${rule}': 'error',`), `the oxlint rule strictly/${rule} is not turned on`);
         }
+        assert.match(lintConfig, /'typescript\/consistent-type-assertions': \[\n\s+'error',\n\s+\{ assertionStyle: 'never' \},\n\s+\],/);
+        assert.ok(lintConfig.includes("'typescript/no-non-null-assertion': 'error',"), 'typescript/no-non-null-assertion is not turned on');
         assertOutcome(await app.check('lint'), { outcome: 'pass' });
 
         mkdirSync(join(app.dir, 'resources', 'js', 'lib'), { recursive: true });
@@ -390,7 +392,7 @@ export default function ProjectStatuses() {
         );
     });
 
-    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types', async () => {
+    test('while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can\'t be loaded or two that generate the same type name keep the last good types', async () => {
         const app = await createApp('live-regeneration');
         const dataClass = join(app.dir, 'app', 'Data', 'ProjectData.php');
         const projectData = (properties: string) =>
@@ -425,6 +427,25 @@ export default function ProjectStatuses() {
             writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}'));
             writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3, lead: 'Ada'"));
             await untilTsc('tsc passes with the finished edit', tsc, 'pass', dev);
+
+            // Saved mid-edit so that it parses but can't be loaded: its parent class is half-typed (P-073).
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n    ) {}').replace('extends Data', 'extends Dat'));
+            await until('the class that can\'t be loaded was reported', () => dev.output().includes('App\\Data\\ProjectData can\'t be loaded: Class "App\\Data\\Dat" not found'), dev);
+            assertOutcome(await tsc(), { outcome: 'pass' });
+            assert.equal(dev.exited(), false, 'the dev server stopped');
+
+            writeFileSync(dataClass, projectData('        public string $name,\n        public int $openIssues,\n        public string $lead,\n        public int $closedIssues,\n    ) {}'));
+            writeFileSync(usage, useProject("name: 'Strictly', openIssues: 3, lead: 'Ada', closedIssues: 5"));
+            await untilTsc('tsc passes once the class loads again', tsc, 'pass', dev);
+
+            // A second ProjectData in another namespace would generate the same type name (P-063).
+            const sameName = join(app.dir, 'app', 'Data', 'Archive', 'ProjectData.php');
+            mkdirSync(dirname(sameName), { recursive: true });
+            writeFileSync(sameName, projectData('        public string $archivedAt,\n    ) {}').replace('namespace App\\Data;', 'namespace App\\Data\\Archive;'));
+            await until('the same type name was reported', () => dev.output().includes('`App\\Data\\Archive\\ProjectData` and `App\\Data\\ProjectData` both generate `ProjectData`.'), dev);
+            assertOutcome(await tsc(), { outcome: 'pass' });
+            assert.equal(dev.exited(), false, 'the dev server stopped');
+            rmSync(sameName);
 
             mkdirSync(dirname(pageFile), { recursive: true });
             writeFileSync(pageFile, 'export default function Index() {\n    return <h1>Projects</h1>;\n}\n');

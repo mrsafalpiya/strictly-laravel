@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { selectedKey } from '@/lib/keys';
 import { ActivityItem } from '@/components/activity/activity-item';
 import { CommentThread } from '@/components/comments/comment-thread';
 import { LabelPill } from '@/components/domain/label-pill';
@@ -281,8 +282,12 @@ export default function IssuesShow({
                             }
                             onValueChange={(value) =>
                                 save({
-                                    assigneeId:
-                                        value === NONE ? null : Number(value),
+                                    assigneeId: selectedKey(
+                                        options.members.map(
+                                            (member) => member.id,
+                                        ),
+                                        value,
+                                    ),
                                 })
                             }
                         >
@@ -348,8 +353,10 @@ export default function IssuesShow({
                             }
                             onValueChange={(value) =>
                                 save({
-                                    cycleId:
-                                        value === NONE ? null : Number(value),
+                                    cycleId: selectedKey(
+                                        options.cycles.map((cycle) => cycle.id),
+                                        value,
+                                    ),
                                 })
                             }
                         >

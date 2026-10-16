@@ -16,7 +16,8 @@
             "StrictlyLaravel\\Tests\\": "packages/laravel/tests/"
         },
         "classmap": [
-            "packages/laravel/tests/PHPStan/data/"
+            "packages/laravel/tests/PHPStan/data/",
+            "packages/laravel/tests/PHPStan/stubs/"
         ]
     },
     "config": {

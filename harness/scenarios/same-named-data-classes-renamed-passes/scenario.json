@@ -1,0 +1,6 @@
+{
+    "problem": "P-063",
+    "description": "The same two same-named Data classes, one given its own TypeScript name with #[TypeScript(name: '…')], generate two distinct types that a component uses side by side, and tsc passes.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

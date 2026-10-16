@@ -1,0 +1,8 @@
+{
+    "problem": "P-126",
+    "description": "An input's authorize(#[CurrentUser] User $user) and rules(#[CurrentUser] User $user) get the signed-in user from the container, not the model the route binds to {user}, and work on a route without a {user} parameter; PHPStan accepts #[CurrentUser] on a query class's rules().",
+    "step": "test",
+    "expect": {
+        "outcome": "pass"
+    }
+}

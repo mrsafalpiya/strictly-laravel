@@ -1,0 +1,6 @@
+{
+    "problem": "P-062",
+    "description": "mixed generates unknown, and an array with no item type unknown[] | Record<string, unknown>, at every Type Boundary (a Data class, a Page class and its OnceProp, MergeProp and ScrollProp props, the shared props, an input class, a query class, a JSON response and a broadcast payload), so @/generated has no any there and tsc passes.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

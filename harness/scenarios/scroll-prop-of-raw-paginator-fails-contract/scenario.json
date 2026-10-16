@@ -1,0 +1,8 @@
+{
+    "problem": "P-042",
+    "description": "An infinite-scroll page prop typed as the raw paginator it holds (ScrollProp<LengthAwarePaginator<int, EntryData>>): Inertia sends Laravel's flat paginator JSON, the generated type is { data, links, meta }, and the feature test's Contract fails ci:check on the flat keys.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "error TS2353: Object literal may only specify known properties, and '\"current_page\"' does not exist in type"
+    }
+}

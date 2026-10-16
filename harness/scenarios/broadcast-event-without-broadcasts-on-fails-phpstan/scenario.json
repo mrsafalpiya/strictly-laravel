@@ -1,0 +1,6 @@
+{
+    "problem": "P-144",
+    "description": "A broadcast event without #[BroadcastsOn], whose channels no listener could be checked against, fails PHPStan.",
+    "step": "test",
+    "expect": { "outcome": "fail", "errorContains": "Broadcast event App\\Events\\ProjectUpdated declares no channel it is" }
+}

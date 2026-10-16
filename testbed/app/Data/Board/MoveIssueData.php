@@ -3,10 +3,12 @@
 namespace App\Data\Board;
 
 use App\Enums\IssueStatus;
+use App\Models\Issue;
 use App\Rules\WorkspaceRules;
 use App\Support\Workspaces\CurrentWorkspace;
 use Spatie\LaravelData\Attributes\Validation\Min;
 use StrictlyLaravel\Data\InputData;
+use StrictlyLaravel\Data\KeyOf;
 
 /**
  * PATCH /w/{workspace}/projects/{project}/issues/{issue}/move: drop an issue into a board column.
@@ -22,7 +24,9 @@ final class MoveIssueData extends InputData
         public IssueStatus $status,
         #[Min(0)]
         public int $position,
+        #[KeyOf(Issue::class)]
         public ?int $beforeId = null,
+        #[KeyOf(Issue::class)]
         public ?int $afterId = null,
     ) {}
 

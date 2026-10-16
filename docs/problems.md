@@ -44,7 +44,9 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-006](#p-006) | Query strings are untyped | routes | closed |
 | [P-104](#p-104) | A query property without a default fails on a URL that leaves its key out | routes | closed |
 | [P-105](#p-105) | A query value the route function leaves out of the URL reads as a different default | routes | closed |
-| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | open |
+| [P-106](#p-106) | A route whose action takes no query class accepts any query string | routes | closed |
+| [P-151](#p-151) | A closure route's query class doesn't type its route function | routes | closed |
+| [P-171](#p-171) | A closure route PHPStan can't see as one isn't checked | routes | accepted gap |
 | [P-007](#p-007) | Hard-coded URLs bypass the route types | routes | closed |
 | [P-008](#p-008) | Route keys are checked for existence, not identity | routes | accepted gap |
 | [P-116](#p-116) | A route-key brand can be put on a value that isn't its model's key | routes | closed |
@@ -60,11 +62,11 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-014](#p-014) | Inertia's request APIs accept any payload | form payloads | closed |
 | [P-096](#p-096) | Inertia's `<Form>` takes any payload and error keys | form payloads | closed |
 | [P-100](#p-100) | A form to a route without an input brand names its payload by hand | form payloads | closed |
-| [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | open |
+| [P-097](#p-097) | A closure route's input isn't on its route type | form payloads | closed |
 | [P-015](#p-015) | Form control names are plain strings | form payloads | closed |
 | [P-016](#p-016) | `jsxImportSource` also changes the JSX runtime import | form payloads | closed |
 | [P-017](#p-017) | laravel-data `rules()` replaces the inferred rules | form payloads | closed |
-| [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | open |
+| [P-099](#p-099) | A nested Data class's `rules()` replace its inferred rules | form payloads | closed |
 | [P-018](#p-018) | Inferred `required` rejects empty arrays | form payloads | closed |
 | [P-019](#p-019) | `int` is validated as `numeric` | form payloads | closed |
 | [P-020](#p-020) | PHPDoc literal unions are not validated | form payloads | closed |
@@ -72,18 +74,24 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-021](#p-021) | Typed iterables are not cast by default | form payloads | closed |
 | [P-022](#p-022) | An invalid item in a typed list is a 500 | form payloads | closed |
 | [P-023](#p-023) | Calendar dates and datetimes are indistinguishable | form payloads | closed |
-| [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | open |
+| [P-075](#p-075) | A datetime input that isn't an ISO-8601 timestamp is a 500 | form payloads | closed |
+| [P-173](#p-173) | A datetime input's TypeScript type doesn't say which format the server reads | form payloads | accepted gap |
+| [P-189](#p-189) | A datetime input typed by an interface is a 500 for every value | form payloads | closed |
 | [P-024](#p-024) | Actions can read request keys their input type doesn't declare | form payloads | closed |
 | [P-113](#p-113) | An input's rules can validate a key it doesn't declare | form payloads | closed |
-| [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | open |
-| [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | open |
+| [P-112](#p-112) | An action without an input class has its payload checked by nothing | form payloads | closed |
+| [P-167](#p-167) | A closure route can take a FormRequest or read the request's input | form payloads | closed |
+| [P-168](#p-168) | Input read from the request outside a controller isn't rejected | form payloads | accepted gap |
+| [P-128](#p-128) | A model key in an input class is a plain number, so another model's key type-checks | form payloads | closed |
+| [P-157](#p-157) | A model key named unlike one and validated by no `exists` rule needs no `#[KeyOf]` | form payloads | accepted gap |
 | [P-025](#p-025) | Vendor controllers' payloads have no Source of Truth | form payloads | closed |
 | [P-026](#p-026) | Input reads are seen per key | form payloads | accepted gap |
 | [P-027](#p-027) | `FieldName` proves a name came from some `field()`, not this form's | form payloads | accepted gap |
 | [P-028](#p-028) | Client-side error keys are not tied to the input type | validation errors | closed |
 | [P-029](#p-029) | The server can return error keys that aren't fields | validation errors | closed |
 | [P-030](#p-030) | Validation runs before authorization | validation errors | closed |
-| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | open |
+| [P-126](#p-126) | An input's `authorize()` reads the route's models untyped | validation errors | closed |
+| [P-155](#p-155) | An input whose `rules()` take a route model is validated only through its route | validation errors | accepted gap |
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
@@ -96,7 +104,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
-| [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | open |
+| [P-042](#p-042) | `Inertia::scroll()` sends a flat paginator | pagination and deferred props | closed |
 | [P-043](#p-043) | Raw `Inertia::defer()` props are typed as required keys | pagination and deferred props | closed |
 | [P-044](#p-044) | `Lazy::closure()` and default-included props are typed optional | pagination and deferred props | accepted gap |
 | [P-045](#p-045) | Prop names in reloads and Inertia components are plain strings | pagination and deferred props | closed |
@@ -106,22 +114,30 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-047](#p-047) | Flash data is untyped and read through a cast | flash messages | closed |
 | [P-048](#p-048) | `useHttp` request and response types are hand-picked | JSON endpoints | closed |
 | [P-049](#p-049) | `useHttp` resolves `undefined` on a 422 despite `Promise<T>` | JSON endpoints | closed |
-| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | open |
-| [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | open |
+| [P-108](#p-108) | A JSON endpoint that returns a list of Data objects has no response type | JSON endpoints | closed |
+| [P-109](#p-109) | A closure route's response isn't on its route type | JSON endpoints | closed |
+| [P-179](#p-179) | A closure route that answers JSON without a Data class isn't rejected | JSON endpoints | open |
+| [P-180](#p-180) | JSON an action builds itself has no response type | JSON endpoints | accepted gap |
 | [P-050](#p-050) | Vendor JSON endpoints have no Source of Truth | JSON endpoints | closed |
 | [P-051](#p-051) | Vendor JSON declared as a TypeScript type gets no shape coverage | JSON endpoints | accepted gap |
 | [P-052](#p-052) | Broadcast payloads are hand-typed and unverified | broadcasting | closed |
 | [P-053](#p-053) | Broadcast event names are plain strings | broadcasting | closed |
 | [P-054](#p-054) | Channel names and parameters are hand-written | broadcasting | closed |
-| [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | open |
-| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | open |
-| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | open |
-| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | open |
+| [P-142](#p-142) | Broadcast notifications and model broadcasts have no generated payload type | broadcasting | closed |
+| [P-147](#p-147) | A broadcast notification or model broadcast needs an app event alongside it | broadcasting | accepted gap |
+| [P-143](#p-143) | A public channel's name is hand-written | broadcasting | closed |
+| [P-153](#p-153) | A misspelled channel pattern with parameters fails `tsc` on the argument count | broadcasting | closed |
+| [P-144](#p-144) | An event can be listened for on a channel it is never broadcast on | broadcasting | closed |
+| [P-145](#p-145) | A presence channel's member data is untyped | broadcasting | closed |
+| [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
+| [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | open |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
-| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | open |
-| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | open |
+| [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
+| [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
+| [P-137](#p-137) | Translation keys used in PHP are unchecked | translations | closed |
+| [P-163](#p-163) | Text no lang file defines can't be told from a misspelled key | translations | accepted gap |
 | [P-138](#p-138) | Translations outside the app's lang files have no keys on the client | translations | accepted gap |
 | [P-058](#p-058) | `VITE_*` variables are untyped | exposed config | closed |
 | [P-140](#p-140) | A `VITE_*` variable `.env.example` lists can be unset when Vite builds | exposed config | closed |
@@ -129,21 +145,25 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-141](#p-141) | A value the root Blade template writes into the page reaches React untyped | exposed config | accepted gap |
 | [P-060](#p-060) | `config()` values are `mixed` in PHP | exposed config | closed |
 | [P-061](#p-061) | Unmapped PHP classes become `undefined` | every Type Boundary | closed |
-| [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | open |
-| [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | open |
+| [P-062](#p-062) | `mixed` becomes `any` | every Type Boundary | closed |
+| [P-063](#p-063) | Same-named Data classes produce duplicate types | every Type Boundary | closed |
 | [P-064](#p-064) | Generated types go stale or missing | every Type Boundary | closed |
 | [P-065](#p-065) | Generated types are never checked against real payloads | every Type Boundary | closed |
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | closed |
-| [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | open |
+| [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | closed |
+| [P-185](#p-185) | Contract Coverage doesn't look inside a generic Data class's template-typed items | every Type Boundary | open |
 | [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
 | [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
 | [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
-| [P-068](#p-068) | Type assertions override generated types | every Type Boundary | open |
+| [P-068](#p-068) | Type assertions override generated types | every Type Boundary | closed |
 | [P-069](#p-069) | Casts remain in three boundary modules | every Type Boundary | accepted gap |
+| [P-175](#p-175) | An `any` from an untyped API reaches typed code without a cast | every Type Boundary | open |
+| [P-176](#p-176) | A hand-written type guard is trusted as written | every Type Boundary | accepted gap |
 | [P-070](#p-070) | Lint rules are syntactic | every Type Boundary | accepted gap |
 | [P-072](#p-072) | Data shapes are hand-written or registered one by one | every Type Boundary | closed |
-| [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | open |
+| [P-073](#p-073) | A Data class that parses but can't be loaded silently drops its type | every Type Boundary | closed |
+| [P-183](#p-183) | A Data class outside `App\Data` whose parent class doesn't exist still drops its type | every Type Boundary | accepted gap |
 | [P-076](#p-076) | An empty map is sent as `[]`, which its type doesn't allow | every Type Boundary | closed |
 | [P-080](#p-080) | An existing app silently lacks a hook a newer release adds, or one it lost | every Type Boundary | closed |
 | [P-081](#p-081) | A half-updated app runs one release's Composer package with another's npm package | every Type Boundary | closed |
@@ -194,7 +214,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 
 **Manual workaround:** nominal route keys. A Wayfinder template override types parameters bound to `Project` as `RouteKey<'Project', string>` (`App\Support\Wayfinder\RouteKeys`, `RouteTypes::arguments`); the route-key property of a Data class built by `fromModel(Project $project)` is generated with the same brand (`RouteKeysDataClassTransformer`), and a property holding another model's key declares `#[RouteKeyOf(Project::class)]`. Tests check every branded value sent is an existing key of its model (`tests/Support/RouteKeyChecks.php`), with a disjoint id range per table.
 
-**Closed by:** nominal route keys ([`StrictlyLaravel\Routes\RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php)). The package's Wayfinder `function-arguments` template ([`WayfinderTemplates::functionArguments()`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types a parameter whose action type-hints a model (`show(Project $project)`) as `RouteKey<'Project', number> | { id: RouteKey<'Project', number> }`, from the npm package's [`routes` types](../packages/npm/routes/index.d.ts). A Data class built from the model (a static `from…(Project $project)` method) has each property named after a binding field the routes use for that model generated as `RouteKey<'Project', …>`, and so does a property declaring [`#[RouteKeyOf(Project::class)]`](../packages/laravel/src/Data/RouteKeyOf.php), per item for a list ([`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Input and query classes are never branded: they hold what the user sent. So `show(project)`, `show(project.id)` and `show(issue.project_id)` pass, and `show(issue)`, `show(issue.id)` or a plain number fail `tsc` with TS2345. Contracts check a route key as its plain value (`Contract<T>`), and the feature tests check it is an existing key of its model ([P-116](#p-116)). Kit Conversion types the Base Kit's passkey ids as `PasskeyData['id']`, since `destroy(passkey)` takes a passkey's key. Scenarios: `route-keys-nominal-passes`, `route-key-of-another-model-fails-tsc`, `route-key-plain-number-fails-tsc`.
+**Closed by:** nominal route keys ([`StrictlyLaravel\Routes\RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php)). The package's Wayfinder `function-arguments` template ([`WayfinderTemplates::functionArguments()`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types a parameter whose action type-hints a model (`show(Project $project)`) as the model's key by the field the route binds it by, `Key<'Project', 'id', number> | { id: Key<'Project', 'id', number> }` (`RouteKey<'Project', number>` names it, [P-128](#p-128)), from the npm package's [`routes` types](../packages/npm/routes/index.d.ts). A Data class built from the model (a static `from…(Project $project)` method) has each property named after a binding field the routes use for that model generated as `Key<'Project', …>`, and so does a property declaring [`#[RouteKeyOf(Project::class)]`](../packages/laravel/src/Data/RouteKeyOf.php) or `#[KeyOf]`, per item for a list ([`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Input and query classes are branded only where a property declares its model ([P-128](#p-128)): they hold what the user sent. So `show(project)`, `show(project.id)` and `show(issue.project_id)` pass, and `show(issue)`, `show(issue.id)` or a plain number fail `tsc` with TS2345. Contracts check a route key as its plain value (`Contract<T>`), and the feature tests check it is an existing key of its model ([P-116](#p-116)). Kit Conversion types the Base Kit's passkey ids as `PasskeyData['id']`, since `destroy(passkey)` takes a passkey's key. Scenarios: `route-keys-nominal-passes`, `route-key-of-another-model-fails-tsc`, `route-key-plain-number-fails-tsc`.
 
 ### P-004
 
@@ -237,7 +257,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a `QueryData` class type-hinted on the GET action (`index(IssueFiltersData $filters)`), parsed leniently (invalid items fall back to defaults); a Wayfinder template override types the route function's `query` option as `QueryOptions<IssueFiltersData>` (`RouteTypes::queryOptions`). The same object is sent back as a prop so the filter UI is typed by it.
 
-**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class still take any query: [P-106](#p-106). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
+**Closed by:** a GET action's query string is a final Data class extending [`QueryData`](../packages/laravel/src/Data/QueryData.php) (a query class), type-hinted on the action. The Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php), which looks the class up through [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php)) types every route function of that action, `.url()` and `.form()` too, as taking `options?: QueryOptions<ProjectFiltersData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)) instead of `RouteQueryOptions`: `query` and `mergeQuery` are `Partial<ProjectFiltersData>`, so a misspelled key or a value of the wrong type fails `tsc`. `QueryData` parses the query string leniently: an invalid list item is dropped and any other key that fails its inferred or custom rules falls back to its default, so an old bookmark never gets a 422 or a 500. It is an ordinary Data class otherwise, so a Page class sends it back as a prop and the filter UI builds the next query from the same type. The PHPStan rule `strictly.inputData` accepts it on a controller action, and `strictly.queryDefault` keeps its defaults honest ([P-104](#p-104), [P-105](#p-105)). Routes whose action takes no query class take none ([P-106](#p-106)). Scenarios: `query-filters-typed-passes`, `invalid-query-value-falls-back-passes`, `query-key-misspelled-fails-tsc`, `query-value-wrong-type-fails-tsc`, `stale-bookmark-expects-422-fails-test`.
 
 ### P-104
 
@@ -276,11 +296,43 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** routes
 - **Source:** found while closing [P-006](#p-006)
 - **Upstream:** none (Wayfinder's `query` option is `RouteQueryOptions` on every route)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `dashboard({ query: { tab: 'stats' } })` or `edit({ query: { anything: 1 } })` compiles for a route whose action declares no query class, and the action can still read the key (`$request->query('tab')`, [P-024](#p-024)). A vendor GET that reads a query string gets a query class only by declaring one in `config/strictly.php` ([P-025](#p-025)), as the Base Kit's password reset link (`email`) is. A closure route's query class is parsed leniently but doesn't type its route function, since Wayfinder gives the templates only a controller and method (as for inputs, [P-097](#p-097)).
 
 **Manual workaround:** take a query class on every action that reads its query string.
+
+**Closed by:** the Wayfinder `method` template override ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)) types the `options` of every route function whose action has no query class ([`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) finds none: a controller action without one, a closure route, a vendor action `config/strictly.php` declares none for) as `NoQueryOptions` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)), whose `query` and `mergeQuery` are `NoQueryClass`, a type no value fits. Passing a query string to such a route fails `tsc`: `error TS2353: Object literal may only specify known properties, and 'tab' does not exist in type 'NoQueryClass'.` On the server, the PHPStan rule `strictly.queryRead` ([`QueryReadRule`](../packages/laravel/src/PHPStan/QueryReadRule.php)) rejects reading the query string from the request in a controller (`$request->query(…)`, `$request->query->…`, `request()->query(…)`, `Request::query(…)`), with or without a query class: keys are read from the query class. `strictly.inputRead` treats `$request->input('tab')` and the other input accessors in a method that takes only a query class the same way ([P-112](#p-112)). Pagination needs no query class: `<Pagination>` follows the links the paginator builds, Inertia's `<InfiniteScroll>` asks for the next page itself, and the paginator reads `page` and `cursor` outside the controller, so neither goes through a route function's `query`. A closure route takes no query string through its route function either, and may neither take a query class nor read the query string: [P-151](#p-151). Scenarios: `route-query-typed-with-and-without-query-class-passes`, `query-on-route-without-query-class-fails-tsc`, `merge-query-on-closure-route-fails-tsc`, `query-read-without-query-class-fails-phpstan`; pagination keeps working in `paginators-typed-as-laravel-sends-them-passes` and the Testbed App.
+
+### P-151
+
+**A closure route's query class doesn't type its route function**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-106](#p-106)
+- **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
+- **Status:** closed
+
+**Reproduction:** `Route::get('projects', fn (ProjectFiltersData $filters): IndexPage => …)->name('projects.index')` parses its query string leniently, but its route function can't tell it takes a query class, so `index()` from `@/routes/projects` takes `NoQueryOptions` and `index({ query: { sort: 'name' } })` fails `tsc` although `sort` is a property of the class. Nothing says why, and nothing rejects the closure. A closure route that reads `$request->query('tab')` isn't rejected either: `strictly.queryRead` checks controllers only. It fails safe: no route function can send such a route an untyped query string.
+
+**Manual workaround:** take query classes, and read query strings, in controller actions only (as for inputs, [P-097](#p-097), and responses, [P-109](#p-109)).
+
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a query class: `The closure route GET projects takes App\Data\ProjectFiltersData, a query class, but Wayfinder types a route function's query option only from a controller action: no route function can send its keys.` `strictly.queryRead` ([P-106](#p-106)) also rejects reading the query string anywhere in a closure route: `A closure route reads the query string from the request, where nothing types it: a route function sends only the keys of a controller action's query class.` Scenarios: `closure-routes-without-data-classes-pass`, `query-class-in-closure-route-fails-phpstan`.
+
+### P-171
+
+**A closure route PHPStan can't see as one isn't checked**
+
+- **Type Boundary:** routes
+- **Source:** found while closing [P-097](#p-097)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `$store = fn (StoreProjectData $data) => …; Route::post('projects', $store);`, or a closure registered through `Route::addRoute()`. `strictly.closureRoute`, `strictly.inputRead` and `strictly.queryRead` see a closure route only when its closure is written as the action argument of `Route::get/post/put/patch/delete/options/any/match()` (on the facade, the router or a route registrar), so such a route can take an input or query class, return a Data class or read the request, and its route function is untyped as in [P-097](#p-097), [P-109](#p-109) and [P-151](#p-151).
+
+**Manual workaround:** write a closure route's closure in its route call, or use a controller action.
+
+**Reasoning:** which closure a variable holds is known only where it is called, and the closure written in the route call is how the Base Kit and Laravel's documentation define closure routes. Such a route's function still fails safe for its query string (`NoQueryOptions`) and its response (`unknown`), `useRouteForm()` refuses it, and the validation-error Contracts and the form-endpoint and JSON-endpoint coverage still see the closure.
 
 ### P-007
 
@@ -325,7 +377,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the Reference Implementation's `RouteKeyChecks`: while a test serialises a Data object, every branded value must be an existing key of its model, and every table gets its own id range in tests.
 
-**Closed by:** [`StrictlyLaravel\Testing\RouteKeyChecks`](../packages/laravel/src/Testing/RouteKeyChecks.php), started for every feature test by the installer's Pest hook (`RecordsContracts`). While a test's request is handled, laravel-data's serialisation checks every property typed as a [route key](#p-003): a value that isn't an existing key of its model fails the request with `GET /issues/4000001 sent a value typed as a model's route key that is no key of that model (Problem P-116): App\Data\IssueData.project_id is not the id of any App\Models\Project: 4000001`. A test that uses `RefreshDatabase` (or `DatabaseMigrations`) on SQLite gives every table its own range of a million ids, so ids of different models never coincide. Scenarios: `route-keys-nominal-passes` (its tests also prove the ranges are disjoint), `route-key-not-a-key-of-its-model-fails-test`. What remains, a key of the right model but the wrong row, is [P-008](#p-008).
+**Closed by:** [`StrictlyLaravel\Testing\RouteKeyChecks`](../packages/laravel/src/Testing/RouteKeyChecks.php), started for every feature test by the installer's Pest hook (`RecordsContracts`). While a test's request is handled, laravel-data's serialisation checks every property typed as a [route key](#p-003) or another [model key](#p-128): a value that isn't an existing key of its model fails the request with `GET /issues/4000001 sent a value typed as a model's key that is no key of that model (Problem P-116): App\Data\IssueData.project_id is not the id of any App\Models\Project: 4000001`. A test that uses `RefreshDatabase` (or `DatabaseMigrations`) on SQLite gives every table its own range of a million ids, so ids of different models never coincide. Scenarios: `route-keys-nominal-passes` (its tests also prove the ranges are disjoint), `route-key-not-a-key-of-its-model-fails-test`. What remains, a key of the right model but the wrong row, is [P-008](#p-008).
 
 ### P-117
 
@@ -372,7 +424,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the page component name derives from the `Page` class; the generated `__PageComponentCheck` (`CheckPage<'projects/show', typeof import('@/pages/projects/show').default>`) fails `tsc` when the file is missing or asks for a prop the class doesn't send. An arch test fails a page file without a class. `php artisan make:page` creates both.
 
-**Closed by:** the page component's name derives from the Page class's (`App\Pages\Projects\ShowPage` is `projects/show`), and `@/generated` carries two checks ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php)): `__PageComponentCheck` fails `tsc` when a Page class's component file is missing or declares a prop the class doesn't send (even an optional one, which would always be missing), and `__PageFileCheck` fails it when a file under `resources/js/pages` has no Page class. `php artisan make:page projects/show` ([`MakePageCommand`](../packages/laravel/src/Console/MakePageCommand.php)) creates both, already in sync (harness test `make:page creates a Page class and its page component, already in sync`). The file check lists the page files found when the types were last generated, so the Vite plugin regenerates them when a file is created or deleted under `resources/js/pages` while the dev server runs (`ci:check`, `types:check` and `build` always generate first). Scenarios: `page-component-accepting-page-props-passes`, `page-component-missing-fails-tsc`, `page-component-unsent-prop-fails-tsc`, `page-component-optional-unsent-prop-fails-tsc`, `page-file-without-class-fails-tsc`; harness test "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types".
+**Closed by:** the page component's name derives from the Page class's (`App\Pages\Projects\ShowPage` is `projects/show`), and `@/generated` carries two checks ([`InertiaPagesProvider`](../packages/laravel/src/TypeScript/InertiaPagesProvider.php)): `__PageComponentCheck` fails `tsc` when a Page class's component file is missing or declares a prop the class doesn't send (even an optional one, which would always be missing), and `__PageFileCheck` fails it when a file under `resources/js/pages` has no Page class. `php artisan make:page projects/show` ([`MakePageCommand`](../packages/laravel/src/Console/MakePageCommand.php)) creates both, already in sync (harness test `make:page creates a Page class and its page component, already in sync`). The file check lists the page files found when the types were last generated, so the Vite plugin regenerates them when a file is created or deleted under `resources/js/pages` while the dev server runs (`ci:check`, `types:check` and `build` always generate first). Scenarios: `page-component-accepting-page-props-passes`, `page-component-missing-fails-tsc`, `page-component-unsent-prop-fails-tsc`, `page-component-optional-unsent-prop-fails-tsc`, `page-file-without-class-fails-tsc`; harness test "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can't be loaded or two that generate the same type name keep the last good types".
 
 ### P-011
 
@@ -526,7 +578,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the `InputData` base class carries `#[MergeValidationRules]`.
 
-**Closed by:** [`InputData`](../packages/laravel/src/Data/InputData.php) carries `#[MergeValidationRules]`, so an input's `rules()` are merged with the rules inferred from its types, and the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action that takes a Data class not extending it. A nested Data class inside an input still has its `rules()` replace its inferred ones: [P-099](#p-099). Scenarios: `custom-input-rules-merged-passes`, `plain-data-action-input-fails-phpstan`.
+**Closed by:** [`InputData`](../packages/laravel/src/Data/InputData.php) carries `#[MergeValidationRules]`, so an input's `rules()` are merged with the rules inferred from its types, and the PHPStan rule `strictly.inputData` ([`InputDataRule`](../packages/laravel/src/PHPStan/InputDataRule.php)) rejects a controller action that takes a Data class not extending it. A Data class with `rules()` nested in an input must extend it too: [P-099](#p-099). Scenarios: `custom-input-rules-merged-passes`, `plain-data-action-input-fails-phpstan`.
 
 ### P-099
 
@@ -535,11 +587,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-017](#p-017)
 - **Upstream:** by design; laravel-data reads `#[MergeValidationRules]` from each Data class. No upstream issue filed.
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an input with `public TaskData $task` (or `list<TaskData>`), where the plain Data class `TaskData` has `public string $title` and `rules()` returning `['title' => ['max:50']]`: the inferred `required|string` for `task.title` is dropped. Only the action's own parameter must extend InputData (`strictly.inputData`).
 
 **Manual workaround:** make every Data class nested in an input that has `rules()` extend InputData too.
+
+**Closed by:** the PHPStan rule `strictly.inputData` also rejects, in every input and query class, a property that nests a Data class with `rules()` not extending InputData ([`NestedInputDataRule`](../packages/laravel/src/PHPStan/NestedInputDataRule.php)): as the property's type, an item of a list, a map or a `DataCollection` of it, or a `#[DataCollectionOf]` class, at any depth. The message names the nested class (and the classes it is nested through). A nested class that extends InputData carries `#[MergeValidationRules]`, so its `rules()` are merged with its inferred ones; a plain Data class that carries the attribute itself, or through a parent class (laravel-data reads parents' attributes too), merges them the same way and passes. Scenarios: `nested-data-with-rules-fails-phpstan`, `nested-input-data-rules-merged-passes`, `nested-data-merging-its-own-rules-passes`.
 
 ### P-018
 
@@ -644,7 +698,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a `#[DateOnly]` attribute with `DateOnlyCast`: `"2026-10-14"` both ways; other dates are ISO-8601 strings.
 
-**Closed by:** the `#[DateOnly]` attribute ([`packages/laravel/src/Data/DateOnly.php`](../packages/laravel/src/Data/DateOnly.php)) on a `Carbon`, `CarbonImmutable` or `CarbonInterface` property of a Data class, which keeps the declared class. Its cast reads and sends `"2026-10-14"` and rejects anything else (a timestamp, an impossible date such as `2026-02-30`) with a validation error on the field instead of a 500; the property is generated as `DateOnly` (`` `${number}-${number}-${number}` ``), with an `isDateOnly()` guard in `@/generated` that turns an `<input type="date">` value into one without a cast ([`DateOnlyTypes`](../packages/laravel/src/TypeScript/DateOnlyTypes.php)). Every other date is an ISO-8601 `string`. A plain datetime input given anything but an ISO-8601 timestamp is still a 500: [P-075](#p-075). Scenarios: `date-only-round-trips-passes`, `timestamp-for-date-only-fails-tsc`.
+**Closed by:** the `#[DateOnly]` attribute ([`packages/laravel/src/Data/DateOnly.php`](../packages/laravel/src/Data/DateOnly.php)) on a `Carbon`, `CarbonImmutable` or `CarbonInterface` property of a Data class, which keeps the declared class. Its cast reads and sends `"2026-10-14"` and rejects anything else (a timestamp, an impossible date such as `2026-02-30`) with a validation error on the field instead of a 500; the property is generated as `DateOnly` (`` `${number}-${number}-${number}` ``), with an `isDateOnly()` guard in `@/generated` that turns an `<input type="date">` value into one without a cast ([`DateOnlyTypes`](../packages/laravel/src/TypeScript/DateOnlyTypes.php)). Every other date is an ISO-8601 `string`; a datetime input is validated against its cast's format too ([P-075](#p-075)). Scenarios: `date-only-round-trips-passes`, `timestamp-for-date-only-fails-tsc`.
 
 ### P-075
 
@@ -653,12 +707,43 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-023](#p-023)
 - **Upstream:** no upstream issue filed (laravel-data infers no rule for a `DateTimeInterface` property, so its cast is the first to see the value)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an input Data class with `public CarbonImmutable $startsAt`; posting `startsAt: '2026-10-14'` or `'tomorrow'` passes validation, then laravel-data's `DateTimeInterfaceCast` throws `CannotCastDate` ("Could not cast date `2026-10-14` into a `Carbon\CarbonImmutable` using formats: Y-m-d\TH:i:sP"): a 500 instead of a 422, while the TypeScript type `string` accepts the value.
 
 **Manual workaround:** `#[DateFormat(DATE_ATOM)]` on every datetime input property, or `#[DateOnly]` for a calendar date.
 
+**Closed by:** [`DateFormatRuleInferrer`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRuleInferrer.php) validates a `DateTimeInterface` property of any Data class against the formats its `DateTimeInterfaceCast` reads ([`DateFormatRule`](../packages/laravel/src/Workarounds/LaravelData/DateFormatRule.php)): a `#[WithCast(DateTimeInterfaceCast::class, format: …)]` format, otherwise `data.date_format` (DATE_ATOM by default), each read by the class the cast creates, as it reads it (Carbon's `createFromFormat()` takes `c` as DATE_ATOM, PHP's doesn't). A value the cast can't read, or one naming an impossible date it would roll over (`2026-02-30T09:30:00+00:00`), gets a 422 on the field ("The starts at field must match the format Y-m-d\TH:i:sP."), alongside the other fields' errors; a timestamp ending in `Z`, which the cast reads, is accepted. Each item of a `list<CarbonImmutable>` is validated the same way, and a `#[DateOnly]` property gets `date_format:Y-m-d`, so its error comes with the others instead of after them. Null, a missing key and an `Optional` keep the inferred nullable and required rules, `rules()` still merge, an explicit `#[DateFormat]` replaces the inferred rule, and a property with another cast is left to that cast. A property typed `CarbonInterface` or `DateTimeInterface` is read as a `CarbonImmutable` ([P-189](#p-189)). The TypeScript type is still `string`: [P-173](#p-173). Scenarios: `datetime-input-validated-passes` (through a controller action, its input and validation-error Contracts checked by the full `ci:check`), `non-iso-datetime-for-input-fails-test`.
+
+### P-173
+
+**A datetime input's TypeScript type doesn't say which format the server reads**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-075](#p-075)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `public CarbonImmutable $startsAt` on an input is generated as `startsAt: string`, so `tsc` accepts `startsAt: new Date().toISOString()` (`2026-10-14T09:30:00.000Z`), whose milliseconds DATE_ATOM has no place for; the request gets a 422 on `startsAt` naming the format.
+
+**Manual workaround:** send the format the server sends back (DATE_ATOM, `2026-10-14T09:30:00+00:00`), or add `u` or `v` to `data.date_format` to read milliseconds.
+
+**Reasoning:** the server now rejects such a value with a 422 on the field, which is what P-075 asked. A template literal can't tell the formats apart (`${number}-${number}-${number}T${string}` takes the milliseconds too), and the format is the app's choice in `data.date_format` or a `#[WithCast]`, so a type that encodes it would need a branded datetime type and a helper to build one: a design of its own, worth a ticket if apps keep sending the wrong format.
+
+### P-189
+
+**A datetime input typed by an interface is a 500 for every value**
+
+- **Type Boundary:** form payloads
+- **Source:** code review of [P-075](#p-075)'s fix, whose Boost guidance recommended `CarbonInterface`
+- **Upstream:** no upstream issue filed (laravel-data 4's `DateTimeInterfaceCast` calls `createFromFormat()` on the property's type)
+- **Status:** closed
+
+**Reproduction:** an input Data class with `public CarbonInterface $startsAt` (or `DateTimeInterface`, or `list<CarbonInterface>`); posting a valid `startsAt: '2026-10-14T09:30:00+00:00'` passes validation, then laravel-data throws `CannotCastDate` ("Could not cast date `2026-10-14T09:30:00+00:00` into a `Carbon\CarbonInterface` using formats: Y-m-d\TH:i:sP"), since an interface can't create an instance: a 500 for every value. Output Data classes are unaffected (a model's date is already an object, which isn't cast).
+
+**Manual workaround:** type the property `CarbonImmutable`.
+
+**Closed by:** [`InterfaceTypedDateCast`](../packages/laravel/src/Workarounds/LaravelData/InterfaceTypedDateCast.php), laravel-data's `DateTimeInterfaceCast` reading a property typed by an interface that `CarbonImmutable` implements as a `CarbonImmutable`. [`StrictInputConfig`](../packages/laravel/src/Workarounds/LaravelData/StrictInputConfig.php) makes it the global cast for `DateTimeInterface` while the app's `config/data.php` keeps laravel-data's; an app that casts dates with a class of its own keeps it. Its format rule is the one [P-075](#p-075) infers. A `#[WithCast(DateTimeInterfaceCast::class, …)]` on an interface-typed property still uses laravel-data's own cast. Scenario: `datetime-input-validated-passes` (a `CarbonInterface` and a `?DateTimeInterface` property round-trip through a controller action).
 ### P-024
 
 **Actions can read request keys their input type doesn't declare**
@@ -672,7 +757,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** the test request records every key read (`input()`, `boolean()`, `only()`, `has()`, magic properties; `tests/Support/InputReads.php`) and the Contract `read satisfies InputKey<StoreProjectData>[]` fails on an undeclared key.
 
-**Closed by:** every feature test's request is a [`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php) ([`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) overrides the test case's `createTestRequest()`), which reports each input key the app reads by name (`input()`, `boolean()`, `string()`, `filled()`, `has()`, `hasAny()`, `only()`, `all('key')`, `query()`, `post()`, `file()`, `json()`, `$request->key`, `$request['key']`; a route parameter read as a property isn't input) to [`InputReads`](../packages/laravel/src/Testing/InputReads.php). A request to a form endpoint records the keys its action read, from the moment it reached its route, in its `form` Contract as `export const read = [...] satisfies InputKey<StoreProjectData>[]`, which fails `tsc` on a key the input type lacks: `Type '"notify"' is not assignable to type '"name" | "public"'.` Framework plumbing is ignored: keys starting with `_` (the CSRF token, `_method`) and the reads of the paginators (`page`, `cursor`) and of laravel-data (its `include`, `exclude`, `only` and `except` response partials). A read that names no key isn't seen: [P-026](#p-026). An action without an input class isn't checked: [P-112](#p-112). Scenarios: `input-reads-declared-fields-pass-contract`, `input-read-not-a-field-fails-contract`.
+**Closed by:** every feature test's request is a [`TrackedRequest`](../packages/laravel/src/Testing/TrackedRequest.php) ([`RecordsContracts`](../packages/laravel/src/Testing/RecordsContracts.php) overrides the test case's `createTestRequest()`), which reports each input key the app reads by name (`input()`, `boolean()`, `string()`, `filled()`, `has()`, `hasAny()`, `only()`, `all('key')`, `query()`, `post()`, `file()`, `json()`, `$request->key`, `$request['key']`; a route parameter read as a property isn't input) to [`InputReads`](../packages/laravel/src/Testing/InputReads.php). A request to a form endpoint records the keys its action read, from the moment it reached its route, in its `form` Contract as `export const read = [...] satisfies InputKey<StoreProjectData>[]`, which fails `tsc` on a key the input type lacks: `Type '"notify"' is not assignable to type '"name" | "public"'.` Framework plumbing is ignored: keys starting with `_` (the CSRF token, `_method`) and the reads of the paginators (`page`, `cursor`) and of laravel-data (its `include`, `exclude`, `only` and `except` response partials). A read that names no key isn't seen: [P-026](#p-026). An action without an input class reads no input: [P-112](#p-112). Scenarios: `input-reads-declared-fields-pass-contract`, `input-read-not-a-field-fails-contract`.
 
 ### P-113
 
@@ -696,11 +781,43 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-024](#p-024)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an action taking a FormRequest, such as the Base Kit's `SecurityController::update(PasswordUpdateRequest $request)` before Kit Conversion gave it `PasswordUpdateData`, validates `current_password` and `password` and reads `$request->string('password')`; an app action taking a plain `Request` can read `$request->input('q')`. No input class types their payload, so their form has no fields (naming its payload as a `<TypedForm>` type argument fails lint, [P-100](#p-100)), and the input Contracts ([P-024](#p-024), [P-029](#p-029), [P-113](#p-113)) only check form endpoints, so the keys these actions validate, report errors for and read are checked against nothing. A vendor action is one of them until `config/strictly.php` declares its payload ([P-025](#p-025)); the Base Kit's Fortify actions that take no payload (logout, disabling two-factor authentication) aren't declared.
 
 **Manual workaround:** take an input class on every action that reads the request's input, and a query class on a GET action that reads its query string ([P-006](#p-006)); declare one for a vendor action that reads either ([P-025](#p-025)). A GET with a query class records the keys it reads as a `query` Contract checked against the class.
+
+**Closed by:** two PHPStan rules, which share [`ControllerAction`](../packages/laravel/src/PHPStan/ControllerAction.php) and [`RequestRead`](../packages/laravel/src/PHPStan/RequestRead.php) with `strictly.queryRead` ([P-106](#p-106)). [`FormRequestRule`](../packages/laravel/src/PHPStan/FormRequestRule.php) (`strictly.formRequest`) rejects a controller action parameter typed as a FormRequest: `App\Http\Controllers\ProjectController::store() takes App\Http\Requests\StoreProjectRequest, a FormRequest, where nothing types its payload: a typed form sends only the fields of its action's input class.` [`InputReadRule`](../packages/laravel/src/PHPStan/InputReadRule.php) (`strictly.inputRead`) rejects reading input from the request in any method of a controller (or closure in one) that takes no input class: the accessors of `InteractsWithInput` and `InteractsWithData` (`input()`, `string()`, `boolean()`, `all()`, `only()`, `has()`, `file()`, …), `get()`, `json()`, the `validate()` macros, a FormRequest's `validated()` and `safe()`, the `request` and `files` bags, a key read as a property (`$request->name`) or offset (`$request['name']`), `Request::input()` on the facade and `request('name')`. A method that takes an input class may still read the request, since its Contract checks every key it reads ([P-024](#p-024)). A method that takes only a query class may not, with a message of its own (`…::index() reads input from the request with input() instead of from its query class, which falls back to its defaults on an invalid value: the raw value is unchecked.`): on a GET, `input('tab')` reads the same query string `strictly.queryRead` keeps to the query class ([P-106](#p-106)), and the raw value skips the class's fallback to its default ([P-006](#p-006)). Reading what isn't the payload (`user()`, `route()`, `header()`, `ip()`, `session()`, `cookie()`) passes. Kit Conversion's `SecurityController::edit()` takes a plain `Request` and makes the Base Kit's `TwoFactorAuthenticationRequest`, which validates nothing, from it with `createFrom()` for Fortify's two-factor state handling. Vendor actions stay covered by their declarations ([P-025](#p-025)). Closure routes are covered too ([P-167](#p-167)); reads outside a controller aren't ([P-168](#p-168)). Scenarios: `form-request-in-action-fails-phpstan`, `input-read-without-input-class-fails-phpstan`, `input-read-beside-query-class-fails-phpstan`, `input-class-and-request-metadata-passes`.
+
+### P-167
+
+**A closure route can take a FormRequest or read the request's input**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-112](#p-112)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `Route::post('projects', fn (Request $request) => Project::create(['name' => $request->string('name')]))` or `fn (StoreProjectRequest $request) => …`. `strictly.inputRead` and `strictly.formRequest` check controllers only, so neither is rejected, and as with [P-097](#p-097) the route function has no input type, so no typed form can send the payload.
+
+**Manual workaround:** handle a payload in a controller action that takes an input class.
+
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) rejects a closure route that takes a FormRequest (`… takes App\Http\Requests\StoreProjectRequest, a FormRequest, but Wayfinder types a route function's payload only from a controller action: no typed form can send it.`), and `strictly.inputRead` ([P-112](#p-112)) rejects reading input from the request anywhere in a closure route, with the accessors it rejects in a controller: `A closure route reads input from the request with string(), where nothing types it: a typed form sends only the fields of a controller action's input class.` Reading what isn't the payload (`$request->user()`) passes. Scenarios: `closure-routes-without-data-classes-pass`, `input-read-in-closure-route-fails-phpstan`.
+
+### P-168
+
+**Input read from the request outside a controller isn't rejected**
+
+- **Type Boundary:** form payloads
+- **Source:** found while closing [P-112](#p-112)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a controller action without an input class hands the request to another class (`$this->projects->create($request)`, a job, an action class) that reads `$request->input('name')`; or reads the request through a value PHPStan doesn't type as one (`app('request')` in code typed `mixed`). `strictly.inputRead` sees reads only in a controller's own methods and closures, on a value typed as a `Request`. The same holds for a vendor action that reads input and that `config/strictly.php` declares nothing for ([P-025](#p-025)): vendor code isn't analysed.
+
+**Manual workaround:** take the input class in the action and pass it, not the request, to the code that needs the payload.
+
+**Reasoning:** middleware, a FormRequest's own methods, Fortify's customisation callbacks (`Fortify::authenticateUsing()`) and other framework hooks read the request by design, so a rule can't reject every read outside a controller; and which action a service's read serves is only known at runtime. The typed way hands such code the input class, and the reads a feature test reaches are still recorded in the action's Contract when it has one ([P-024](#p-024)). The Base Kit's undeclared Fortify actions (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes) take no payload.
 
 ### P-128
 
@@ -709,11 +826,29 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found porting Tracklane's Issues area into the Testbed App (#24)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** the Testbed App's bulk action `BulkUpdateIssuesData` takes `/** @var list<int> */ array $ids`, the issues' primary keys, and is generated `ids: number[]`. In `pages/issues/index.tsx`, collecting the selection from `issue.number` (the per-project number, `RouteKey<'Issue', number>`) instead of `issue.id` still type-checks: the brand is assignable to `number`. The server only checks that each value is the id of *some* issue in the workspace, so in production, where tables share one id range, the request can update other issues than the ones selected; in feature tests the disjoint id ranges ([P-116](#p-116)) usually turn it into a validation error instead. The same holds for every key an input carries: `StoreIssueData.assigneeId`, `labelIds`, `cycleId`, `parentId`. [P-003](#p-003)'s brands don't help, for two reasons: input and query classes are never branded, because they hold what the user sent, and only a binding field a route uses gets a brand (`Issue` binds `{issue}` by `number`, so an issue's `id` has none, not even on `IssueListItemData`).
 
 **Manual workaround:** name the field after the model it belongs to and check the call sites in review; the input's `exists` rules (`App\Rules\WorkspaceRules`) at least reject keys that belong to no row of the workspace.
+
+**Closed by:** model keys branded by their model and field (ADR-0009). A Data property declared [`#[KeyOf(User::class)]`](../packages/laravel/src/Data/KeyOf.php), in an input, query or output class, is generated as `Key<'User', 'id', number>` from the npm package's [`routes` types](../packages/npm/routes/index.d.ts) (per item for a list; `#[KeyOf(Issue::class, 'number')]` for a key by another field than the primary key). A Data class built from a model brands its own primary key the same way, and the fields its routes bind it by ([P-003](#p-003)), so `issue.id` is `Key<'Issue', 'id', number>` and `issue.number` is `Key<'Issue', 'number', number>` ([`RouteKeys`](../packages/laravel/src/Routes/RouteKeys.php), [`RouteKeyTypes`](../packages/laravel/src/TypeScript/RouteKeyTypes.php)). Filling a bulk action's `#[KeyOf(Issue::class)] $ids` from the issues' numbers fails `tsc` with `error TS2322: Type 'number & { readonly [keyOf]: "Issue.number"; }' is not assignable to type 'number & { readonly [keyOf]: "Issue.id"; }'.`, and an issue's id for a `#[KeyOf(User::class)]` assignee with TS2345. The PHPStan rule `strictly.keyOf` ([`KeyOfRule`](../packages/laravel/src/PHPStan/KeyOfRule.php)) makes the attribute required on every property of a Data class named `…Id`, `…Ids`, `…_id` or `…_ids` or validated by an `exists` rule (in `rules()`, or laravel-data's `#[Exists]`), except the class's own primary key: `App\Data\BulkUpdateIssuesData::$ids is validated by an exists rule but declares no model, so TypeScript takes any value for it: another model's key, or another field's, fits.` A value that is no model's key takes a suppression with a reason. Contracts check a key as its plain value, and the feature tests check every key the server sends exists ([P-116](#p-116)). The Testbed App's inputs (`BulkUpdateIssuesData.ids`, `StoreIssueData.projectId`, `assigneeId`, `labelIds`, `cycleId`, `parentId`, and the rest the rule found) declare their models, and its selects look their value up among the options' keys (`selectedKey()`) instead of `Number(value)`. What the rule can't see is [P-157](#p-157). Scenarios: `model-keys-typed-from-output-to-input-passes`, `model-key-of-another-field-fails-tsc`, `model-key-of-another-model-fails-tsc`, `model-key-undeclared-fails-phpstan`.
+
+### P-157
+
+**A model key named unlike one and validated by no `exists` rule needs no `#[KeyOf]`**
+
+- **Type Boundary:** form payloads
+- **Source:** issue #39
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** an input with `public ?int $assignee` (no `Id` suffix) whose only check is a closure rule, or an output Data class with `public int $owner` holding a user's id, or a parent input whose `rules()` validate a nested class's key (`'tasks.*.ownerId' => ['exists:users,id']`) while the nested class names it `owner`. PHPStan's `strictly.keyOf` doesn't ask for `#[KeyOf]`, so the property stays a plain number in TypeScript and any other key fits, as in [P-128](#p-128).
+
+**Manual workaround:** name a key property after its model with the `Id` suffix (`assigneeId`), or declare `#[KeyOf]` on it anyway.
+
+**Reasoning:** the rule only knows a value is a key from its name or its `exists` rule. Guessing further (from the property's type, its model's relations or a custom rule's code) would raise false alarms on every count and amount, and the maintainer decided against name-based guessing beyond the suffixes (issue #39). The naming convention the rule enforces is the Laravel default for foreign keys.
+
 
 ### P-025
 
@@ -730,12 +865,12 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Closed by:** vendor declarations ([`VendorDeclarations`](../packages/laravel/src/Routes/VendorDeclarations.php)) in the app's `config/strictly.php`, keyed by action: `vendor_inputs` names an input class for a vendor action (`AuthenticatedSessionController::class.'@store' => LoginData::class`) and `vendor_queries` a query class for a vendor GET. [`RouteInput`](../packages/laravel/src/Routes/RouteInput.php) and [`RouteQuery`](../packages/laravel/src/Routes/RouteQuery.php) read them before the action's own parameters, so the route is branded with them as an app action is (`<TypedForm {...store.form()}>`, `submit(store(), data)`, `reset(token, { query: { email } })`), and its requests are recorded and covered as a form endpoint's. The declarations are verified, not trusted:
 
-- one naming an action no route runs, or a class that doesn't exist or doesn't extend `InputData` or `QueryData`, fails `strictly:generate`;
+- one naming an action no route runs, or a class that doesn't exist (spelled exactly: PHP class names ignore case, autoloading doesn't), can't be loaded or doesn't extend `InputData` or `QueryData`, fails `strictly:generate`;
 - every key the vendor validates, reads or reports an error for during a feature test must be a field of the declared input (the `form` Contract of [P-024](#p-024), [P-029](#p-029) and [P-113](#p-113)): `Type '"remember"' is not assignable to type '"name" | "email" | "password" | "password_confirmation"'.` That includes reads through the vendor's own FormRequest (Fortify's `LoginRequest`), which [`InputReads`](../packages/laravel/src/Testing/InputReads.php) has the container build as a subclass that reports them ([`TracksInputReads`](../packages/laravel/src/Testing/TracksInputReads.php)); a final one can't be tracked ([P-026](#p-026));
 - a GET to a route with a query class, declared or the action's own, records the query keys it validated and read as a `query` Contract (`__contracts__/_queries/`) checked against the class;
 - Contract Coverage reports a declared field no test saw the vendor use ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php)): `✗ LoginData.nickname is declared for a vendor action that never uses it (at POST /login): add a feature test that submits to POST /login with nickname, or remove it from the declaration in config/strictly.php if … doesn't validate or read it.`
 
-`strictly:install` publishes `config/strictly.php` with the Base Kit's Fortify declarations ([`stubs/strictly.php`](../packages/laravel/stubs/strictly.php); the package's merged defaults declare nothing), and Kit Conversion adds their classes under `App\Data\Auth`, with the Reference Implementation's two findings declared: `remember` on registration and `force` on enabling two-factor authentication, both `bool|Optional`. Its `tests/Feature/ContractCoverageTest.php` submits to the Fortify actions the Base Kit's tests don't (password confirmation, the two-factor challenge, enabling and confirming two-factor authentication) and opens the password reset link with its `email`. Not declared: the passkey routes, whose requests Laravel Passkeys' own client sends, and the Fortify actions that take no payload (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes), whose reads are checked by nothing like any action without an input ([P-112](#p-112)). Scenarios: `vendor-input-declared-passes`, `vendor-input-undeclared-read-fails-contract`, `vendor-input-undeclared-force-fails-contract`, `vendor-form-wrong-field-fails-tsc`, `vendor-input-field-never-used-fails-coverage`, `vendor-request-reads-declared-key-passes`, `vendor-request-reads-undeclared-key-fails-contract`, `vendor-query-declared-passes`, `vendor-query-key-misspelled-fails-tsc`, `vendor-query-undeclared-read-fails-contract`, `vendor-declaration-unknown-class-fails-generate`.
+`strictly:install` publishes `config/strictly.php` with the Base Kit's Fortify declarations ([`stubs/strictly.php`](../packages/laravel/stubs/strictly.php); the package's merged defaults declare nothing), and Kit Conversion adds their classes under `App\Data\Auth`, with the Reference Implementation's two findings declared: `remember` on registration and `force` on enabling two-factor authentication, both `bool|Optional`. Its `tests/Feature/ContractCoverageTest.php` submits to the Fortify actions the Base Kit's tests don't (password confirmation, the two-factor challenge, enabling and confirming two-factor authentication) and opens the password reset link with its `email`. Not declared: the passkey routes, whose requests Laravel Passkeys' own client sends, and the Fortify actions that take no payload (logout, disabling two-factor authentication, resending the verification email, regenerating recovery codes), whose reads are checked by nothing ([P-168](#p-168)). Scenarios: `vendor-input-declared-passes`, `vendor-input-undeclared-read-fails-contract`, `vendor-input-undeclared-force-fails-contract`, `vendor-form-wrong-field-fails-tsc`, `vendor-input-field-never-used-fails-coverage`, `vendor-request-reads-declared-key-passes`, `vendor-request-reads-undeclared-key-fails-contract`, `vendor-query-declared-passes`, `vendor-query-key-misspelled-fails-tsc`, `vendor-query-undeclared-read-fails-contract`, `vendor-declaration-unknown-class-fails-generate`, `vendor-declaration-unloadable-class-fails-generate`.
 
 ### P-026
 
@@ -795,7 +930,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** keep each hand-named payload class next to the vendor action it describes and check it against the vendor's rules by reading them.
 
-**Closed by:** the oxlint rule `strictly/typed-forms` rejects a type argument on `<TypedForm>` or an alias of it (`` `<TypedForm>`'s payload comes from the route it submits to: drop the type argument. `` …), so a form's payload, field names and error keys always come from its route's brand. A vendor route gets its brand from the payload `config/strictly.php` declares for its action ([P-025](#p-025)), so Kit Conversion's Fortify forms (login, registration, password reset and confirmation, the two-factor challenge and setup) drop their type arguments, and their routes are form endpoints whose validation errors, validated fields and reads are Contracts. A closure route's form still has no fields until its input moves to a controller action ([P-097](#p-097)). Scenarios: `vendor-form-typed-by-declaration-passes`, `typed-form-type-argument-fails-lint`.
+**Closed by:** the oxlint rule `strictly/typed-forms` rejects a type argument on `<TypedForm>` or an alias of it (`` `<TypedForm>`'s payload comes from the route it submits to: drop the type argument. `` …), so a form's payload, field names and error keys always come from its route's brand. A vendor route gets its brand from the payload `config/strictly.php` declares for its action ([P-025](#p-025)), so Kit Conversion's Fortify forms (login, registration, password reset and confirmation, the two-factor challenge and setup) drop their type arguments, and their routes are form endpoints whose validation errors, validated fields and reads are Contracts. A closure route can't take an input class, so its form has none to type ([P-097](#p-097)). Scenarios: `vendor-form-typed-by-declaration-passes`, `typed-form-type-argument-fails-lint`.
 
 ### P-097
 
@@ -804,11 +939,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** form payloads
 - **Source:** found while closing [P-014](#p-014)
 - **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Route::post('projects', fn (StoreProjectData $data) => …)->name('projects.store')`: the generated `@/routes/projects` `store()` has no `WithInput` brand, so `useRouteForm(store(), …)` is refused as taking no input and `visit(store())` compiles, sending no payload. The PHPStan rule `strictly.inputData` checks controller actions only, so a plain Data class in such a closure isn't rejected either. The validation-error Contracts and the form-endpoint coverage do see the closure.
 
 **Manual workaround:** take inputs in controller actions only.
+
+**Closed by:** the PHPStan rule `strictly.closureRoute` ([`ClosureRouteRule`](../packages/laravel/src/PHPStan/ClosureRouteRule.php)) rejects a closure route that takes an input class, or any other Data class: `The closure route POST projects takes App\Data\StoreProjectData, an input class, but Wayfinder types a route function's payload only from a controller action: no typed form can send it.` Its tip says to move the route to a controller action, whose input class brands the route function. A closure route is a closure written as the action of `Route::get/post/put/patch/delete/options/any/match()`, on the facade, the router or a route registrar (`Route::middleware('auth')->post(…)`); [`RouteClosure`](../packages/laravel/src/PHPStan/RouteClosure.php) finds it, and also tells `strictly.inputRead` and `strictly.queryRead` when a read is inside one ([P-151](#p-151), [P-167](#p-167)). A route a test registers (where `$this` is a PHPUnit `TestCase`, as in a Pest test) is left alone: it exists only while the test runs, so no route function is generated for it, and a test route taking an input class is how a feature test checks the class's validation. A closure route the rule can't see as one isn't checked: [P-171](#p-171). Scenarios: `closure-routes-without-data-classes-pass`, `input-class-in-closure-route-fails-phpstan`.
 
 ## Validation errors
 
@@ -864,11 +1001,28 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** validation errors
 - **Source:** found porting Tracklane's Workspaces area into the Testbed App (#23)
 - **Upstream:** by design (laravel-data calls `authorize()` through the container, which knows nothing of the route's bound parameters)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** changing a member's role is allowed per row (only owners touch owners, nobody demotes the last owner), so the check needs the `{membership}` the route binds. [P-030](#p-030) puts it in `UpdateMemberData::authorize()`, whose parameters are resolved from the container: `Membership $membership` there is a new, empty model, not the route's. The method has to read `$request->route('membership')`, which is `mixed`, and narrow it with `instanceof` (the Testbed App's `app/Data/Members/UpdateMemberData.php`). `rules()` has the same limit (`UpdateLabelData::rules()` reads `request()->route('label')`). Editing a comment is another: only its author may (`CommentPolicy::update`), so `UpdateCommentData::authorize()` reads `$request->route('comment')` the same way.
 
 **Manual workaround:** take `Request $request` in `authorize()`, read the parameter with `$request->route('name')` and check it with `instanceof` before use.
+
+**Closed by:** an InputData's `authorize()` and `rules()` (a nested InputData's `rules()` too) receive, for each parameter typed as a model (any `UrlRoutable`), the model the current route binds to the parameter of the same name; every other parameter still resolves through the container, and so does a model parameter with a contextual attribute (`#[CurrentUser] User $user` is the signed-in user, whatever the route binds to `{user}`, and needs no `{user}` parameter) ([`RouteModelArguments`](../packages/laravel/src/Workarounds/LaravelData/RouteModelArguments.php), called by InputData's pipeline in place of laravel-data's `AuthorizedDataPipe` and by the `DataValidationRulesResolver` the service provider binds). It never falls back to an empty model: a parameter the route has no parameter of that name for, a route parameter left unbound (the action doesn't take the model, so it stays the raw key), or a call outside a request's route (`validate()` from a command or a unit test, [P-155](#p-155)) throws a `LogicException` naming the parameter and the route; a nullable parameter receives `null` for an optional route parameter the URL left out. The PHPStan rule `strictly.routeModelParameter` ([`RouteModelParameterRule`](../packages/laravel/src/PHPStan/RouteModelParameterRule.php)) rejects a model parameter of `authorize()` or `rules()` on any other Data class (a query class, a plain Data class), where it would still be a new, empty model; one with a contextual attribute passes, since the container resolves it there too. The Testbed App's `UpdateMemberData`, `UpdateCommentData`, `UpdateIssueData` and `UpdateLabelData` take the models as parameters. Scenarios: `bound-models-in-input-authorize-and-rules-passes`, `input-model-parameter-not-on-route-fails-test`, `model-parameter-in-query-rules-fails-phpstan`, `current-user-in-input-authorize-and-rules-passes`.
+
+### P-155
+
+**An input whose `rules()` take a route model is validated only through its route**
+
+- **Type Boundary:** validation errors
+- **Source:** found while closing [P-126](#p-126)
+- **Upstream:** by design (laravel-data's `validate()` and `validateAndCreate()` take only the payload)
+- **Status:** accepted gap
+
+**Reproduction:** `UpdateLabelData::rules(Label $label)` gets the route's `{label}`. Validating that input outside a request to its route, with `UpdateLabelData::validate($payload)` from a command, a queued job or a unit test, has no route to take the label from, so it throws `…::rules() takes App\Models\Label $label, the model the current route binds to {label}, but there is no current route.` An input without model parameters validates anywhere, as before.
+
+**Manual workaround:** validate the input through a request to its route (a feature test). Where the same rules are needed elsewhere, put them in a static method that takes the model and call it from both `rules()` and the other caller.
+
+**Reasoning:** laravel-data gives `validate()` no way to pass the model, and falling back to an empty one is what P-126 removed. Inputs are validated by the request that carries them, and that path has the route.
 
 ## Enums
 
@@ -930,7 +1084,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `enumValues.IssueStatus` generated from PHP in case order (`EnumValuesProvider`); for a literal union, `allOf<WeekStart>()('monday', 'sunday')`.
 
-**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and rejecting type assertions is [P-068](#p-068). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
+**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
 
 ### P-035
 
@@ -1063,11 +1217,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** pagination and deferred props
 - **Source:** eval-02 §3, §4 and §9
 - **Upstream:** no upstream issue filed
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Inertia::scroll($paginator)` sends the paginator's own flat JSON, while a paginator inside a Data class is typed `{ data, links, meta }`; the infinite-scroll prop's type is wrong.
 
 **Manual workaround:** `/** @var ScrollProp<CursorPaginatedDataCollection<array-key, X>> */ public ScrollProp $items` with `new ScrollProp(X::collect($cursorPaginator, CursorPaginatedDataCollection::class), …)` (type-safety rule 10).
+
+**Closed by:** the existing checks, proven to catch both ways of sending a raw paginator from a Page class. Filling a `ScrollProp<PaginatedDataCollection<…>>` property with `Inertia::scroll($paginator)` fails PHPStan, since the facade returns `ScrollProp<mixed>` (`… Inertia\ScrollProp<mixed> given.`), and so does `new ScrollProp($paginator)` (`… Inertia\ScrollProp<Illuminate\Pagination\LengthAwarePaginator<…>> given.`). Typing the property as the raw paginator instead (`ScrollProp<LengthAwarePaginator<int, X>>`) passes PHPStan, but its generated type is `{ data, links, meta }`, so the Contract of the feature test that renders the page fails `tsc` on the flat keys (`'"current_page"' does not exist in type …`), and Contract Coverage makes sure some test renders it. The typed way is unchanged. Scenarios: `inertia-scroll-into-typed-scroll-prop-fails-phpstan`, `scroll-prop-of-raw-paginator-fails-contract`, `scroll-prop-typed-as-its-items-passes`, `scroll-prop-every-item-shape-passes-coverage`.
 
 ### P-043
 
@@ -1191,7 +1347,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** a JSON action returns a Data object (`: SearchResultsData`); the route is branded with it (`RouteTypes::brands`), and `useRouteHttp(search(workspace), { q: null })` derives request and response from the route.
 
-**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. A JSON endpoint returning a list isn't branded: [P-108](#p-108); nor is a closure route's response: [P-109](#p-109). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
+**Closed by:** a JSON endpoint is a controller action whose return type is a Data class that isn't a Page class, `public function search(SearchQueryData $data): SearchResultsData` ([`RouteResponse`](../packages/laravel/src/Routes/RouteResponse.php)). The Wayfinder template override brands its route functions with it as well as with the input ([`WayfinderTemplates`](../packages/laravel/src/Routes/WayfinderTemplates.php)): `search(): RouteDefinition<'post'> & WithInput<SearchQueryData> & WithResponse<SearchResultsData>` ([`@mrsafalpiya/strictly-laravel/routes`](../packages/npm/routes/index.d.ts)). `useRouteHttp(route, init)` ([`@mrsafalpiya/strictly-laravel/react`](../packages/npm/react/index.d.ts)) takes the request data from the route's input (`useRouteHttp(stats())` when the action takes none) and types `response` and the result of `submit()` with the response, so a wrong field fails `tsc`; a route whose action declares no Data class response, a plain `JsonResponse` for instance, types it `unknown`, which must be checked before it is read. The `strictly/typed-requests` lint rule rejects Inertia's `useHttp()`. Every successful response a feature test gets from a JSON endpoint is recorded as a Contract, `export const response = {…} satisfies Contract<SearchResultsData>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on a JSON endpoint no test calls and observes the shapes of the responses ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `POST /search › hits`). Fortify's two-factor endpoints are typed by the responses `config/strictly.php` declares for them ([P-050](#p-050)), so Kit Conversion moves the Base Kit's `use-two-factor-auth.ts` to `useRouteHttp()`. An action that answers JSON through anything but one Data class (a list, a collection, a nullable or union type) fails PHPStan: [P-108](#p-108); a JSON response the action builds itself stays `unknown`: [P-180](#p-180). A closure route can't return a Data class: [P-109](#p-109); one that answers JSON without a Data class isn't checked: [P-179](#p-179). Scenarios: `json-endpoint-typed-passes`, `json-response-wrong-field-fails-tsc`, `json-response-undeclared-is-unknown-fails-tsc`, `inertia-use-http-fails-lint`, `json-response-around-the-data-class-fails-contract`, `json-endpoint-no-test-calls-fails-coverage`, `json-response-list-only-empty-fails-coverage`.
 
 ### P-049
 
@@ -1215,11 +1371,13 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** found while closing [P-048](#p-048)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `public function recent(): array` with `@return list<ProjectData>`, or a `DataCollection` / `PaginatedDataCollection` return type: the PHP return type doesn't name a Data class, so the route isn't branded, `useRouteHttp(recent())` types the result `unknown`, no Contract records its responses and Contract Coverage doesn't list it. The same holds for a nullable or union return type (`?ProjectData`).
 
 **Manual workaround:** return one Data class that holds the list (`RecentProjectsData` with `@param list<ProjectData> $projects`).
+
+**Closed by:** the PHPStan rule `strictly.jsonResponse` ([`JsonResponseRule`](../packages/laravel/src/PHPStan/JsonResponseRule.php)) rejects a controller action whose native return type is something Laravel answers as JSON with no Data class (`array` or `iterable`, a `@return list<ProjectData>` included, a Collection, laravel-data's `DataCollection`, `PaginatedDataCollection` and `CursorPaginatedDataCollection`, a paginator, a model or an API resource: anything `Arrayable`, `Jsonable` or `JsonSerializable` that isn't a Data class), `App\Http\Controllers\ProjectController::recent() returns array, which Laravel sends as JSON that nothing types: useRouteHttp() types the route's response unknown, and no Contract checks it.`, and one that returns a nullable Data class or a union holding one (`?ProjectData`, `ProjectData|RedirectResponse`), `… returns App\Data\ProjectData|null, a nullable or union type, which declares no response: …`. Its tip says to return one Data class that holds the value (`RecentProjectsData` with a `list<ProjectData>` property), which is a JSON endpoint like any other: its route is branded, its responses are recorded as Contracts and Contract Coverage sees the list filled. Page classes (on their own, nullable or in a union), redirects, `Response`, downloads and `void` stay allowed, and so does a `JsonResponse`, JSON the action builds itself ([P-180](#p-180)). A closure route returning such JSON isn't checked: [P-179](#p-179). The PHPStan rule-test kit covers each rejected and allowed return type. Scenarios: `json-endpoint-returning-list-fails-phpstan`, `json-endpoint-returning-nullable-data-fails-phpstan`, `json-endpoint-returning-wrapped-list-passes`.
 
 ### P-109
 
@@ -1228,11 +1386,41 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 - **Type Boundary:** JSON endpoints
 - **Source:** found while closing [P-048](#p-048), like [P-097](#p-097) for inputs
 - **Upstream:** none (Wayfinder gives its templates the controller and method, not the route's closure)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Route::get('stats', fn (): StatsData => …)->name('stats')`: the generated `@/routes` `stats()` has no `WithResponse` brand, so `useRouteHttp(stats())` types the result `unknown`. The JSON Contracts and the JSON-endpoint coverage do see the closure.
 
 **Manual workaround:** return JSON from controller actions only.
+
+**Closed by:** `strictly.closureRoute` ([P-097](#p-097)) also rejects a closure route whose return type, declared or inferred, is a Data class other than a Page class (a closure route may still render a page): `The closure route GET stats returns App\Data\StatsData, but Wayfinder types a route function's response only from a controller action: useRouteHttp() types its result unknown.` Scenarios: `closure-routes-without-data-classes-pass` (a controller action returns the Data class), `data-response-from-closure-route-fails-phpstan`.
+
+### P-179
+
+**A closure route that answers JSON without a Data class isn't rejected**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-108](#p-108)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `Route::get('projects/recent', fn (): array => Project::query()->latest()->take(5)->get()->all())`: Laravel answers the array as JSON, but `strictly.jsonResponse` checks controller actions only, so the route function's response is `unknown`, no Contract records it and Contract Coverage doesn't list it, without a word. A closure route returning a Data class fails `strictly.closureRoute` ([P-109](#p-109)), but its check stops at Data classes.
+
+**Manual workaround:** return JSON from controller actions only, as one Data class.
+
+### P-180
+
+**JSON an action builds itself has no response type**
+
+- **Type Boundary:** JSON endpoints
+- **Source:** found while closing [P-108](#p-108)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `public function health(): JsonResponse { return response()->json(['status' => 'ok']); }`, or a `Responsable` whose `toResponse()` builds JSON, or a `mixed` return type: the route isn't branded, so `useRouteHttp(health())` types the result `unknown`; no Contract records the response and Contract Coverage doesn't list the route.
+
+**Manual workaround:** return one Data class instead; where the JSON must stay untyped, narrow the `unknown` result before reading it, which `tsc` enforces.
+
+**Reasoning:** a `JsonResponse` is the explicit way to answer JSON no Data class describes (a health check, a payload a third party dictates), and the client already can't read it without narrowing, so it fails loudly rather than silently. Rejecting it would leave such endpoints only a suppression; what `strictly.jsonResponse` rejects are the return types that look typed in PHP (`list<ProjectData>`, `?ProjectData`) yet reach the client as `unknown` ([P-108](#p-108)).
 
 ### P-050
 
@@ -1283,7 +1471,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Manual workaround:** hand-write the payload type next to the listener and keep it in sync.
 
-**Closed by:** an event's payload is a Data class: it uses [`BroadcastsData`](../packages/laravel/src/Broadcasting/BroadcastsData.php), whose `broadcastWith()` sends what `broadcastData(): CommentData` returns. The PHPStan rule `strictly.broadcastData` ([`BroadcastDataRule`](../packages/laravel/src/PHPStan/BroadcastDataRule.php)) rejects a broadcast event that sends its payload any other way (public properties, its own `broadcastWith()` array, a `broadcastData()` that declares no single Data class): `Broadcast event App\Events\ProjectUpdated sends a payload that has no generated type.` `@/generated/broadcasting` maps the event to the Data class's generated type ([`BroadcastingModule`](../packages/laravel/src/Broadcasting/BroadcastingModule.php)), and `useChannelEvent()` ([`@mrsafalpiya/strictly-laravel/echo`](../packages/npm/echo/index.d.ts), a wrapper around `@laravel/echo-react`'s `useEcho()`) types the callback's payload with it, so reading a field it lacks fails `tsc`. The oxlint rule `strictly/typed-broadcasts` rejects Echo's untyped `useEcho()`, `useEchoPresence()` and `useEchoPublic()`. Every broadcast a feature test makes, from a request or not, is recorded as a Contract, `export const payload = {…} satisfies Contract<BroadcastEvents['ProjectUpdated']>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on an event no test broadcasts and observes the payloads' shapes ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `broadcast ProjectUpdated › description`). Broadcast notifications and model broadcasts aren't covered: [P-142](#p-142). ADR-0008. Scenarios: `broadcast-payload-typed-passes`, `broadcast-payload-field-misread-fails-tsc`, `broadcast-payload-without-data-class-fails-phpstan`, `broadcast-payload-around-the-data-class-fails-contract`, `broadcast-event-never-broadcast-fails-coverage`.
+**Closed by:** an event's payload is a Data class: it uses [`BroadcastsData`](../packages/laravel/src/Broadcasting/BroadcastsData.php), whose `broadcastWith()` sends what `broadcastData(): CommentData` returns. The PHPStan rule `strictly.broadcastData` ([`BroadcastDataRule`](../packages/laravel/src/PHPStan/BroadcastDataRule.php)) rejects a broadcast event that sends its payload any other way (public properties, its own `broadcastWith()` array, a `broadcastData()` that declares no single Data class): `Broadcast event App\Events\ProjectUpdated sends a payload that has no generated type.` `@/generated/broadcasting` maps the event to the Data class's generated type ([`BroadcastingModule`](../packages/laravel/src/Broadcasting/BroadcastingModule.php)), and `useChannelEvent()` ([`@mrsafalpiya/strictly-laravel/echo`](../packages/npm/echo/index.d.ts), a wrapper around `@laravel/echo-react`'s `useEcho()`) types the callback's payload with it, so reading a field it lacks fails `tsc`. The oxlint rule `strictly/typed-broadcasts` rejects Echo's untyped `useEcho()`, `useEchoPresence()` and `useEchoPublic()`. Every broadcast a feature test makes, from a request or not, is recorded as a Contract, `export const payload = {…} satisfies Contract<BroadcastEvents['ProjectUpdated']>` ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and Contract Coverage fails on an event no test broadcasts and observes the payloads' shapes ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), at `broadcast ProjectUpdated › description`). Broadcast notifications and model broadcasts are read through an app event: [P-142](#p-142). ADR-0008. Scenarios: `broadcast-payload-typed-passes`, `broadcast-payload-field-misread-fails-tsc`, `broadcast-payload-without-data-class-fails-phpstan`, `broadcast-payload-around-the-data-class-fails-contract`, `broadcast-event-never-broadcast-fails-coverage`.
 
 ### P-053
 
@@ -1313,7 +1501,7 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 
 **Manual workaround:** none; channel strings are built by hand.
 
-**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback with an `array` return type defines a presence channel, any other a private one, and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so its name stays unchecked: [P-143](#p-143). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
+**Closed by:** `strictly:generate` reads the channels the app's broadcaster registered from `routes/channels.php` ([`BroadcastChannels`](../packages/laravel/src/Broadcasting/BroadcastChannels.php)) into `BroadcastChannels`, and `channel(pattern, params)` from `@/generated/broadcasting` takes only those patterns and exactly their parameters. A parameter the callback type-hints with a model (`fn (User $user, Project $project): bool`) takes that model's route key, `RouteKey<'Project', number>`, or the Data object holding it, as a route function does ([P-003](#p-003)); a plain one takes any value. A Data class built from a model a channel binds has its key generated as that route key even when no route binds the model. A misspelled pattern fails `tsc` (`error TS2345: Argument of type '"project.{project}"' is not assignable to parameter of type '"projects.{project}"'.`), and so does the slug for a channel bound by id. A callback that declares a Data class as its return type defines a presence channel, typing its members ([P-145](#p-145); an `array` return type does too, which `strictly.presenceData` rejects), any other a private one (`make:channel`'s `array|bool` included), and `channel()` subscribes accordingly. On the server side, each broadcast Contract checks the event's private and presence channels against the defined patterns (`export const channels = [ "private-projects.4000001" ] satisfies BroadcastChannelName[];`), so an event broadcast on a channel no definition authorizes fails `tsc`. The Vite plugin regenerates when `routes/channels.php` changes. A public channel needs no definition, so `config/strictly.php` declares it instead ([P-143](#p-143)). Scenarios: `broadcast-channels-typed-passes`, `broadcast-channel-pattern-misspelled-fails-tsc`, `broadcast-channel-param-wrong-key-fails-tsc`, `broadcast-on-undefined-channel-fails-contract`.
 
 ### P-142
 
@@ -1322,11 +1510,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-052](#p-052)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** a notification with `via(): ['broadcast']` whose `toBroadcast()` returns `new BroadcastMessage([...])`, read with `useEchoNotification(channel, (n: { title: string }) => …)`; or a model using `BroadcastsEvents`, read with `useEchoModel()`. Both payloads are typed by hand, no Contract records them, and `strictly/typed-broadcasts` leaves those hooks alone.
 
 **Manual workaround:** broadcast an event of the app's own with a `BroadcastsData` payload alongside the notification or model change, and listen for that.
+
+**Closed by:** the oxlint rule `strictly/typed-broadcasts` ([`packages/npm/oxlint/index.js`](../packages/npm/oxlint/index.js)) also rejects Echo's `useEchoNotification()` and `useEchoModel()`, imported from `@laravel/echo-react` by name, renamed or through a namespace import: ``Echo's `useEchoNotification()` reads a broadcast notification's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the notification, and listen for it with `useChannelEvent(channel, event, callback)` from `@/generated/broadcasting`, which types its payload from the event's Data class.`` (and "a model broadcast's" / "the model change" for `useEchoModel()`). The workaround becomes the only way to read one: the app event's payload is typed, recorded as a Contract and covered like any other (P-052). What that leaves is [P-147](#p-147). Scenarios: `broadcast-notification-through-app-event-passes`, `use-echo-notification-fails-lint`.
+
+### P-147
+
+**A broadcast notification or model broadcast needs an app event alongside it**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-142](#p-142)
+- **Upstream:** none (Laravel Wayfinder's `next` branch and Laravel Ranger collect only `ShouldBroadcast` events)
+- **Status:** accepted gap
+
+**Reproduction:** a notification with `via(): ['broadcast']` and a `toBroadcast()`, or a model using `BroadcastsEvents`, has no client type for its own broadcast, and `strictly/typed-broadcasts` rejects the hooks that read it. To react to it in the browser the app broadcasts a second event of its own, so each change goes over the socket twice while the notification still broadcasts.
+
+**Manual workaround:** broadcast an app event with a `BroadcastsData` payload alongside the notification or model change and listen for it with `useChannelEvent()`; drop `'broadcast'` from the notification's `via()` (or `BroadcastsEvents` from the model) when nothing else reads it.
+
+**Reasoning:** a notification's `toBroadcast()` returns a `BroadcastMessage` around an untyped array, and a model broadcast sends the model's attributes (or its own `broadcastWith()` array) under event names derived at runtime, so typing them would need a second payload convention beside `BroadcastsData`, plus recording Laravel's `BroadcastNotificationCreated` and `BroadcastableModelEventOccurred` as Contracts. An app event already gets all of that, and the extra broadcast is cheap next to a payload nothing checks.
 
 ### P-143
 
@@ -1335,11 +1540,28 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-054](#p-054)
 - **Upstream:** none (Laravel needs no definition for a public channel)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** an event broadcasts on `new Channel('status')`; the client listens with `useChannelEvent(publicChannel('statuss'), …)`. Both compile, since nothing in `routes/channels.php` names the channel, and the broadcast Contract checks only private and presence channels.
 
-**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it.
+**Manual workaround:** define the channel in `routes/channels.php` and broadcast on it as a private channel whose callback returns `true`, so `channel()` names it. That isn't equivalent: a private channel needs an authenticated user, so guests, whom public channels exist for, can't listen.
+
+**Closed by:** the app declares its public channels in `config/strictly.php`'s `public_channels`, next to the vendor declarations, since Laravel defines them nowhere: a name (`'status'`), or a pattern keyed by itself with the models its parameters hold the route key of (`'projects.{project}.public' => ['project' => Project::class]`), which the installer publishes empty for new apps and the package's defaults give existing ones ([`PublicChannels`](../packages/laravel/src/Broadcasting/PublicChannels.php)). `BroadcastChannels::of()` returns them next to the channels `routes/channels.php` defines, with the visibility `public`, so `BroadcastChannels` in `@/generated/broadcasting` covers all three kinds. `publicChannel(pattern, params)` takes only the declared patterns, with their parameters typed as `channel()` types them (a bound one takes the model's route key or its Data object), and `channel()` takes only private and presence ones: a misspelled name fails `tsc` (`error TS2345: Argument of type '"statuss"' is not assignable to parameter of type '"status" | "projects.{project}.public"'.`), and so does any public channel in an app that declares none (`… parameter of type 'never'.`). Each broadcast Contract now checks every channel the event was broadcast on, public ones included, so broadcasting on an undeclared one fails `tsc` (`error TS2820: Type '"statuss"' is not assignable to type 'BroadcastChannelName'. Did you mean '"status"'?`). A declaration that isn't a name, binds a parameter its pattern doesn't have or a class that isn't a model, names a `private-` or `presence-` channel, or repeats a pattern `routes/channels.php` defines fails `strictly:generate`. The Vite plugin regenerates when `config/strictly.php` is saved, so a channel declared while the dev server runs is typed at once. Scenarios: `broadcast-public-channels-declared-passes`, `broadcast-public-channel-misspelled-fails-tsc`, `broadcast-on-undeclared-public-channel-fails-contract`, `broadcast-public-channel-declaration-invalid-fails-generate`.
+
+### P-153
+
+**A misspelled channel pattern with parameters fails `tsc` on the argument count**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-143](#p-143)
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** an app whose channels take different parameters (`projects.{project}`, `App.Models.User.{id}`) calls `channel('project.{project}', { project })`. `tsc` fails with `error TS2554: Expected 1 arguments, but got 2.` at the parameters instead of naming the pattern: it falls back to every pattern for the one it can't match, and the parameters of every pattern at once are none. The same holds for `publicChannel()`.
+
+**Manual workaround:** none needed for safety, since the call fails `tsc`; read the pattern instead of the reported argument.
+
+**Closed by:** `ChannelArgs` ([`echo/index.d.ts`](../packages/npm/echo/index.d.ts)) lets a pattern `tsc` couldn't match take its parameters or not, so the pattern is what fails: `error TS2345: Argument of type '"project.{project}.public"' is not assignable to parameter of type '"status" | "projects.{project}.public"'.` A pattern typed as a union of several takes no parameters. Scenarios: `broadcast-public-channels-declared-passes`, `broadcast-public-channel-with-params-misspelled-fails-tsc`.
 
 ### P-144
 
@@ -1348,11 +1570,13 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-053](#p-053) and [P-054](#p-054)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `CommentPosted` broadcasts on `issues.{issue}`; the client calls `useChannelEvent(channel('projects.{project}', { project }), 'CommentPosted', cb)`. The pattern and the event name are each checked, but not that the event goes to that channel, so the callback never fires.
 
 **Manual workaround:** none; check each listener's channel against the event's `broadcastOn()` by hand.
+
+**Closed by:** each broadcast event names the channel patterns it is sent on with a repeatable `#[BroadcastsOn('issues.{issue}')]` ([`BroadcastsOn`](../packages/laravel/src/Broadcasting/BroadcastsOn.php), ADR-0010), and the PHPStan rule `strictly.broadcastsOn` requires one (`Broadcast event App\Events\ProjectUpdated declares no channel it is sent on.`). A pattern must name a channel the app knows, private or presence from `routes/channels.php` or public from `config/strictly.php`'s `public_channels`, or `strictly:generate` fails (`App\Events\ProjectUpdated: #[BroadcastsOn('project.{project}')] names no channel.`). `@/generated/broadcasting` maps each channel's pattern to the events declared on it (`ChannelEvents`); `channel()` and `publicChannel()` return a handle that carries its pattern, and `useChannelEvent(handle, event, cb)` takes only that pattern's events, or for a handle whose pattern is one of several, the events sent on every one of them: `error TS2345: Argument of type '"ProjectUpdated"' is not assignable to parameter of type '"ProjectShared"'.` The declaration duplicates `broadcastOn()`, which builds the names at runtime, so it is verified both ways. Each broadcast Contract records the pattern of every channel the event went to, matched as Laravel's broadcaster matches it, and checks it against the event's declaration, so a `broadcastOn()` that sends the event elsewhere fails `tsc` (`error TS2322: Type '"App.Models.User.{id}"' is not assignable to type '"projects.{project}"'.`). Contract Coverage reports a declared pattern no feature test broadcasts the event on, a stale declaration (`✗ ProjectUpdated on App.Models.User.{id}: no feature test broadcasts this event on this channel: …`), unless the event's Contracts already fail on a channel it doesn't declare, and a public channel no event declares, which listeners would hear nothing on (`✗ maintenance: no event's #[BroadcastsOn] names this public channel: …`). Scenarios: `broadcast-event-on-undeclared-channel-fails-tsc`, `broadcast-on-channel-not-declared-fails-contract`, `broadcast-declared-channel-never-broadcast-fails-coverage`, `broadcast-public-channel-no-event-declares-fails-coverage`, `broadcast-on-unknown-channel-pattern-fails-generate`, `broadcast-event-without-broadcasts-on-fails-phpstan`, and the passing `broadcast-channels-typed-passes`, `broadcast-event-names-typed-passes`, `broadcast-payload-typed-passes`, `broadcast-public-channels-declared-passes`.
 
 ### P-145
 
@@ -1361,11 +1585,41 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-054](#p-054)
 - **Upstream:** by design: `@laravel/echo-react`'s presence callbacks take `any`
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `Broadcast::channel('issues.{issue}.viewers', fn (User $user, Issue $issue): array => ['id' => $user->id, 'name' => $user->name])`; the client reads the members through `here()`, `joining()` and `leaving()` on `usePresenceChannel()`'s channel, typed by hand.
 
 **Manual workaround:** type the member data by hand next to the listener.
+
+**Closed by:** a presence channel's callback returns a Data class of what each member shares, declared as its return type (`fn (User $user, Issue $issue): ?ViewerData => …`, `null` refusing the user; a channel class's `join()` the same). `BroadcastChannels` reads the declared return type: a Data class makes the channel a presence one and is generated as its `member` in `BroadcastChannels` (`@/generated/broadcasting`). `usePresence(channel, { here, joining, leaving })` from there ([`echo/index.d.ts`](../packages/npm/echo/index.d.ts)) takes only a presence channel's handle, with its parameters typed as `channel()` types them, joins it through `@laravel/echo-react`'s `useChannel()` (ADR-0008), and types each callback's members as that Data class, so reading a field it lacks fails `tsc` (`error TS2339: Property 'email' does not exist on type 'ViewerData'.`). The PHPStan rule `strictly.presenceData` ([`PresenceDataRule`](../packages/laravel/src/PHPStan/PresenceDataRule.php)) rejects a channel callback that returns an array (`Presence channel issues.{issue}.viewers returns its members' data as an array.`), and one that returns a Data class without declaring it, which generation would take for a private channel; a callback returning `bool` is untouched. A callback returning an array or a bool (`make:channel`'s `join(User $user): array|bool`) could authorize either kind, so generation takes it for a private channel (`usePresence()` on it fails `tsc`) and the rule asks for `bool` or a Data class (`Channel projects.{project} returns an array or a bool, which doesn't tell a private channel from a presence one.`). The oxlint rule `strictly/typed-broadcasts` also rejects Echo's `usePresenceChannel()` (``Echo's `usePresenceChannel()` hands out a presence channel whose members are typed by hand: …``), and its `useChannel(name, 'presence')`, which hands out the same channel (``Echo's `useChannel(name, 'presence')` hands out …``); a visibility only known at runtime is left with Echo's other channel objects ([P-148](#p-148)). What that leaves is [P-165](#p-165). Scenarios: `presence-members-typed-passes`, `presence-member-field-misread-fails-tsc`, `presence-channel-returns-array-fails-phpstan`, `private-channel-class-join-array-or-bool-fails-phpstan`, `private-channel-class-join-array-or-bool-is-private-fails-tsc`, `use-presence-channel-fails-lint`, `use-channel-presence-fails-lint`, and the passing `broadcast-channels-typed-passes`, `skill-add-broadcast-event-example-passes`.
+
+### P-165
+
+**A presence channel's member data isn't checked by a Contract**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-145](#p-145)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** a presence channel's `ViewerData` gains a `#[WithTransformer]` (or a `toArray()` override) that changes what it serialises to. Its members reach the browser in the `channel_data` of the `/broadcasting/auth` response, which no feature test records, so the difference from the generated `ViewerData` type fails nothing, and Contract Coverage doesn't ask for a test that joins the channel.
+
+**Manual workaround:** a feature test that authorizes the presence channel through a Pusher-protocol broadcaster (switch the test to the Reverb connection, as the Testbed App's `CommentBroadcastTest` does for its private channel) and asserts the `user_info` in the response's `channel_data`.
+
+**Reasoning:** feature tests broadcast on the `null` connection, whose `auth()` never runs a channel's callback, so no test sees member data unless it installs and configures a real broadcaster's SDK (`pusher/pusher-php-server` for Reverb and Pusher). Recording `channel_data` from such responses is possible, but Contract Coverage couldn't require it of every app with a presence channel, and a Contract nothing requires proves little. The member type is generated from the Data class like every other, so what stays unchecked is only that class's own serialisation.
+
+### P-148
+
+**A channel object from Echo listens for any event with an untyped payload**
+
+- **Type Boundary:** broadcasting
+- **Source:** found while closing [P-142](#p-142)
+- **Upstream:** by design: `@laravel/echo-react`'s `useChannel()` returns Echo's channel, whose `listen()` and `notification()` take any name and callback
+- **Status:** open
+
+**Reproduction:** `useChannel('App.Models.User.1').channel()?.listen('CommentPostd', (e: { body: string }) => …)`, or `.notification((n: { title: string }) => …)` on it, or the same on `echo().private(…)`, compiles and passes lint: `strictly/typed-broadcasts` rejects only Echo's listening hooks, not the channel objects its other hooks and `echo()` return.
+
+**Manual workaround:** listen through `useChannelEvent()` and follow presence members through `usePresence()` only, and leave Echo's channel objects to joining and leaving.
 
 ## Translations
 
@@ -1423,11 +1677,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found building the translations boundary (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `lang/en/issues.php` defines `'count' => '{0} No issues|{1} One issue|[2,*] :count issues'`; the client calls `t('issues.count', { count: 3 })`, which compiles and renders the whole message, pipes and ranges included. `trans_choice()` selects the variant on the server; nothing does on the client.
 
 **Manual workaround:** one key per variant (`issues.count_none`, `issues.count_one`, `issues.count_many`), chosen in TypeScript.
+
+**Closed by:** a message is pluralised when it contains `|` (`StrictlyLaravel\Translations\Translations::isPlural()`), and `@/generated/translations` lists those keys as `PluralTranslationKey`. Its `choice(key, count, params?)` picks the form as Laravel's `MessageSelector` does (a `{n}` or `[from,to]` range holding the count first, `*` leaving a range open, then the plural rule of the locale whose message it is, falling back to the default locale's message like `t()`), fills `:count` with the count (or a `count` param) and takes the message's other `:params`. `t()` rejects a pluralised key (`error TS2345: Argument of type '"issues.count"' is not assignable to parameter of type '"issues.count is a plural message: use choice()"'.`) and `choice()` every other key (`… '"issues.title is not a plural message: use t()"'.`). The locale parity test ([P-057](#p-057)) reports a locale whose message is pluralised where the default locale's isn't, or the other way round (`de: issues.count isn't plural, but the en message is, so choice() can't pick its form`), except that a locale whose plural rule has one form (Japanese, Chinese, Korean, Turkish…) may leave a message unpluralised, since `trans_choice()` and `choice()` take its only form; the number of forms may differ, since each locale's plural rule has its own. The npm package's unit tests compare `choice()` with what `trans_choice()` returns in `en`, `de`, `fr`, `ru`, `pl`, `ar` and `ja`. Scenarios: `translation-plural-choice-passes`, `translation-plural-key-in-t-fails-tsc`, `translation-singular-key-in-choice-fails-tsc`, `translation-only-key-plural-in-t-fails-tsc`, `translation-only-key-choice-without-params-fails-tsc` (an app with a single key), `locale-plural-mismatch-fails-test`, `locale-single-plural-form-unpluralised-passes`.
+
+### P-161
+
+**A message with a literal `|` is a pluralised message**
+
+- **Type Boundary:** translations
+- **Source:** found typing `choice()` (#47)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** `lang/en/app.php` defines `'title' => 'Tracklane | Projects'`, which isn't pluralised. `t('app.title')` fails `tsc` (`… is a plural message: use choice()`), and `choice('app.title', 1)` renders `Tracklane `, the first form. In PHP, `__('app.title')` fails PHPStan (`strictly.translationPlural`: `Translation 'app.title' is pluralised: use trans_choice().`, [P-137](#p-137)), and `trans_choice('app.title', 1)` renders `Tracklane `.
+
+**Manual workaround:** keep the `|` out of the message: `` `${t('app.name')} | ${t('projects.index.title')}` ``, or a different character (`·`, `—`).
+
+**Reasoning:** `|` is Laravel's form separator and has no escape: `trans_choice()` splits such a message on the server just as `choice()` does on the client. Only `__()` renders it whole, which the Overlay rejects for the same reason as `t()`, and telling a literal `|` from a form separator would mean guessing at the message's intent; a wrong guess renders a pluralised message whole, which is the Problem P-136 closed.
 
 ### P-137
 
@@ -1436,11 +1707,28 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 - **Type Boundary:** translations
 - **Source:** found translating the Testbed App's flash messages (#28)
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `FlashData::success(__('projects.flash.saevd', ['key' => $project->key]))` passes PHPStan and the tests; the toast shows the raw key. A param misspelled in `__()`'s replacements leaves the `:key` placeholder unfilled the same way.
 
 **Manual workaround:** a feature test that asserts the flashed message's text.
+
+**Closed by:** the PHPStan rule [`TranslationRule`](../packages/laravel/src/PHPStan/TranslationRule.php) checks `__()`, `trans()`, `trans_choice()`, `Lang::get()`, `Lang::choice()` and the Translator's `get()` and `choice()` as `tsc` checks `t()` and `choice()` ([P-055](#p-055), [P-056](#p-056), [P-136](#p-136)), against the default locale's messages as `strictly:generate` reads them (PHP lang files with nested and subdirectory keys, and the JSON file) over Laravel's own lang files (`validation.*`, `auth.*`, `passwords.*`, `pagination.*`), which the translator falls back to when the app hasn't published them ([P-138](#p-138)). A key neither defines fails with `Translation key 'projects.flash.saevd' isn't defined in locale en.` (`strictly.translationKey`). A key naming a group of messages (`__('dates.months')` for `'months' => ['Jan', …]`, `trans('validation.attributes')`), which Laravel returns as an array, is defined; a choice call on one fails (`Translation key 'dates.months' names a group of messages, not one.`). The replacements must be exactly the message's `:params`, matched as on the client (`:key`, `:Key` and `:KEY` are the param `key`): `Translation 'projects.flash.saved' needs the param 'key'.` and `… takes no param 'kye'.` (`strictly.translationParams`); `trans_choice()` may leave out `count`, which it fills from the number, and a closure replacement fills a `<tag>`, not a `:param`. A pluralised message goes through a choice call and any other through a get call (`Translation 'issues.count' is pluralised: use trans_choice().`, `strictly.translationPlural`), as `choice()` and `t()` on the client: `__()` renders every form, and `trans_choice()` has none to pick. A key, or replacements, that PHPStan can't resolve to literals (a union of literal keys is fine, each is checked) can't be checked, so it is reported as `strictly.translationDynamic`, which a suppression with its reason accepts (ADR-0007), just as `t()` takes no `string` key. A package's namespaced key (`billing::invoices.title`) isn't checked, as its lang files aren't read. Each analysed file depends on the default locale's lang files through PHPStan's result cache, so editing a lang file re-checks the calls. Rule-test kit cases: `packages/laravel/tests/PHPStan/TranslationRuleTest.php`. Scenarios: `translation-calls-in-php-pass-phpstan`, `translation-key-misspelled-in-php-fails-phpstan`, `translation-param-misspelled-in-php-fails-phpstan`.
+
+### P-163
+
+**Text no lang file defines can't be told from a misspelled key**
+
+- **Type Boundary:** translations
+- **Source:** found checking translation keys in PHP (#48)
+- **Upstream:** none
+- **Status:** accepted gap
+
+**Reproduction:** the Base Kit flashes `__('Profile updated.')` and has no `lang/en.json`; Laravel's translator renders text it has no message for as it is. `__('Profile updatd.')` passes PHPStan the same way, and so does a misspelled text key that `lang/en.json` defines, which then renders untranslated in every locale.
+
+**Manual workaround:** give the message a `group.item` key (`__('settings.flash.profile_updated')`), which must be defined.
+
+**Reasoning:** Laravel documents text as its own key ("translation strings as keys") and renders it when no lang file defines it, and the Base Kit relies on that. So [P-137](#p-137)'s rule reports only an undefined key shaped like a lang file's (`group.item`, dot-separated with no whitespace), and accepts other text, checking only that its own `:params` are passed. Requiring every text to be defined would fail every app that uses the convention, and the Base Kit, until each such text is copied into `lang/en.json` unchanged.
 
 ### P-138
 
@@ -1566,12 +1854,14 @@ Problems in generation or verification that affect every Type Boundary.
 
 - **Type Boundary:** every Type Boundary
 - **Source:** eval-02 §4 and §9
-- **Upstream:** none
-- **Status:** open
+- **Upstream:** no upstream issue filed (typescript-transformer 3.3 transpiles `mixed` to `any` and keeps only a `@template`'s name; [spatie/typescript-transformer#58](https://github.com/spatie/typescript-transformer/issues/58) asked for configurable fallbacks against v2)
+- **Status:** closed
 
 **Reproduction:** `public mixed $meta` or an untyped `public array $items` generates `any` / `any[]`; template bounds are dropped. Anything typed with them compiles.
 
 **Manual workaround:** PHPStan max with 100 % type coverage forbids untyped properties; arrays declare their item type (`/** @var array<int, TaskData> */`).
+
+**Closed by:** [`MixedAsUnknown`](../packages/laravel/src/Workarounds/TypeScriptTransformer/MixedAsUnknown.php) generates `mixed` as `unknown` wherever the Overlay emits TypeScript (a Data class, a Page class and its `OnceProp`, `MergeProp` and `ScrollProp` props, the shared props, an input or query class, a JSON response, a broadcast payload, and inside their arrays: `array<string, mixed>` is `Record<string, unknown>`), and an array with no item type as `unknown[] | Record<string, unknown>`, so a reader narrows before reading a field. [`TemplateBounds`](../packages/laravel/src/Workarounds/TypeScriptTransformer/TemplateBounds.php) writes a generic Data class's `@template T of X` as `T extends X` (`object` for laravel-data's own base classes and any abstract Data class such as `InputData`, `string | number` for `\BackedEnum`, and no constraint for a class with no TypeScript type such as a model, so such a bound never fails generation). Contract Coverage reports a `mixed` property only ever `null` like any nullable one. The one `any` left in typescript-transformer's output is a PHPDoc `callable` with no signature, which no JSON value can be (PHP forbids `callable` as a property type). Scenarios: `mixed-field-read-unnarrowed-fails-tsc`, `mixed-prop-narrowed-passes`, `mixed-generates-unknown-at-every-type-boundary-passes`, `generic-data-class-outside-bound-fails-tsc`, `generic-data-class-within-bounds-passes`.
 
 ### P-063
 
@@ -1580,11 +1870,13 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary
 - **Source:** eval-02 §4 and §9
 - **Upstream:** no upstream issue filed (typescript-transformer `FlatModuleWriter`)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `App\Data\Issues\SummaryData` and `App\Data\Projects\SummaryData`: the flat module silently emits two `export type SummaryData`; `tsc` then fails on the generated file.
 
 **Manual workaround:** rename one, or `#[TypeScript(name: 'IssueSummaryData')]`.
+
+**Closed by:** `strictly:generate` (the `generate` step of `ci:check`, and `build` and `types:check`, which generate first) fails before it writes `@/generated` when two or more PHP classes generate the same type name: Data classes, enums, and an app class named like one of Strictly Laravel's own types (`DateOnly`, `InertiaPages`, …). It names every clashing class and the fix, one line per name, such as "`App\Data\Issues\SummaryData` and `App\Data\Projects\SummaryData` both generate `SummaryData`. Rename one, or give one a TypeScript name with `#[TypeScript(name: '…')]`." The check wraps typescript-transformer's writer ([`DuplicateTypeNames`](../packages/laravel/src/Workarounds/TypeScriptTransformer/DuplicateTypeNames.php)), so nothing is written and the last good types stay; while the dev server runs, the Vite plugin logs the failure like any other ([P-064](#p-064)). Page classes never clash, since their type names come from the page path ([P-010](#p-010)). Scenarios: `same-named-data-classes-fail-generate`, `same-named-data-classes-renamed-passes`; harness test "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can't be loaded or two that generate the same type name keep the last good types".
 
 ### P-064
 
@@ -1599,7 +1891,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** a Vite plugin (`vite-plugins/php-types.ts`) that regenerates on PHP changes under `app/`, plus `File::ensureDirectoryExists()` before generating; build, typecheck and CI regenerate first.
 
-**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010), or `.env.example` is saved, [P-058](#p-058)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class keeps the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
+**Closed by:** the npm package's Vite plugin ([`packages/npm/vite/index.js`](../packages/npm/vite/index.js), `@mrsafalpiya/strictly-laravel/vite`), which `strictly:install` registers in `vite.config.ts` ([`ViteTypesPlugin`](../packages/laravel/src/Install/ViteTypesPlugin.php)). While the dev server runs it runs `php artisan strictly:generate --skip-routes` on start and whenever a PHP file under `app/` is created, saved or deleted (and a page component file under `resources/js/pages` is created or deleted, [P-010](#p-010), or `.env.example` is saved, [P-058](#p-058)): saves are debounced, runs never overlap and queue at most one more, and a failed run is logged without stopping the dev server. `strictly:generate` refuses to run while a PHP file it reads doesn't parse ([`UnparsableFiles`](../packages/laravel/src/Workarounds/UnparsableFiles.php)) or a class that gets a type can't be loaded ([P-073](#p-073)), so it writes nothing and the last good types stay. Build, typecheck and `ci:check` generate first, and generation creates the gitignored output directory ([P-072](#p-072)). Scenarios: `data-class-mid-edit-fails-generate`, `data-class-edit-finished-passes`; harness tests: "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can't be loaded or two that generate the same type name keep the last good types", "generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone", and the plugin's timing through a real Vite dev server (`harness/tests/vite-plugin.test.ts`).
 
 ### P-065
 
@@ -1629,7 +1921,7 @@ Problems in generation or verification that affect every Type Boundary.
 
 **Manual workaround:** Contract Coverage, `php artisan types:coverage --strict`, fails CI on each unverified shape; close it with a test that produces it (`tests/Feature/ShapeCoverageTest.php`).
 
-**Closed by:** Contract Coverage, `php artisan strictly:coverage --strict` ([`CoverageCommand`](../packages/laravel/src/Console/CoverageCommand.php)), which `ci:check` runs as `ci:check:coverage`, after the tests and before `tsc`. It reads the sidecars of the Contracts the tests recorded ([P-065](#p-065)) and compares them with the Page classes and the Data classes they hold ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php)). It fails on a page no test renders, and, at any depth and per Data class property, on a nullable field only ever `null`, an Optional field never sent, a list or map only ever empty, a union of Data classes never sent as one of its variants and a scalar union (`int|string`) never sent as one of its members. Each gap is one line that names the page or field, where it was looked for and the test to add: `✗ ProjectData.lead is only ever null (at projects/show › project.lead): add a feature test that renders projects/show with project.lead not null.` The shared props and the flash data are proven the same way against their Data classes ([P-012](#p-012), [P-047](#p-047)): every page's shared props (`at shared props › …`, and a gap when no test renders a page through the Inertia middleware) and everything flashed, so a flash key no test flashes is a gap (`at flash data › …`). Run without `--strict`, only unrendered pages fail. A fresh install has no gaps: Kit Conversion adds `tests/Feature/ContractCoverageTest.php` with `tests/Pest.php`, which renders the Base Kit's pages with a status message, with passkeys and the appearance page. The other dimensions report into the same Contract Coverage with the Problems that record their Contracts: deferred props ([P-043](#p-043): a lazy page prop no test loads), JSON endpoints ([P-048](#p-048), [P-050](#p-050)), form endpoints and declared vendor fields ([P-024](#p-024), [P-025](#p-025)) and broadcasts ([P-052](#p-052)). Shapes laravel-data doesn't describe stay unchecked ([P-084](#p-084)). Scenarios: `every-shape-exercised-passes-coverage`, `page-no-test-renders-fails-coverage`, `nullable-prop-only-null-fails-coverage`, `optional-prop-only-absent-fails-coverage`, `list-prop-only-empty-fails-coverage`, `union-variant-never-seen-fails-coverage`, `scalar-union-member-never-seen-fails-coverage`, `coverage-without-recorded-contracts-fails`, `shared-prop-only-null-fails-coverage`, `flash-key-never-flashed-fails-coverage`; harness test: "make:page creates a Page class and its page component, already in sync".
+**Closed by:** Contract Coverage, `php artisan strictly:coverage --strict` ([`CoverageCommand`](../packages/laravel/src/Console/CoverageCommand.php)), which `ci:check` runs as `ci:check:coverage`, after the tests and before `tsc`. It reads the sidecars of the Contracts the tests recorded ([P-065](#p-065)) and compares them with the Page classes and the Data classes they hold ([`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php), [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php)). It fails on a page no test renders, and, at any depth and per Data class property, on a nullable field only ever `null`, an Optional field never sent, a list or map only ever empty, a union of Data classes never sent as one of its variants and a scalar union (`int|string`) never sent as one of its members. Each gap is one line that names the page or field, where it was looked for and the test to add: `✗ ProjectData.lead is only ever null (at projects/show › project.lead): add a feature test that renders projects/show with project.lead not null.` The shared props and the flash data are proven the same way against their Data classes ([P-012](#p-012), [P-047](#p-047)): every page's shared props (`at shared props › …`, and a gap when no test renders a page through the Inertia middleware) and everything flashed, so a flash key no test flashes is a gap (`at flash data › …`). Run without `--strict`, only unrendered pages fail. A fresh install has no gaps: Kit Conversion adds `tests/Feature/ContractCoverageTest.php` with `tests/Pest.php`, which renders the Base Kit's pages with a status message, with passkeys and the appearance page. The other dimensions report into the same Contract Coverage with the Problems that record their Contracts: deferred props ([P-043](#p-043): a lazy page prop no test loads), JSON endpoints ([P-048](#p-048), [P-050](#p-050)), form endpoints and declared vendor fields ([P-024](#p-024), [P-025](#p-025)) and broadcasts ([P-052](#p-052)). Shapes laravel-data doesn't describe (an array shape, a list of a union, a list of lists) are rejected by PHPStan instead ([P-084](#p-084)). Scenarios: `every-shape-exercised-passes-coverage`, `page-no-test-renders-fails-coverage`, `nullable-prop-only-null-fails-coverage`, `optional-prop-only-absent-fails-coverage`, `list-prop-only-empty-fails-coverage`, `union-variant-never-seen-fails-coverage`, `scalar-union-member-never-seen-fails-coverage`, `coverage-without-recorded-contracts-fails`, `shared-prop-only-null-fails-coverage`, `flash-key-never-flashed-fails-coverage`; harness test: "make:page creates a Page class and its page component, already in sync".
 
 ### P-084
 
@@ -1638,13 +1930,28 @@ Problems in generation or verification that affect every Type Boundary.
 - **Type Boundary:** every Type Boundary
 - **Source:** found while closing [P-066](#p-066)
 - **Upstream:** none (laravel-data's `DataConfig` describes one item class per collection, by design)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** Contract Coverage reads a property's shapes from laravel-data's description of its Data class, which knows one item type per collection and nothing inside a PHPDoc array shape. So these pass `strictly:coverage --strict` although `tsc` never saw the other shape: a page prop `/** @param list<array{lead: ?string}> $projects */` whose `lead` every test sends as `null`; `/** @param list<int|string> $estimates */` only ever sent strings; `/** @param list<IssueData|MilestoneData> $focus */` only ever sent issues (laravel-data reads every item as an `IssueData`); and a nested list `list<list<MemberData>>`.
 
 **Manual workaround:** model the item as a Data class (a `ProjectSummaryData` with `public ?string $lead`, or a Data class wrapping the union), whose shapes Contract Coverage does check.
 
-The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<IssueStatus>, array<int, IssueListItemData>>`, a map of lists), whose issues' shapes go unchecked. Its tests send an assigned, labelled, estimated issue with a due date anyway, so the gap closes as soon as this one does.
+The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<IssueStatus>, array<int, IssueListItemData>>`, a map of lists), whose issues' shapes went unchecked.
+
+**Closed by:** the PHPStan rule `strictly.dataShape` ([`DataShapeRule`](../packages/laravel/src/PHPStan/DataShapeRule.php)) rejects the shapes Contract Coverage can't see in the public properties of every Data class, Page, input and query classes included (promoted constructor parameters and their `@param` or `@var` too): an array shape at any depth, a list or map whose item type is a union (of Data classes, of scalars, or with `null`) and a list or map of lists or maps. Its message names the property and the part of its type, `App\Pages\Projects\IndexPage::$projects has an array shape (array{name: string, lead: string|null}) in its type, inside which Contract Coverage can't see.`, and its tip says to model the item as a Data class, for a union of Data classes one whose property is the union, its variants told apart by a literal discriminant, as Contract Coverage checks them ([P-132](#p-132)). Input and query classes are included because laravel-data validates such shapes only as `array` (and every item of a union of Data classes as the first), so a request's shape went unchecked too. Lists and maps of one type stay allowed, as do a union of literals of one scalar type (`list<'low'|'high'>`), `list<int|float>` (one TypeScript `number`, as Contract Coverage counts it) and a template type with a union bound, which each use of the class decides; a `#[Hidden]` property is never sent, so it is exempt. The Testbed App's cycle page now sends `list<StatusGroupData>`, each with its status and `list<IssueListItemData>`, so Contract Coverage checks its issues. Scenarios: `array-shape-page-prop-fails-phpstan`, `array-shape-modelled-as-data-class-passes-coverage`; the rule-test kit's `DataShapeRuleTest` covers each rejected and allowed form. The Contract scenarios that send a value around an array shape (`hand-built-page-prop-fails-contract`, `json-response-around-the-data-class-fails-contract`, `broadcast-payload-around-the-data-class-fails-contract`) now suppress `strictly.dataShape` with a reason, showing the Contract still catches what such an app sends.
+
+### P-185
+
+**Contract Coverage doesn't look inside a generic Data class's template-typed items**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-084](#p-084)
+- **Upstream:** none (laravel-data describes a `list<TItem>` property as an array with no item class, since a template type is no class)
+- **Status:** open
+
+**Reproduction:** a generic Data class `/** @template TItem of Data */ final class ListingData extends Data` with `/** @param list<TItem> $items */`, sent as `/** @param ListingData<IssueData> $backlog */`. laravel-data describes `items` as an `Array` with no Data class, so Contract Coverage checks only that the list isn't always empty and never walks its items: an `IssueData.assignee` only ever `null` there passes `strictly:coverage --strict`. A union type argument (`ListingData<IssueData|MilestoneData>`) passes `strictly.dataShape` too, since the rule checks the generic class's own `list<TItem>` and leaves the template's argument to each use ([P-084](#p-084)).
+
+**Manual workaround:** render the same Data class in a prop Contract Coverage does walk, or use a non-generic Data class per item type (`IssueListingData` with `list<IssueData>`).
 
 ### P-125
 
@@ -1713,11 +2020,13 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** overview §2; type-safety rule 14
 - **Upstream:** none
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** `props.project as ProjectData`, `<T>x` or `user!.name` in app code compiles whatever the generated type says.
 
 **Manual workaround:** the `type-safety/no-type-assertions` lint rule rejects `as`, `<T>x` and `!` (not `as const`) outside the boundary modules ([P-069](#p-069)).
+
+**Closed by:** the installer hook `vite.config.ts: oxlint rejects type and non-null assertions` ([`ViteLintPlugin::rejectAssertions()`](../packages/laravel/src/Install/ViteLintPlugin.php)) turns on oxlint's own `typescript/consistent-type-assertions` (with `assertionStyle: 'never'`, which still allows `as const`) and `typescript/no-non-null-assertion` in the app's Vite+ lint config. `props.project as ProjectData` and `<UserData>meta` fail `ci:check:lint` with `typescript(consistent-type-assertions): Do not use any type assertions.`, and `auth.user!.name` with `typescript(no-non-null-assertion): Forbidden non-null assertion.` App code narrows with a check instead (`=== null`, `typeof`, a type guard for an `unknown`, [P-062](#p-062)); a cast that is really needed takes a suppression with its reason (ADR-0007). The vendored shadcn/ui components in `resources/js/components/ui/`, which cast CSS variables to `React.CSSProperties`, are already outside lint (the Base Kit's `ignorePatterns`), and the Overlay's own casts live in the npm package ([P-069](#p-069)), so app code needs no other exemption. Kit Conversion narrows the appearance `use-appearance.tsx` reads from `localStorage` with a check against the `Appearance` values, and types `use-current-url.ts`'s `whenCurrentUrl()` with overloads instead of `null as TIfFalse`. What still asserts without a cast: an `any` ([P-175](#p-175)) and a hand-written type guard ([P-176](#p-176)). Scenarios: `type-assertion-on-page-prop-fails-lint`, `angle-bracket-assertion-on-unknown-fails-lint`, `non-null-assertion-fails-lint`, `narrowed-instead-of-asserted-passes`, `assertion-rules-added-by-reinstall-fails-lint`.
 
 ### P-069
 
@@ -1733,6 +2042,34 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** each cast states what proves it (the recorded Contracts); the lint rule allows casts only in these modules.
 
 **Reasoning:** Inertia's own types are looser than the generated ones, so bridging them needs casts somewhere. Confining them to three modules, each cast justified and backed by Contracts, keeps the rest of the app cast-free.
+
+### P-175
+
+**An `any` from an untyped API reaches typed code without a cast**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #52
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** `const project: ProjectData = JSON.parse(text)`, or a third-party function typed as returning `any`, compiles and passes lint: TypeScript lets `any` flow into any type, so the value is cast without `as`, and the rules against type assertions ([P-068](#p-068)) don't see it.
+
+**Manual workaround:** read such a value as `unknown` (`const parsed: unknown = JSON.parse(text)`) and narrow it.
+
+### P-176
+
+**A hand-written type guard is trusted as written**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** issue #52
+- **Upstream:** by design: TypeScript doesn't check a written type predicate (`value is UserData`) against the function's body
+- **Status:** accepted gap
+
+**Reproduction:** `function isUser(value: unknown): value is UserData { return typeof value === 'object'; }` compiles and passes lint, and every `isUser(meta) && meta.name` after it reads `meta` as a `UserData` the check never proved, like a cast ([P-068](#p-068)).
+
+**Manual workaround:** check in the guard's body every field its predicate claims, and review guards as closely as casts.
+
+**Reasoning:** narrowing an `unknown` ([P-062](#p-062)) needs a guard whenever the check doesn't fit in one expression, and the predicate is how TypeScript lets a function narrow. Lint can't compare a predicate with its body (oxlint's own rules have no such check, and JS plugins are syntactic, [P-070](#p-070)), so rejecting written predicates would reject the narrowing P-068 asks for.
 
 ### P-070
 
@@ -1771,11 +2108,28 @@ The Testbed App has one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 - **Type Boundary:** every Type Boundary
 - **Source:** found while closing [P-064](#p-064)
 - **Upstream:** no upstream issue filed (typescript-transformer's `DiscoverTypesAction` catches the reflection error and skips the class)
-- **Status:** open
+- **Status:** closed
 
 **Reproduction:** save `final class ProjectData extends Dat` (a half-typed parent class) while `composer dev` runs. The file parses, so `strictly:generate` runs; loading the class throws, typescript-transformer skips it, and generation exits 0 with `ProjectData` missing from `@/generated`. Every component that uses the type breaks until the class loads again. `ci:check` still fails (PHPStan reports the unknown class), so only the dev loop is affected.
 
 **Manual workaround:** none; finish the edit and the next save regenerates the type.
+
+**Closed by:** `strictly:generate` (the `generate` step of `ci:check`, and `build` and `types:check`, which generate first) loads every class under `app/` that typescript-transformer would transform before it generates anything, and fails when one can't be loaded, listing each as `app/Data/ProjectData.php: App\Data\ProjectData can't be loaded: Class "App\Data\Dat" not found` ([`UnloadableClasses`](../packages/laravel/src/Workarounds/TypeScriptTransformer/UnloadableClasses.php)). Nothing is written, so while the dev server runs the Vite plugin logs the failure and the last good types stay ([P-064](#p-064)); the first save after which the class loads regenerates them. A class that can't be loaded counts when it is a backed enum, when its parent classes or interfaces make it a Data class (Page classes are Data classes), or when it is in `App\Data` or `App\Pages`, whatever its half-typed parent. Any other class, such as a service provider for a dev-only package that a production install leaves out, and one marked `#[Hidden]` are skipped as before, so they never fail a build. This runs before anything else loads an app class, so it also reports an input or query class that `config/strictly.php` declares for a vendor action (the Kit's `App\Data\Auth\LoginData`); one declared from outside `App\Data` that can't be loaded fails the vendor declarations' check with its load error ([P-025](#p-025)). A Data class elsewhere whose parent class doesn't exist is [P-183](#p-183). Scenarios: `data-class-parent-missing-fails-generate`, `data-class-outside-data-namespace-unloadable-fails-generate`, `vendor-declared-input-unloadable-fails-generate`, `unloadable-class-without-a-type-passes`; harness test "while the dev server runs, tsc sees a saved Data class and a new or deleted page file, and a half-written Data class, one that can't be loaded or two that generate the same type name keep the last good types".
+
+### P-183
+
+**A Data class outside `App\Data` whose parent class doesn't exist still drops its type**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found while closing [P-073](#p-073)
+- **Upstream:** no upstream issue filed (as [P-073](#p-073))
+- **Status:** accepted gap
+
+**Reproduction:** save `final class ReportData extends Dat` in `app/Reports/ReportData.php` (a Data class outside `App\Data`, which `strictly.dataNamespace` allows) while `composer dev` runs. Its parent class doesn't exist, so nothing in its source says it is a Data class: `strictly:generate` skips it as typescript-transformer does, exits 0, and `ReportData` is missing from `@/generated` until the class loads again. `ci:check` still fails (PHPStan reports the unknown class), so only the dev loop is affected.
+
+**Manual workaround:** keep Data classes in `App\Data`, as the Boost guideline asks; there a Data class that can't be loaded fails generation whatever its parent.
+
+**Reasoning:** a class whose own parent class doesn't exist could be anything. Failing generation on every such class in `app/` would also fail every production build (`build` generates first) on classes that legitimately can't be loaded there, such as a service provider for a dev-only package that `composer install --no-dev` leaves out. The Data namespace tells a Data class mid-edit from those. Outside it, a class that extends a Data class and lacks an interface or trait still fails generation.
 
 ### P-076
 

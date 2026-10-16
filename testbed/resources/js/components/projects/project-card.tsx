@@ -4,6 +4,7 @@ import { UserAvatar } from '@/components/domain/user-avatar';
 import { OpenIssueCounts } from '@/components/projects/open-issue-counts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { choice } from '@/generated/translations';
 import { useWorkspace } from '@/hooks/use-workspace';
 import { colors } from '@/lib/domain';
 import { cn } from '@/lib/utils';
@@ -41,7 +42,8 @@ export function ProjectCard({ project }: { project: ProjectData }) {
                         {project.name}
                     </Link>
                     <div className="font-mono text-xs text-muted-foreground">
-                        {project.key} · {project.issuesCount} issues
+                        {project.key} ·{' '}
+                        {choice('projects.card.issues', project.issuesCount)}
                     </div>
                 </div>
                 {archived && <Badge variant="secondary">Archived</Badge>}

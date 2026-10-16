@@ -56,12 +56,16 @@ _Avoid_: filter request, search DTO
 An entry in the app's `config/strictly.php` that names, for an action of a controller the app doesn't own (Fortify's), the input class, query class or JSON response its own code can't carry: `AuthenticatedSessionController::class.'@store' => LoginData::class`. The route is branded, recorded and covered as if the action declared it itself, and the feature tests verify it: every key the vendor validates, reads or reports an error for must be a field of it, every response must match it, and Contract Coverage reports a declared field the vendor never uses.
 _Avoid_: vendor override, route map
 
+**Model key**:
+A value that is a key of one model by one of its fields, typed nominally by both: `Key<'Issue', 'id', number>` (an issue's primary key) is neither `Key<'Issue', 'number', number>` (its per-project number), another model's key nor a plain number. A Data class built from a model (a `from…(Issue $issue)` method) brands its own primary key; any property that holds a key declares the model with `#[KeyOf(User::class)]`, in input, query and output classes alike, and PHPStan requires it on properties named `…Id`, `…Ids`, `…_id`, `…_ids` or validated by an `exists` rule. Feature tests check every model key the server sends exists.
+_Avoid_: ID type, typed id, foreign key type
+
 **Route key**:
-A model's key as the routes and broadcast channels bound to that model take it (`show(Project $project)` takes a project's `id`, `{project:slug}` its `slug`), typed nominally by the model: `RouteKey<'Project', number>`, so another model's key or a plain number doesn't fit. A Data class property holds one when the class is built from the model (a `from…(Project $project)` method) and the property is named after a binding field the routes use for it, or when it declares `#[RouteKeyOf(Project::class)]`. Feature tests check every route key the server sends is an existing key of its model.
+The model key a route or broadcast channel bound to a model takes: the key of the field it binds by (`show(Project $project)` takes a project's `id`, `{project:slug}` its `slug`), `Key<'Project', 'id', number>`. `RouteKey<'Project', number>` names the key of the model's route key name, and `#[RouteKeyOf(Project::class)]` declares a property holding it. A Data class built from the model brands each property named after a binding field the routes use for it.
 _Avoid_: ID type, typed id
 
 **Default locale**:
-The locale `app.locale` names, whose lang files are the Source of Truth for translation keys: `t()` takes exactly their keys and each message's `:params`, and every other locale must have the same keys and params (the locale parity test, `tests/Feature/LocaleParityTest.php`). Messages reach the client as generated JSON bundled by Vite; only the locale's name may travel in the shared props.
+The locale `app.locale` names, whose lang files are the Source of Truth for translation keys: `t()` takes exactly their keys and each message's `:params` (`choice()` the keys of pluralised `|` messages), and every other locale must have the same keys and params, pluralised where its messages are (the locale parity test, `tests/Feature/LocaleParityTest.php`). Messages reach the client as generated JSON bundled by Vite; only the locale's name may travel in the shared props.
 _Avoid_: base language, master locale
 
 **Contract**:

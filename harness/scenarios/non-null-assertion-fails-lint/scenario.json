@@ -1,0 +1,6 @@
+{
+    "problem": "P-068",
+    "description": "A non-null assertion on the shared auth.user (user!.name), which tsc accepts though guests see it as null, fails the lint step through typescript/no-non-null-assertion.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(no-non-null-assertion): Forbidden non-null assertion." }
+}

@@ -9,7 +9,7 @@ import { IssueRow } from '@/components/issues/issue-row';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkspace } from '@/hooks/use-workspace';
-import { issueStatuses, issueStatusValues } from '@/lib/domain';
+import { issueStatuses } from '@/lib/domain';
 import { destroy, index, update } from '@/routes/cycles';
 import type { PageProps } from '@/generated';
 import { useRouteForm } from '@mrsafalpiya/strictly-laravel/react';
@@ -17,7 +17,7 @@ import { visit } from '@mrsafalpiya/strictly-laravel/react';
 
 export default function CyclesShow({
     cycle,
-    issuesByStatus,
+    statusGroups,
     stats,
     defaults,
 }: PageProps<'cycles/show'>) {
@@ -25,10 +25,7 @@ export default function CyclesShow({
     const [editing, setEditing] = useState(false);
     const form = useRouteForm(update({ workspace, cycle }), defaults);
     const route = { workspace, cycle };
-    // `Partial<Record<IssueStatus, …>>`: PHP can't prove every status is present, so neither does TS.
-    const groups = issueStatusValues
-        .map((status) => ({ status, issues: issuesByStatus[status] ?? [] }))
-        .filter((group) => group.issues.length > 0);
+    const groups = statusGroups.filter((group) => group.issues.length > 0);
 
     return (
         <>

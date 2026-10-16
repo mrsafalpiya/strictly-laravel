@@ -1,0 +1,7 @@
+{
+    "problem": "P-075",
+    "description": "A datetime property of an input Data class (CarbonImmutable, CarbonInterface or DateTimeInterface) is validated against the format its cast reads (DATE_ATOM, a #[WithCast] format, YYYY-MM-DD for #[DateOnly]), in a list too, so anything else gets a 422 on the field instead of a 500, while a valid timestamp, a date-only date, null and a missing optional key round-trip through a controller action and rules() still merge; its input and validation-error Contracts pass the full ci:check.",
+    "expect": {
+        "outcome": "pass"
+    }
+}

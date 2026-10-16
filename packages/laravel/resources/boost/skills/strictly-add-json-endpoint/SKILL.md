@@ -54,7 +54,21 @@ A GET endpoint that reads a query string takes a query class instead (skill `str
     Route::post('projects/check-name', [ProjectController::class, 'checkName'])->name('projects.check-name');
 ```
 
-Return one Data object: a list, a nullable or a union return type gets no response type. Wrap a list in a Data class (`/** @var list<HitData> */ public array $hits`).
+Return one Data object from a controller action: a closure route that returns a Data class fails `strictly.closureRoute`, since Wayfinder types a route function only from a controller action. The `strictly.jsonResponse` PHPStan rule rejects an action that answers JSON any other way: a list (`array`, even with `@return list<ProjectData>`), a Collection, a `DataCollection` or paginated collection, a model, and a nullable or union return type (`?ProjectData`, `ProjectData|RedirectResponse`), none of which types the route's response. Wrap a list in a Data class that holds it:
+
+```php
+final class RecentProjectsData extends Data
+{
+    /**
+     * @param  list<ProjectData>  $projects
+     */
+    public function __construct(
+        public array $projects,
+    ) {}
+}
+```
+
+Put a value that may be missing in a nullable property of the response class, and refuse a request with `abort()` or a validation error instead of returning another type.
 
 ## 3. Call it with `useRouteHttp`
 
@@ -124,8 +138,11 @@ Done when `composer ci:check` passes.
 
 ## When a check fails
 
+- `ci:check:test` fails with `App\Http\Controllers\ProjectController::recent() returns array, which`: the action answers a list (or a collection, a model) that no Data class types. Return one Data class holding it, such as `RecentProjectsData` with a `list<ProjectData>` property (`strictly.jsonResponse`).
+- `ci:check:test` fails with `App\Data\ProjectData|null, a nullable or union type, which declares`: the action may answer something other than its Data class. Return the Data class on every path: a missing value goes in a nullable property, a refusal is `abort()` or a validation error (`strictly.jsonResponse`).
 - `ci:check:lint` fails with ``Inertia's `useHttp()` is untyped: use `useRouteHttp(route, init)` ``: call the route through `useRouteHttp`.
 - `ci:check:tsc` fails with `error TS2339: Property 'response' does not exist on type 'HttpResult<SearchQueryData, SearchResultsData>'.`: check `result.ok` before reading `result.response`.
+- `ci:check:test` fails with `The closure route GET stats returns App\Data\StatsData`: move the route to a controller action that returns the Data class.
 - `ci:check:tsc` fails with `error TS18046: 'result.response' is of type 'unknown'.`: the action declares no Data class return type. Declare one.
 - `ci:check:tsc` fails with `error TS2353: Object literal may only specify known properties, and '"users"' does not exist in type '{ documents: number; projects: number; }'.`: a response a test received doesn't match its Data class. Build the response from the class's own fields.
 - `ci:check:coverage` fails with `✗ GET /search/stats: no feature test calls this JSON endpoint: add a feature test that calls GET /search/stats and gets a successful App\Data\SearchStatsData response.`: add the step 4 tests.

@@ -1,0 +1,6 @@
+{
+    "problem": "P-068",
+    "description": "An angle-bracket type assertion that reads an unknown value (a mixed field) as a Data class instead of narrowing it fails the lint step through typescript/consistent-type-assertions.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(consistent-type-assertions): Do not use any type assertions." }
+}

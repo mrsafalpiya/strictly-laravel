@@ -196,9 +196,13 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
     tester.run('typed-broadcasts', rule('typed-broadcasts'), {
         valid: [
             "import { channel, useChannelEvent } from '@/generated/broadcasting'; useChannelEvent(channel('issues.{issue}', { issue }), 'CommentPosted', cb);",
-            "import { configureEcho, useConnectionStatus, useEchoNotification } from '@laravel/echo-react'; configureEcho({ broadcaster: 'reverb' }); useConnectionStatus(); useEchoNotification(name, cb);",
+            "import { configureEcho, useConnectionStatus } from '@laravel/echo-react'; configureEcho({ broadcaster: 'reverb' }); useConnectionStatus();",
+            "import { channel, useChannelEvent } from '@/generated/broadcasting'; import { useEchoNotification } from './hooks/notifications'; useEchoNotification(name, cb); useChannelEvent(channel('users.{user}', { user }), 'InvoicePaid', cb);",
             "import { useEcho } from './hooks/use-echo'; useEcho();",
-            "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);",
+            "import { channel, usePresence } from '@/generated/broadcasting'; usePresence(channel('issues.{issue}.viewers', { issue }), { here: cb });",
+            "import { usePresenceChannel } from './hooks/presence'; usePresenceChannel(name);",
+            "import { useChannel } from '@laravel/echo-react'; useChannel(`issues.${issue.id}`); useChannel(`issues.${issue.id}`, 'private');",
+            "import { useChannel } from './hooks/channel'; useChannel(name, 'presence');",
         ],
         invalid: [
             {
@@ -208,6 +212,47 @@ describe('oxlint plugin: strictly/typed-broadcasts', () => {
             { code: "import { useEchoPresence as usePresence } from '@laravel/echo-react'; usePresence(name, 'Joined', cb);", errors: 1 },
             { code: "import { useEchoPublic } from '@laravel/echo-react'; useEchoPublic('status', 'Updated', cb);", errors: 1 },
             { code: "import * as Echo from '@laravel/echo-react'; Echo.useEcho(name, 'CommentPosted', cb);", errors: 1 },
+            {
+                code: "import { useEchoNotification } from '@laravel/echo-react'; useEchoNotification(`App.Models.User.${user.id}`, (n: { title: string }) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's `useEchoNotification\(\)` reads a broadcast notification's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the notification, and listen for it with `useChannelEvent\(channel, event, callback\)` from `@\/generated\/broadcasting`/,
+                    },
+                ],
+            },
+            {
+                code: "import { useEchoModel } from '@laravel/echo-react'; useEchoModel<{ name: string }, 'App.Models.Project'>('App.Models.Project', project.id, 'ProjectUpdated', cb);",
+                errors: [
+                    {
+                        message:
+                            /Echo's `useEchoModel\(\)` reads a model broadcast's hand-typed payload: broadcast an app event with a `BroadcastsData` payload alongside the model change, and listen for it with `useChannelEvent\(channel, event, callback\)` from `@\/generated\/broadcasting`/,
+                    },
+                ],
+            },
+            { code: "import { useEchoModel as useModel } from '@laravel/echo-react'; useModel('App.Models.Project', id, 'ProjectUpdated', cb);", errors: 1 },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.useEchoNotification(name, cb);", errors: 1 },
+            {
+                code: "import { usePresenceChannel } from '@laravel/echo-react'; usePresenceChannel(`issues.${issue.id}.viewers`).channel()?.here((members: { name: string }[]) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's `usePresenceChannel\(\)` hands out a presence channel whose members are typed by hand: use `usePresence\(channel, \{ here, joining, leaving \}\)` from `@\/generated\/broadcasting`, which types its members from the Data class the channel's callback returns\./,
+                    },
+                ],
+            },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.usePresenceChannel(name);", errors: 1 },
+            {
+                code: "import { useChannel } from '@laravel/echo-react'; useChannel(`issues.${issue.id}.viewers`, 'presence').channel().here((members: { name: string }[]) => {});",
+                errors: [
+                    {
+                        message:
+                            /Echo's `useChannel\(name, 'presence'\)` hands out a presence channel whose members are typed by hand: use `usePresence\(channel, \{ here, joining, leaving \}\)` from `@\/generated\/broadcasting`, which types its members from the Data class the channel's callback returns\./,
+                    },
+                ],
+            },
+            { code: "import { useChannel as useEchoChannel } from '@laravel/echo-react'; useEchoChannel(name, `presence`);", errors: 1 },
+            { code: "import * as Echo from '@laravel/echo-react'; Echo.useChannel(name, 'presence');", errors: 1 },
         ],
     });
 });

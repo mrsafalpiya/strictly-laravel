@@ -1,0 +1,5 @@
+{
+    "problem": "P-142",
+    "description": "A broadcast notification is read in React through an app event with a BroadcastsData payload, broadcast alongside it and listened for with useChannelEvent(), and the full ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

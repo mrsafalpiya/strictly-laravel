@@ -1,0 +1,9 @@
+{
+    "problem": "P-112",
+    "description": "A controller action that takes a FormRequest instead of an input class, so no type describes the payload it validates and reads, fails PHPStan (strictly.formRequest).",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "App\\Http\\Controllers\\ProjectController::store() takes"
+    }
+}

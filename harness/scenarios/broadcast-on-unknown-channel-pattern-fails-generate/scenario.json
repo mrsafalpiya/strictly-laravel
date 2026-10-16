@@ -1,0 +1,6 @@
+{
+    "problem": "P-144",
+    "description": "A #[BroadcastsOn] pattern that names no channel routes/channels.php defines or config/strictly.php declares fails strictly:generate, naming the event and the pattern.",
+    "step": "generate",
+    "expect": { "outcome": "fail", "errorContains": "App\\Events\\ProjectUpdated: #[BroadcastsOn('project.{project}')] names no channel." }
+}

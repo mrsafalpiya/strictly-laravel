@@ -11,6 +11,7 @@ final class SearchStatsData extends Data
      */
     public function __construct(
         public int $indexed,
+        // @phpstan-ignore strictly.dataShape (a cached value asserted to the shape, for its Contract to catch)
         public array $counts,
     ) {}
 }

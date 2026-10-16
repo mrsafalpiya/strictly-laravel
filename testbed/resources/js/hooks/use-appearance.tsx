@@ -29,12 +29,20 @@ const setCookie = (name: string, value: string, days = 365): void => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
+const appearances: readonly Appearance[] = ['light', 'dark', 'system'];
+
+// localStorage holds any string: check it instead of casting it (P-068).
+const isAppearance = (value: string | null): value is Appearance =>
+    appearances.some((appearance) => appearance === value);
+
 const getStoredAppearance = (): Appearance => {
     if (typeof window === 'undefined') {
         return 'system';
     }
 
-    return (localStorage.getItem('appearance') as Appearance) || 'system';
+    const stored = localStorage.getItem('appearance');
+
+    return isAppearance(stored) ? stored : 'system';
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {

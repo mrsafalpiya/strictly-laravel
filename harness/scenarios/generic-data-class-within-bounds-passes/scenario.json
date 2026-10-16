@@ -1,0 +1,6 @@
+{
+    "problem": "P-062",
+    "description": "Generic Data classes bounded by a Data class, by laravel-data's Data base class, by the Overlay's InputData, by \\BackedEnum and by scalars generate, and TypeScript code using them within their bounds passes tsc.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

@@ -1,0 +1,5 @@
+{
+    "problem": "P-143",
+    "description": "An event broadcast on a public channel config/strictly.php doesn't declare, which no listener names, fails its recorded Contract.",
+    "expect": { "outcome": "fail", "errorContains": "error TS2820: Type '\"statuss\"' is not assignable to type 'BroadcastChannelName'. Did you mean '\"status\"'?" }
+}
