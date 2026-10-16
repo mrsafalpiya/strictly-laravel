@@ -1,0 +1,7 @@
+{
+    "problem": "P-173",
+    "description": "A datetime input or query property reads the timestamp JavaScript's toISOString() builds (2026-10-14T09:30:00.000Z) as the instant it names, in a list too, its validation rule accepting exactly what its cast reads, while a property with its own #[DateFormat] or #[WithCast] format keeps only that format; the form built with toISOString() and its Contracts pass the full ci:check.",
+    "expect": {
+        "outcome": "pass"
+    }
+}
