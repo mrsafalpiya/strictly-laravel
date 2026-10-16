@@ -1,0 +1,9 @@
+{
+    "problem": "P-179",
+    "description": "A closure route that returns an array, which Laravel sends as JSON that no Data class types, so its route function's response is unknown and no Contract checks it, fails PHPStan (strictly.closureRoute).",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "The closure route GET projects/recent returns array, which Laravel"
+    }
+}

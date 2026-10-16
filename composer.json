@@ -6,6 +6,7 @@
     "require-dev": {
         "laravel/installer": "^5.32",
         "laravel/pint": "^1.32",
+        "nette/neon": "^3.4",
         "phpstan/phpstan": "^2.3",
         "phpunit/phpunit": "^13.4",
         "spatie/laravel-data": "^4.23"

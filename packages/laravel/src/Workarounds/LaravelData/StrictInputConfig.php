@@ -2,9 +2,7 @@
 
 namespace StrictlyLaravel\Workarounds\LaravelData;
 
-use DateTimeInterface;
 use Illuminate\Contracts\Config\Repository;
-use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
 use Spatie\LaravelData\RuleInferrers\AttributesRuleInferrer;
 use Spatie\LaravelData\RuleInferrers\BuiltInTypesRuleInferrer;
 use Spatie\LaravelData\RuleInferrers\RequiredRuleInferrer;
@@ -23,7 +21,8 @@ use Spatie\LaravelData\RuleInferrers\RequiredRuleInferrer;
  *   holds enums, not the raw strings laravel-data 4 leaves by default (upstream: off by default until its next major);
  *
  * - Problem P-189: the global cast for `DateTimeInterface` is InterfaceTypedDateCast, which reads a property typed
- *   `CarbonInterface` or `DateTimeInterface` as a CarbonImmutable instead of failing every value.
+ *   `CarbonInterface` or `DateTimeInterface` as a CarbonImmutable instead of failing every value, in place of the
+ *   Overlay's DateTimeCast (P-173), which it extends. Runs after DateTimeCast::useAsGlobalCast().
  *
  * Applying it again changes nothing. There is no switch to turn any of it off (ADR-0007: no feature toggles).
  */
@@ -44,10 +43,7 @@ final class StrictInputConfig
         $config->set('data.rule_inferrers', self::ruleInferrers(is_array($inferrers) ? array_values($inferrers) : []));
         $config->set('data.features.cast_and_transform_iterables', true);
 
-        // Problem P-189: unless the app casts dates with a class of its own.
-        if ($config->get('data.casts.'.DateTimeInterface::class) === DateTimeInterfaceCast::class) {
-            $config->set('data.casts.'.DateTimeInterface::class, InterfaceTypedDateCast::class);
-        }
+        InterfaceTypedDateCast::replaceGlobalCast($config);
     }
 
     /**

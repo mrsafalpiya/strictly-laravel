@@ -3,13 +3,12 @@
 namespace StrictlyLaravel\Tests\PHPStan;
 
 use PHPStan\Rules\Rule;
-use PHPStan\Testing\RuleTestCase;
 use StrictlyLaravel\PHPStan\DataShapeRule;
 
 /**
- * @extends RuleTestCase<DataShapeRule>
+ * @extends StrictlyRuleTestCase<DataShapeRule>
  */
-final class DataShapeRuleTest extends RuleTestCase
+final class DataShapeRuleTest extends StrictlyRuleTestCase
 {
     protected function getRule(): Rule
     {
@@ -45,6 +44,10 @@ final class DataShapeRuleTest extends RuleTestCase
             [$union('StoreIssueData::$estimates', 'int|string'), 72, $unionTip],
             [$shape('IssueFiltersData::$sort', 'array{field: string}'), 82, $shapeTip],
             [$shape('ReportPage::$rows', 'array{id: int}'), 159, $shapeTip],
+            [$union('FocusPage::$focus', $issueOrMilestone), 197, $dataUnionTip],
+            [$union('FocusPage::$board', $issueOrMilestone), 198, $dataUnionTip],
+            [$union('FocusPage::$estimates', 'int|string'), 200, $unionTip],
+            [$nested('FocusPage::$columns', 'list<App\Data\Shapes\IssueData>'), 202, $nestedTip],
         ]);
     }
 }

@@ -1,0 +1,5 @@
+{
+    "problem": "P-185",
+    "description": "Generic Data classes sent with type arguments, in a page prop (ListingData<IssueData>), in a property of a Data class that isn't generic (ProjectData's ListingData<IssueData>) and nested in another generic Data class (BoardData<IssueData>), whose feature tests send every item shape: Contract Coverage walks the items as IssueData and ci:check passes.",
+    "expect": { "outcome": "pass" }
+}

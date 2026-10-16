@@ -1,0 +1,6 @@
+{
+    "problem": "P-175",
+    "description": "Reading a property of the any JSON.parse returns fails the lint step through typescript/no-unsafe-member-access, even where the result is unknown.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(no-unsafe-member-access): Unsafe member access .title on an `any` value." }
+}

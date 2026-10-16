@@ -304,7 +304,7 @@ test('an issue page shows its title', function () {
         assertOutcome(await app.check(), { outcome: 'pass' });
     });
 
-    test('generated TypeScript is gitignored, and ci:check, typecheck and build regenerate it in a fresh clone', async () => {
+    test('generated TypeScript is gitignored, and ci:check, lint, typecheck and build regenerate it in a fresh clone', async () => {
         const app = await createApp('generated-in-fresh-clone');
         mkdirSync(join(app.dir, 'app', 'Enums'), { recursive: true });
         writeFileSync(
@@ -379,6 +379,11 @@ export default function ProjectStatuses() {
         freshClone();
         assertOutcome(await app.check(), { outcome: 'pass' });
         assert.deepEqual(app.changedFiles(), [], 'generated files are not gitignored');
+
+        // Type-aware lint reads every value typed by `@/generated` as an error type, an `any`, until it is generated
+        // (P-193).
+        freshClone();
+        assertOutcome(await app.run('pnpm', ['run', 'check']), { outcome: 'pass' });
 
         freshClone();
         assertOutcome(await app.run('pnpm', ['run', 'types:check']), { outcome: 'pass' });

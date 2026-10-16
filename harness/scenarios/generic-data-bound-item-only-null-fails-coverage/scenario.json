@@ -1,0 +1,8 @@
+{
+    "problem": "P-185",
+    "description": "A generic Data class used with no type argument (PHPStan's missingType.generics suppressed) whose template is bound by a Data class (@template TItem of IssueData), with an item's nullable field only ever null: Contract Coverage walks the items as the bound and fails ci:check, naming the field.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ IssueData.assignee is only ever null (at backlog › backlog.items[].assignee): add a feature test that renders backlog with backlog.items[].assignee not null."
+    }
+}

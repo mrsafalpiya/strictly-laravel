@@ -6,7 +6,7 @@
  *     public function store(StoreProjectData $data)   →   store(): RouteDefinition<'post'> & WithInput<StoreProjectData>
  *     public function stats(): SearchStatsData         →   stats(): RouteDefinition<'get'> & WithResponse<SearchStatsData>
  *
- * Types only: nothing here exists at runtime.
+ * The brands are types only: nothing of them exists at runtime. The one runtime helper is `selectedKey()`.
  */
 
 declare const keyOf: unique symbol;
@@ -49,6 +49,16 @@ export type RouteKey<TModel extends string, TValue> = Key<
     TModel extends keyof RouteKeyFields ? Extract<RouteKeyFields[TModel], string> : string,
     TValue
 >;
+
+/**
+ * The key a `<Select>` value names: the one of `keys` whose `String()` it is, or null for any other value (the "none"
+ * item). A select's value is a string, and `Number(value)` would be a plain number, which an input's model key
+ * (`Key<'User', 'id', number>`, `#[KeyOf(User::class)]`) doesn't take: looking it up among the options the server sent
+ * keeps the brand, so only one of their keys can be chosen (Problem P-128).
+ *
+ *     onValueChange={(value) => setData({ leadId: selectedKey(members.map((member) => member.id), value) })}
+ */
+export declare function selectedKey<TKey extends string | number>(keys: readonly TKey[], value: string): TKey | null;
 
 /** Any model's key (`Key<'Project', 'id', number>`): what Contracts strip, since JSON can't carry the brand. */
 export type AnyKey = { readonly [keyOf]: string };

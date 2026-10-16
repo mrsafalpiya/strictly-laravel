@@ -1,0 +1,9 @@
+{
+    "problem": "P-190",
+    "description": "An app whose vite.config.ts turns a Strictly Laravel lint rule off for every file fails ci:check:install, which says to suppress single lines with a reason instead.",
+    "step": "install",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "vite.config.ts turns `strictly/typed-forms` off; Strictly Laravel has no toggles (ADR-0007)"
+    }
+}

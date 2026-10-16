@@ -56,6 +56,11 @@ export default defineConfig({
     lint: {
         jsPlugins: ['@mrsafalpiya/strictly-laravel/oxlint'],
         rules: {
+            'typescript/no-unsafe-argument': 'error',
+            'typescript/no-unsafe-assignment': 'error',
+            'typescript/no-unsafe-call': 'error',
+            'typescript/no-unsafe-member-access': 'error',
+            'typescript/no-unsafe-return': 'error',
             'typescript/consistent-type-assertions': [
                 'error',
                 { assertionStyle: 'never' },

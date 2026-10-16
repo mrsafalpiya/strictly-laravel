@@ -1,0 +1,6 @@
+{
+    "problem": "P-175",
+    "description": "Reading a page's saved JSON into a typed variable (const project: ProjectData = JSON.parse(text)), which tsc accepts because JSON.parse returns any, fails the lint step through typescript/no-unsafe-assignment.",
+    "step": "lint",
+    "expect": { "outcome": "fail", "errorContains": "typescript(no-unsafe-assignment): Unsafe assignment of an any value." }
+}
