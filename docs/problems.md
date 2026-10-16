@@ -137,7 +137,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-165](#p-165) | A presence channel's member data isn't checked by a Contract | broadcasting | accepted gap |
 | [P-148](#p-148) | A channel object from Echo listens for any event with an untyped payload | broadcasting | closed |
 | [P-191](#p-191) | An Echo channel object the lint rule can't trace still listens untyped | broadcasting | accepted gap |
-| [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | open |
+| [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | accepted gap |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
@@ -1703,11 +1703,13 @@ The Reference Implementation never exercised this Type Boundary, so these Proble
 - **Type Boundary:** broadcasting
 - **Source:** found while closing [P-148](#p-148)
 - **Upstream:** by design: Echo's `whisper(eventName, data)` and `listenForWhisper(event, callback)` take any name and any data
-- **Status:** open
+- **Status:** accepted gap
 
 **Reproduction:** one component calls `channel()?.whisper('typing', { name })` and another `channel()?.listenForWhisper('typng', (e: { user: string }) => …)`. Both pass `tsc` and lint: the name is misspelt and the payload's type disagrees with what is sent, so the listener never fires, or reads a field that isn't there. Whispers go from client to client without the server, so no PHP class describes them and no Contract records them.
 
 **Manual workaround:** keep each whisper's name and payload type in one shared TypeScript module and import it on both sides.
+
+**Reasoning:** a whisper goes from one client to another through the WebSocket server without reaching the app, so no PHP class describes it and there is no Source of Truth to generate its name and payload from (ADR-0002). Declaring each whisper's Data class in PHP would make that class describe a message PHP never sends, a new kind of Source of Truth that needs its own ADR, on top of a generator change, a hook and a lint rule. Declaring whispers in TypeScript instead (a `defineWhispers<{ typing: { name: string } }>()` helper) would put a Source of Truth outside PHP, against ADR-0002. Whispers are rare (typing indicators, live cursors), so neither is worth it yet. Revisit with PHP-declared whispers if the Testbed App or a real app starts using them: an attribute on the channel class next to ADR-0010's `#[BroadcastChannel]`, naming each whisper's Data class; a generated `ChannelWhispers` in `@/generated/broadcasting`; a `useWhisper(channel, name)` hook; and `strictly/typed-broadcasts` rejecting raw `whisper()` and `listenForWhisper()`.
 
 ## Translations
 
