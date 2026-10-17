@@ -1,0 +1,6 @@
+{
+    "problem": "P-034",
+    "description": "A select's string value turns back into an enum value, string- or int-backed, by looking it up among enumValues with selectedKey(), which is typed as the enum (null for any other value) with no cast.",
+    "step": "tsc",
+    "expect": { "outcome": "pass" }
+}

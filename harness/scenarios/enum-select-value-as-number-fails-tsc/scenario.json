@@ -1,0 +1,9 @@
+{
+    "problem": "P-034",
+    "description": "Reading an int-backed enum's select value with Number(value) fails tsc, because any number isn't one of the enum's values: look it up with selectedKey(enumValues.IssuePriority, value) instead.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "resources/js/lib/enum-selects.ts(5,5): error TS2322: Type 'number' is not assignable to type 'IssuePriority'."
+    }
+}

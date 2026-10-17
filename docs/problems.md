@@ -1114,7 +1114,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `enumValues.IssueStatus` generated from PHP in case order (`EnumValuesProvider`); for a literal union, `allOf<WeekStart>()('monday', 'sunday')`.
 
-**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
+**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). A select's string value reads back as the enum by the lookup that keeps a model key's brand ([P-128](#p-128)), `selectedKey(enumValues.IssuePriority, value)`, typed `IssuePriority | null`, while `Number(value)` fails `tsc` (`Type 'number' is not assignable to type 'IssuePriority'.`). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`, `enum-select-value-looked-up-passes`, `enum-select-value-as-number-fails-tsc`.
 
 ### P-035
 
