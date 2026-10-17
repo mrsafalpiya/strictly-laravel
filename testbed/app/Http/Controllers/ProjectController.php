@@ -39,6 +39,7 @@ final class ProjectController extends Controller
         return new IndexPage(
             projects: $projects
                 ->map(fn (Project $project): ProjectData => ProjectData::fromModel($project, $counts[$project->id]))
+                ->values()
                 ->all(),
             showArchived: $showArchived,
             archivedCount: $workspace->projects()->whereNotNull('archived_at')->count(),

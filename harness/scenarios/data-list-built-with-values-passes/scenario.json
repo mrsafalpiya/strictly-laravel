@@ -1,0 +1,6 @@
+{
+    "problem": "P-206",
+    "description": "A page prop typed list<LabelData>, built from a filtered collection with ->values()->all(), passes PHPStan and reaches the client as a JSON array.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}

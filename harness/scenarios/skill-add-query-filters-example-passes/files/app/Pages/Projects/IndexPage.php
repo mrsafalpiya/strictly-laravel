@@ -9,7 +9,7 @@ use StrictlyLaravel\Inertia\Page;
 final class IndexPage extends Page
 {
     /**
-     * @param  array<int, ProjectData>  $projects
+     * @param  list<ProjectData>  $projects
      */
     public function __construct(
         public array $projects,

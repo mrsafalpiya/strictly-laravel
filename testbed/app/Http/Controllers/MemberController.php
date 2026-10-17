@@ -39,6 +39,7 @@ final class MemberController extends Controller
                     isViewer: $membership->user_id === $user->id,
                     can: MemberAbilitiesData::for($user, $role, $membership, $owners),
                 ))
+                ->values()
                 ->all(),
             invitations: ! $role->canManage() ? null : $workspace->invitations()
                 ->whereNull('accepted_at')

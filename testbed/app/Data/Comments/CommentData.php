@@ -16,7 +16,7 @@ final class CommentData extends Data
         public int $id,
         public string $body,
         public UserSummaryData $author,
-        /** @var array<int, ReactionSummaryData> */
+        /** @var list<ReactionSummaryData> */
         public array $reactions,
         public CommentAbilitiesData $can,
         public CarbonInterface $createdAt,

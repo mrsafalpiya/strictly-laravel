@@ -20,7 +20,7 @@ final class SharedProps extends Shared
         public bool $sidebarOpen,
         /** The workspace in the URL, null outside /w/{workspace}/... */
         public ?CurrentWorkspaceData $workspace,
-        /** @var array<int, WorkspaceSummaryData> Every workspace the user belongs to, by name (empty for guests). */
+        /** @var list<WorkspaceSummaryData> Every workspace the user belongs to, by name (empty for guests). */
         public array $workspaces,
         /** The areas of Tracklane config/tracklane.php turns on. */
         public FeaturesData $features,

@@ -17,13 +17,13 @@ final class DashboardPage extends Page
 
     public function __construct(
         public DashboardStatsData $stats,
-        /** @var array<int, IssueListItemData> Open issues assigned to the current user, most urgent first. */
+        /** @var list<IssueListItemData> Open issues assigned to the current user, most urgent first. */
         public array $assignedToMe,
         /** @var Lazy|array<value-of<IssueStatus>, int> Deferred (group "charts"). Every status is present, closed ones included. */
         public Lazy|array $statusCounts,
-        /** @var Lazy|array<int, ThroughputWeekData> Deferred (group "charts"). The last 8 weeks, oldest first, the current week last. */
+        /** @var Lazy|list<ThroughputWeekData> Deferred (group "charts"). The last 8 weeks, oldest first, the current week last. */
         public Lazy|array $throughput,
-        /** @var Lazy|array<int, ActivityData> Deferred. */
+        /** @var Lazy|list<ActivityData> Deferred. */
         public Lazy|array $recentActivity,
     ) {}
 }

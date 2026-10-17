@@ -15,11 +15,11 @@ final class ShowPage extends Page
 {
     public function __construct(
         public IssueData $issue,
-        /** @var Lazy|array<int, CommentData> Deferred: loaded right after the first paint. Oldest first. */
+        /** @var Lazy|list<CommentData> Deferred: loaded right after the first paint. Oldest first. */
         public Lazy|array $comments,
-        /** @var array<int, AttachmentData> Newest first. */
+        /** @var list<AttachmentData> Newest first. */
         public array $attachments,
-        /** @var Lazy|array<int, ActivityData> Deferred: loaded right after the first paint. Newest first. */
+        /** @var Lazy|list<ActivityData> Deferred: loaded right after the first paint. Newest first. */
         public Lazy|array $activity,
         public IssueFormOptionsData $options,
         public IssueAbilitiesData $can,

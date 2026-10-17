@@ -1,0 +1,6 @@
+{
+    "problem": "P-207",
+    "description": "countBy() over enum cases, or with a callback that returns an enum case, fills an array<value-of<IssueStatus>, int> map with no hand-written loop, keyed by the cases' values.",
+    "step": "test",
+    "expect": { "outcome": "pass" }
+}
