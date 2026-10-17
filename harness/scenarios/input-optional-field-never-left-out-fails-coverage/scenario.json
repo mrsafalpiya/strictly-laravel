@@ -1,0 +1,8 @@
+{
+    "problem": "P-209",
+    "description": "An update input's Optional field that every accepted request sends, so no test shows the server accepting a request that leaves it out, as the client may: Contract Coverage fails, naming the field.",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "✗ UpdateProjectData.name is never left out (at PATCH /projects/{project} › name): add a feature test that submits to PATCH /projects/{project} without name."
+    }
+}

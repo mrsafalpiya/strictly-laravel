@@ -3,6 +3,6 @@
     "description": "A nullable input field that no page renders filled in and no accepted submission sends filled in fails Contract Coverage, which names both ways to close it.",
     "expect": {
         "outcome": "fail",
-        "errorContains": "✗ StoreProjectData.description is only ever null (at projects/create › defaults.description): add a feature test that renders projects/create with defaults.description not null, or one whose request a form endpoint accepts with StoreProjectData's description not null."
+        "errorContains": "✗ StoreProjectData.description is only ever null (at projects/create › defaults.description, POST /projects › description): add a feature test that renders projects/create with defaults.description not null, or one whose request a form endpoint accepts with StoreProjectData's description not null."
     }
 }

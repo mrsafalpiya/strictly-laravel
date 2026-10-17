@@ -164,6 +164,8 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-185](#p-185) | Contract Coverage doesn't look inside a generic Data class's template-typed items | every Type Boundary | closed |
 | [P-206](#p-206) | A Data class's int-keyed array can reach the client as a JSON object | every Type Boundary | closed |
 | [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
+| [P-209](#p-209) | An input class's states are never required, so no test shows the server accepting them | every Type Boundary | closed |
+| [P-210](#p-210) | An input refused by every test, or a query class no page sends back, proves none of its states | every Type Boundary | open |
 | [P-127](#p-127) | Contract Coverage depends on the random data factories produce | every Type Boundary | accepted gap |
 | [P-132](#p-132) | Contract Coverage counts every variant of a discriminated union as seen when one is | every Type Boundary | closed |
 | [P-067](#p-067) | Combinations are proven per shape, not per combination | every Type Boundary | accepted gap |
@@ -2126,7 +2128,35 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 
 **Manual workaround:** none that keeps the convention: send the defaults as a different class, or drop the nullable fields from them.
 
-**Closed by:** an input class is the type of what the form sends back as well, so a value the server accepted shows the same states. The Contract recorder keeps what each form request sent when the server accepted it (validated without errors, below 400) in its `form` record ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and [`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php) feeds it to [`ShapeCoverage::observeAccepted()`](../packages/laravel/src/Coverage/ShapeCoverage.php): a test that creates a project with a description closes the gap. Accepted values only mark states as seen; a field no test submits filled in is no gap of its own, since every form endpoint's input is already checked by its `form` Contracts. A gap on an input class now names both ways to close it: `…: add a feature test that renders projects/create with defaults.description not null, or one whose request a form endpoint accepts with StoreProjectData's description not null.` Scenarios: `form-defaults-empty-by-design-pass-coverage`, `form-field-never-sent-fails-coverage`.
+**Closed by:** an input class is the type of what the form sends back as well, so a value the server accepted shows the same states. The Contract recorder keeps what each form request sent when the server accepted it (validated without errors, below 400) in its `form` record ([`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php)), and [`ContractCoverage`](../packages/laravel/src/Coverage/ContractCoverage.php) feeds it to [`ShapeCoverage::observeAccepted()`](../packages/laravel/src/Coverage/ShapeCoverage.php): a test that creates a project with a description closes the gap. Accepted values only marked states as seen, so a field no test submits filled in was no gap of its own; since [P-209](#p-209) they require each state too. A gap on an input class now names both ways to close it: `…: add a feature test that renders projects/create with defaults.description not null, or one whose request a form endpoint accepts with StoreProjectData's description not null.` Scenarios: `form-defaults-empty-by-design-pass-coverage`, `form-field-never-sent-fails-coverage`.
+
+### P-209
+
+**An input class's states are never required, so no test shows the server accepting them**
+
+- **Type Boundary:** every Type Boundary (seen in form payloads)
+- **Source:** found building a Linear clone on the Overlay
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `StoreCommentData` gains `public ?string $mood = null`, and every test submits a comment without it. TypeScript lets the client send `mood: 'happy'`, but no test ever showed the server accepting it: its validation, cast and `exists` or format rules never ran on a value. Contract Coverage reported no gap, since what form endpoints accepted only marked an input's states seen ([P-125](#p-125)), and an input class is required to show its states only where a page sends it as a prop. An `Optional` field of an update input that every test sends, which the client may leave out, was no gap either. And two requests to one URL in one test recorded the same Contract, so the second's accepted payload replaced the first's: in the Testbed App, `UpdateIssueData.assigneeId` read as only ever `null` though a test assigns a member.
+
+**Manual workaround:** none: nothing reports it.
+
+**Closed by:** [`ShapeCoverage::observeAccepted()`](../packages/laravel/src/Coverage/ShapeCoverage.php) requires each state of an input class's type from what its form endpoints accepted, the other way round from a page prop: a nullable field both `null` and set (a field the request leaves out, or sends as `''`, which `ConvertEmptyStringsToNull` reads as `null`, is `null`), an `Optional` one both sent and left out (`is never left out`), a list with an item, each member of a union. `✗ StoreProjectData.description is only ever null (at POST /projects › description): add a feature test that submits to POST /projects with description not null.` The [`ContractRecorder`](../packages/laravel/src/Testing/ContractRecorder.php) names a `form` record by its accepted payload too, so each request's is kept. The Kit Conversion's `tests/Feature/ContractCoverageTest.php` closes the three states the Base Kit's tests left unproven (a two-factor challenge with a code, registering with `remember`, enabling two-factor with `force`), and the Testbed App's tests close the one of its own (an issue's description written). Scenarios: `input-every-state-accepted-passes-coverage`, `input-field-only-accepted-null-fails-coverage`, `input-optional-field-never-left-out-fails-coverage`.
+
+### P-210
+
+**An input refused by every test, or a query class no page sends back, proves none of its states**
+
+- **Type Boundary:** every Type Boundary (seen in form payloads and query strings)
+- **Source:** found closing [P-209](#p-209)
+- **Upstream:** none
+- **Status:** open
+
+**Reproduction:** a form endpoint whose every feature test is refused (a guest's 403, a 422) satisfies `no feature test submits to this form endpoint`, but no request was accepted, so P-209 requires none of its input's states. And a query class's states are proven only where a page sends it back as a prop, as the `strictly-add-query-filters` skill does: one no page sends back has a nullable filter no test has to send set.
+
+**Manual workaround:** submit each form endpoint valid at least once; send each query class back as a page prop.
 
 ### P-127
 

@@ -41,14 +41,15 @@ Done when `composer ci:check` passes.
 | `no feature test submits to this form endpoint` | sends its input class's fields to the route. |
 | `no feature test calls this JSON endpoint` | calls the route and gets a successful response. |
 | `no feature test broadcasts this event` | makes the event broadcast, without `Event::fake()` (spy with `Event::listen()`). |
-| `is only ever null` | sends the value set. |
+| `is only ever null` | sends the value set (for an input class, submits it set in a request the server accepts). |
 | `is only ever empty` | sends the list with at least one item. |
-| `is only ever absent` | sends the optional prop or flash key. |
+| `is only ever absent` | sends the optional prop, flash key or `Optional` input field. |
+| `is never left out` | submits a request the server accepts without that `Optional` input field. |
 | `is never seen as PriorityChangedData` | sends that union variant. |
 | `is never seen as int` | sends that member of the scalar union. |
 | `is declared for a vendor action that never uses it` | submits that field to the vendor route, or remove it from `config/strictly.php`. |
 
-A shape no request can produce is a type that says too much: make the property non-nullable, or the list's minimum explicit, in PHP. Shapes are proven per property, so one test may cover several gaps.
+A shape no request can produce is a type that says too much: make the property non-nullable, or the list's minimum explicit, in PHP. Shapes are proven per Data class property, wherever the class is sent: on any page, endpoint or broadcast, since its TypeScript type is one definition that one Contract checks. So one test may cover several gaps, and a state shown on one page is proven for every page that sends the class; whether a page produces it is a behaviour test's job. A generic Data class is proven per use (`ListingData<IssueData>`), since each use is a different type.
 
 Contract Coverage sees only the shapes laravel-data describes: one item type per list or map, and nothing inside a PHPDoc array shape. So PHPStan (`strictly.dataShape`) rejects a Data property that holds an array shape (`list<array{lead: ?string}>`), a list or map of a union (`list<int|string>`, `list<IssueData|MilestoneData>`, or a generic Data class whose items are `list<TItem>` used as `ListingData<IssueData|MilestoneData>`) or a list or map of lists. A generic Data class's items are walked as the Data class its type argument names (`ListingData<IssueData>`), so their gaps name that class. Model the item as a Data class (`list<ProjectSummaryData>`, with `public ?string $lead`; for a union of Data classes, a Data class whose one property is the union, its variants told apart by a literal discriminant); its properties' gaps then show up here like any other.
 

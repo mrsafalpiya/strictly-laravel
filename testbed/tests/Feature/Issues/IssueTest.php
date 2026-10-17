@@ -389,6 +389,24 @@ test('every field of an issue can be edited inline', function () {
     expect($issue->labels()->count())->toBe(1);
 });
 
+test('an issue description can be written inline and cleared again', function () {
+    [$workspace, $user, $project] = workspaceWith();
+    $issue = Issue::factory()->create(['project_id' => $project->id, 'description' => null]);
+
+    $this->actingAs($user)
+        ->patch(route('issues.update', [$workspace, $project, $issue]), ['description' => 'Steps to reproduce: open the board.'])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($issue->refresh()->description)->toBe('Steps to reproduce: open the board.');
+
+    $this->actingAs($user)
+        ->patch(route('issues.update', [$workspace, $project, $issue]), ['description' => null])
+        ->assertSessionHasNoErrors();
+
+    expect($issue->refresh()->description)->toBeNull();
+});
+
 test('guests cannot edit issues', function () {
     [$workspace, , $project] = workspaceWith();
     $guest = issueMember($workspace, WorkspaceRole::Guest);

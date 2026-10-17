@@ -1,0 +1,7 @@
+{
+    "problem": "P-209",
+    "description": "Accepted requests show every state of the input types (a nullable field null and set, an Optional field sent and left out), two of them from requests to one URL in one test, which each keep their payload, and the full ci:check passes.",
+    "expect": {
+        "outcome": "pass"
+    }
+}
