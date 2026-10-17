@@ -48,7 +48,7 @@ final class IssueListItemData extends Data
             assignee: $issue->assignee === null ? null : UserSummaryData::fromModel($issue->assignee),
             labels: $issue->labels->map(LabelData::fromModel(...))->values()->all(),
             commentsCount: $issue->comments_count ?? 0,
-            updatedAt: $issue->updated_at ?? $issue->created_at ?? now(),
+            updatedAt: $issue->updated_at,
         );
     }
 }

@@ -28,7 +28,7 @@ final class AttachmentData extends Data
             mimeType: $attachment->mime_type,
             size: $attachment->size,
             uploadedBy: UserSummaryData::fromModel($attachment->user),
-            createdAt: $attachment->created_at ?? now(),
+            createdAt: $attachment->created_at,
         );
     }
 }

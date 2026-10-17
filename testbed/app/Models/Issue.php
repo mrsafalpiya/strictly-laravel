@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use Carbon\CarbonImmutable;
 use Database\Factories\IssueFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property CarbonImmutable $created_at Set when the row is created, as is the next one.
+ * @property CarbonImmutable $updated_at
  * @property-read Project $project
  * @property-read User $reporter
  */

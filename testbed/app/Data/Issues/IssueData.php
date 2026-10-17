@@ -60,7 +60,7 @@ final class IssueData extends Data
             parent: $issue->parent === null ? null : IssueReferenceData::fromModel($issue->parent),
             children: $issue->children->map(IssueReferenceData::fromModel(...))->values()->all(),
             completedAt: $issue->completed_at,
-            createdAt: $issue->created_at ?? now(),
+            createdAt: $issue->created_at,
         );
     }
 }

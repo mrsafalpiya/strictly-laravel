@@ -45,7 +45,7 @@ final class CommentData extends Data
                 update: $viewer->can('update', $comment),
                 delete: $viewer->can('delete', $comment),
             ),
-            createdAt: $comment->created_at ?? now(),
+            createdAt: $comment->created_at,
             editedAt: $comment->edited_at,
         );
     }

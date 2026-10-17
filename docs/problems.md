@@ -105,6 +105,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | closed |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | accepted gap |
+| [P-208](#p-208) | Larastan types a model's timestamps as nullable | models | accepted gap |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
@@ -1210,6 +1211,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** declare non-nullable relations on the model: `@property-read Project $project`.
 
 **Reasoning:** Larastan types `BelongsTo` as nullable on purpose: a related row can be missing even when the foreign key column is `NOT NULL`, for example without a database constraint or when the relation was loaded without its columns. Overriding that would make PHPStan trust data it can't see. The workaround is one PHPDoc line per relation and is standard Laravel practice, so the Overlay teaches it in its Boost core guideline instead of changing Larastan's types.
+
+### P-208
+
+**Larastan types a model's timestamps as nullable**
+
+- **Type Boundary:** models
+- **Source:** found building a Linear clone on the Overlay
+- **Upstream:** by design: `$table->timestamps()` creates nullable columns, which Larastan reads from the migrations
+- **Status:** accepted gap
+
+**Reproduction:** a Data property `public CarbonImmutable $createdAt` can't take `$issue->created_at`, which Larastan types `CarbonImmutable|null` from `timestamps()`' nullable columns (and the Base Kit's `User` docblock declares `Carbon|null`, though its `AppServiceProvider` makes every date a `CarbonImmutable`), although a saved row always has both timestamps. Code drifts towards `?? now()` or nullable Data properties, which then need a feature test sending `null` that no request can produce.
+
+**Manual workaround:** declare the timestamps non-nullable on the model: `@property CarbonImmutable $created_at` and `@property CarbonImmutable $updated_at`.
+
+**Reasoning:** the timestamps are `null` on a model that isn't saved yet, which PHPStan can't tell from a saved one, so typing them non-nullable for every model would make PHPStan trust data it can't see, as [P-038](#p-038) declines to for `BelongsTo`. The workaround is two PHPDoc lines per model, the same practice P-038 teaches, so the Overlay teaches it in its Boost core guideline (beside the `BelongsTo` one, and never `?? now()`) instead of changing Larastan's types. The Testbed App declares them on the models its Data classes read them from, which removed its `?? now()` fallbacks. A vendor model (Laravel's `DatabaseNotification`, a passkey) can't take the docblock, so its Data class keeps a fallback. The Base Kit's `User` declaring `Carbon|null` where its dates are `CarbonImmutable` is upstream's (no upstream issue filed); its `UserData` reads the date as a `CarbonInterface`, which both are.
 
 ### P-039
 
