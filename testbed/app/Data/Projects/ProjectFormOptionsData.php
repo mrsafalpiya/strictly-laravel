@@ -11,7 +11,7 @@ use Spatie\LaravelData\Data;
 final class ProjectFormOptionsData extends Data
 {
     public function __construct(
-        /** @var array<int, UserSummaryData> */
+        /** @var list<UserSummaryData> */
         public array $members,
     ) {}
 

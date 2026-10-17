@@ -98,12 +98,14 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-031](#p-031) | Enum values are hand-mirrored in TypeScript | enums | closed |
 | [P-032](#p-032) | Literal and enum-case PHPDoc types become `unknown` | enums | closed |
 | [P-033](#p-033) | Enum-keyed maps claim every key is present | enums | closed |
+| [P-207](#p-207) | `countBy()` loses its keys' type, so an enum-keyed map is built by hand | enums | closed |
 | [P-034](#p-034) | Iterating an enum's values needs a cast | enums | closed |
 | [P-035](#p-035) | A new enum case can go unhandled in label maps | enums | closed |
 | [P-074](#p-074) | A label map typed loosely isn't tied to the enum | enums | accepted gap |
 | [P-036](#p-036) | The Base Kit's hand-written `User` type has drifted | models | closed |
 | [P-037](#p-037) | Larastan ignores `casts()` without config | models | closed |
 | [P-038](#p-038) | Larastan types every `BelongsTo` as nullable | models | accepted gap |
+| [P-208](#p-208) | Larastan types a model's timestamps as nullable | models | accepted gap |
 | [P-039](#p-039) | Lazy loading and unloaded attributes silently change a prop's shape | models | closed |
 | [P-040](#p-040) | Shipped paginator types are wrong | pagination and deferred props | closed |
 | [P-041](#p-041) | A generic `replaceType` target crashes generation | pagination and deferred props | closed |
@@ -140,6 +142,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | accepted gap |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
+| [P-205](#p-205) | A translation key that isn't one, called without params, fails `tsc` on a missing argument | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
 | [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
 | [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
@@ -159,6 +162,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-066](#p-066) | Shapes no test produced are never checked | every Type Boundary | closed |
 | [P-084](#p-084) | Contract Coverage can't see shapes laravel-data doesn't describe | every Type Boundary | closed |
 | [P-185](#p-185) | Contract Coverage doesn't look inside a generic Data class's template-typed items | every Type Boundary | closed |
+| [P-206](#p-206) | A Data class's int-keyed array can reach the client as a JSON object | every Type Boundary | closed |
 | [P-125](#p-125) | A form's empty defaults are a Contract Coverage gap no test can close | every Type Boundary | closed |
 | [P-209](#p-209) | An input class's states are never required, so no test shows the server accepting them | every Type Boundary | closed |
 | [P-210](#p-210) | An input refused by every test, or a query class no page sends back, proves none of its states | every Type Boundary | open |
@@ -1103,6 +1107,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Closed by:** `array<value-of<Status>, V>` is generated as `Partial<Record<Status, V>>` ([`EnumKeyedMaps`](../packages/laravel/src/Workarounds/TypeScriptTransformer/EnumKeyedMaps.php)), so an absent key reads as `V | undefined`. An empty map is still sent as `[]`, which reads safely through the partial record; its recorded Contract accepts the `[]` ([P-076](#p-076)). Scenarios: `enum-keyed-map-may-miss-keys-passes`, `enum-keyed-map-read-as-present-fails-tsc`.
 
+### P-207
+
+**`countBy()` loses its keys' type, so an enum-keyed map is built by hand**
+
+- **Type Boundary:** enums
+- **Source:** found building a Linear clone on the Overlay
+- **Upstream:** no upstream issue filed (Laravel declares `countBy()` as returning `static<array-key, int>`)
+- **Status:** closed
+
+**Reproduction:** a Data property `/** @param array<value-of<IssueStatus>, int> $byStatus */` ([P-033](#p-033)) can't take `$issues->countBy(fn (Issue $issue) => $issue->status)->all()`, the Laravel way to count by status: Laravel declares `countBy()` as returning `static<array-key, int>`, which drops the type of the keys its callback returns (Larastan leaves its template types unresolved), so PHPStan rejects the argument with `argument.type` and the map is counted in a `foreach` instead.
+
+**Manual workaround:** `array_count_values($issues->map(fn (Issue $issue) => $issue->status->value)->all())`, or a `foreach` that counts.
+
+**Closed by:** [`CollectionCountByKeys`](../packages/laravel/src/Workarounds/Laravel/CollectionCountByKeys.php) types `countBy()` as `Collection<K, int<1, max>>`, K being what its callback returns (or the items without one), each enum in it as its cases' values (its cases' names for a pure enum), as `enum_value()` keys the counts at runtime. So `$issues->countBy(fn (Issue $issue) => $issue->status)->all()` is `array<'closed'|'open', int<1, max>>` and fills the map, and a callback returning another string can't: `Parameter $byStatus of class App\Data\IssueCountsData constructor expects array<'closed'|'open', int>, array<string, int<1, max>> given.` A field name (`countBy('status')`) keeps Laravel's own type. The Boost guideline teaches the map and how to fill it. Type inference cases: `packages/laravel/tests/PHPStan/CollectionTypesTest.php`. Scenarios: `count-by-enum-keyed-map-passes`, `count-by-string-keys-into-enum-map-fails-phpstan`.
+
 ### P-034
 
 **Iterating an enum's values needs a cast**
@@ -1116,7 +1135,7 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 
 **Manual workaround:** `enumValues.IssueStatus` generated from PHP in case order (`EnumValuesProvider`); for a literal union, `allOf<WeekStart>()('monday', 'sunday')`.
 
-**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`.
+**Closed by:** `enumValues` in `@/generated`, every backed enum's values in case order, string- and int-backed, typed as the enum ([`packages/laravel/src/TypeScript/EnumValuesProvider.php`](../packages/laravel/src/TypeScript/EnumValuesProvider.php)). `tsc` rejects the cast for an int-backed enum; for a string-backed one it still compiles, and the lint step rejects it as a type assertion ([P-068](#p-068)). A select's string value reads back as the enum by the lookup that keeps a model key's brand ([P-128](#p-128)), `selectedKey(enumValues.IssuePriority, value)`, typed `IssuePriority | null`, while `Number(value)` fails `tsc` (`Type 'number' is not assignable to type 'IssuePriority'.`). Scenarios: `enum-values-in-case-order-pass`, `enum-keys-cast-fails-tsc`, `enum-select-value-looked-up-passes`, `enum-select-value-as-number-fails-tsc`.
 
 ### P-035
 
@@ -1194,6 +1213,21 @@ The Overlay's own `function-arguments` template does the same ([`WayfinderTempla
 **Manual workaround:** declare non-nullable relations on the model: `@property-read Project $project`.
 
 **Reasoning:** Larastan types `BelongsTo` as nullable on purpose: a related row can be missing even when the foreign key column is `NOT NULL`, for example without a database constraint or when the relation was loaded without its columns. Overriding that would make PHPStan trust data it can't see. The workaround is one PHPDoc line per relation and is standard Laravel practice, so the Overlay teaches it in its Boost core guideline instead of changing Larastan's types.
+
+### P-208
+
+**Larastan types a model's timestamps as nullable**
+
+- **Type Boundary:** models
+- **Source:** found building a Linear clone on the Overlay
+- **Upstream:** by design: `$table->timestamps()` creates nullable columns, which Larastan reads from the migrations
+- **Status:** accepted gap
+
+**Reproduction:** a Data property `public CarbonImmutable $createdAt` can't take `$issue->created_at`, which Larastan types `CarbonImmutable|null` from `timestamps()`' nullable columns (and the Base Kit's `User` docblock declares `Carbon|null`, though its `AppServiceProvider` makes every date a `CarbonImmutable`), although a saved row always has both timestamps. Code drifts towards `?? now()` or nullable Data properties, which then need a feature test sending `null` that no request can produce.
+
+**Manual workaround:** declare the timestamps non-nullable on the model: `@property CarbonImmutable $created_at` and `@property CarbonImmutable $updated_at`.
+
+**Reasoning:** the timestamps are `null` on a model that isn't saved yet, which PHPStan can't tell from a saved one, so typing them non-nullable for every model would make PHPStan trust data it can't see, as [P-038](#p-038) declines to for `BelongsTo`. The workaround is two PHPDoc lines per model, the same practice P-038 teaches, so the Overlay teaches it in its Boost core guideline (beside the `BelongsTo` one, and never `?? now()`) instead of changing Larastan's types. The Testbed App declares them on the models its Data classes read them from, which removed its `?? now()` fallbacks. A vendor model (Laravel's `DatabaseNotification`, a passkey) can't take the docblock, so its Data class keeps a fallback. The Base Kit's `User` declaring `Carbon|null` where its dates are `CarbonImmutable` is upstream's (no upstream issue filed); its `UserData` reads the date as a `CarbonInterface`, which both are.
 
 ### P-039
 
@@ -1751,6 +1785,21 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 
 **Closed by:** `TranslationKeys` maps each key to the `:params` its default-locale message takes, named as Laravel's translator fills them (`:seconds`, `:Seconds` and `:SECONDS` are all the param `seconds`; a placeholder starts with a letter, so `10:30` is none), and `t(key, params)` takes exactly those: a misspelled param fails with `error TS2561: Object literal may only specify known properties, but 'second' does not exist in type 'TranslationParams<"seconds">'. Did you mean to write 'seconds'?`, a missing one with `error TS2554: Expected 2 arguments, but got 1.`, and a message without params takes none. At runtime `t()` fills them as Laravel does (`packages/npm/tests/translations.test.ts`). Scenarios: `translation-params-typed-passes`, `translation-param-misspelled-fails-tsc`, `translation-param-missing-fails-tsc`.
 
+### P-205
+
+**A translation key that isn't one, called without params, fails `tsc` on a missing argument**
+
+- **Type Boundary:** translations
+- **Source:** found building a Linear clone on the Overlay: a new `IssueStatus` case without its message
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `lang/en/auth.php` defines `failed`, `password` and `throttle` (`… try again in :seconds seconds.`). `t('auth.pasword')`, and `` t(`auth.${error}`) `` with `type AuthError = 'failed' | 'password' | 'locked'`, both fail with `error TS2554: Expected 2 arguments, but got 1.`, which points at the params instead of the key. A key that matches no message leaves TypeScript nothing to infer `Key` from, so it falls back to every key, and `TranslationArgs` then requires params because `auth.throttle` takes them. TypeScript checks the argument count before the argument types, so the key's own error never shows. P-055's scenario passes its params (`t('auth.throtle', { seconds })`), so it met the key error. Every real app has a message with `:params`, so every misspelled key called without them, and every template-literal key with a member the lang files lack (an enum case added before its message), got the wrong diagnostic.
+
+**Manual workaround:** none; the developer has to work out that the key is the problem.
+
+**Closed by:** `TranslationArgs` ([`translations/index.d.ts`](../packages/npm/translations/index.d.ts)) makes the params optional when `Key` fell back to every key, as `ChoiceArgs` already did for `choice()` ([P-136](#p-136)). `tsc` then reports the key, `error TS2345: Argument of type '"auth.pasword"' is not assignable to parameter of type 'keyof TranslationKeys'.`, and for a template-literal key names the member that isn't one: `Type '"auth.locked"' is not assignable to type 'keyof TranslationKeys'.` A key that is one still requires its params (`translation-param-missing-fails-tsc`, [P-056](#p-056)). Scenarios: `translation-keys-typed-passes`, `translation-key-misspelled-without-params-fails-tsc`, `translation-template-key-undefined-member-fails-tsc`.
+
 ### P-057
 
 **Other locales can miss keys or params**
@@ -2050,6 +2099,21 @@ The Testbed App had one: the cycle page's `issuesByStatus` (`array<value-of<Issu
 **Manual workaround:** render the same Data class in a prop Contract Coverage does walk, or use a non-generic Data class per item type (`IssueListingData` with `list<IssueData>`).
 
 **Closed by:** [`TemplateArgument`](../packages/laravel/src/Coverage/TemplateArgument.php) binds each template of a generic Data class to the type argument of the use being walked, read from the PHPDoc type its TypeScript type is generated from: a page prop's or a Data property's (`/** @param ListingData<IssueData> $backlog */`), or a list's item (`list<ListingData<IssueData>>`). The bindings are passed down, so a template a generic class hands on to another (`BoardData<IssueData>` with `@param list<ListingData<TItem>> $columns`) is bound at any depth. [`ShapeCoverage`](../packages/laravel/src/Coverage/ShapeCoverage.php) walks a template-typed property (`TItem`, `list<TItem>`, `array<string, TItem>`) as that Data class, its variants if the argument is a union, and keeps a template-typed list's emptiness per use (`ListingData<IssueData>.items is only ever empty`), since each use is its own TypeScript type. An item's nullable field only ever `null` now fails: `✗ IssueData.assignee is only ever null (at backlog › backlog.items[].assignee): …`. A use with no type argument, which PHPStan (`missingType.generics`) and `tsc` (TS2314) already reject, falls back to the template's bound when that is one Data class; otherwise Contract Coverage reports the property instead of passing it: `✗ ListingData.items holds TItem with no Data class (at backlog › backlog.items): give ListingData a type argument where it is used (ListingData<SomeData>), or bound TItem by one Data class, …`. `strictly.dataShape` ([`DataShapeRule`](../packages/laravel/src/PHPStan/DataShapeRule.php)) now resolves a generic Data class's template-typed properties with each use's type arguments, so `ListingData<IssueData|MilestoneData>` fails with the message and tip `list<IssueData|MilestoneData>` gets, as does an argument that makes the item a list. The templates and their bounds are read by [`ClassTemplates`](../packages/laravel/src/TypeScript/ClassTemplates.php), which the generated types' template bounds ([P-062](#p-062)) now share. A JSON endpoint's response is walked with the type arguments of its action's `@return ListingData<IssueData>` the same way ([P-197](#p-197)). Scenarios: `generic-data-item-only-null-fails-coverage`, `generic-data-every-item-shape-passes-coverage`, `generic-data-nested-item-only-null-fails-coverage`, `generic-data-bound-item-only-null-fails-coverage`, `generic-data-without-type-argument-fails-coverage`, `generic-data-union-type-argument-fails-phpstan`; the rule-test kit's `DataShapeRuleTest` covers a union argument, one handed on through a nested generic class, a scalar union, a list argument, a template used as a value and a self-referential generic class.
+
+### P-206
+
+**A Data class's int-keyed array can reach the client as a JSON object**
+
+- **Type Boundary:** every Type Boundary
+- **Source:** found building a Linear clone on the Overlay
+- **Upstream:** no upstream issue filed (Laravel's collection generics can't say a collection's keys run from 0 without a gap)
+- **Status:** closed
+
+**Reproduction:** `/** @param array<int, LabelData> $labels */` on a Data class is generated as `LabelData[]`, as are `array<LabelData>` and `LabelData[]`, but PHP only promises int keys, not consecutive ones. `labels: $labels->filter(fn (Label $label): bool => $label->id !== $hidden)->all()` passes PHPStan, and when it leaves a gap PHP sends `"labels":{"0":{…},"2":{…}}`: an object where the client was promised an array, so `labels.map(…)` throws. The guidance taught `array<int, X>`, because `Collection::all()` returns that and PHPStan rejects it for `list<X>`; `->values()->all()`, which does reindex, is typed `array<int, X>` too. A Contract catches the object only when a test happens to produce the gap.
+
+**Manual workaround:** declare `list<X>` and build it with `array_values($collection->all())`.
+
+**Closed by:** the PHPStan rule [`DataListRule`](../packages/laravel/src/PHPStan/DataListRule.php) (`strictly.dataList`) reads each public property's PHPDoc as the generator does, since PHPStan resolves `array<X>` and `array<array-key, X>` alike while the generator makes the first a list and the second a map, and rejects one it reads as a list without PHPStan proving it one: `array<int, X>`, `array<X>`, `X[]` and `non-empty-array<int, X>`, alone, nullable or in a union (`Lazy|array<int, X>`). It applies to every Data class sent to the browser, not to input and query classes, whose arrays the client builds: `App\Pages\Labels\IndexPage::$labels is typed array<int, LabelData>, which TypeScript reads as an array, but PHP sends an array whose keys have a gap as a JSON object.`, with a tip to declare `list<LabelData>`. A map keyed by `string`, `array-key` or an enum's values passes. So that a list costs nothing where the code already builds one, [`CollectionAllIsList`](../packages/laravel/src/Workarounds/Laravel/CollectionAllIsList.php) types `all()` as `list<TValue>` at the end of a chain that starts from a list (`values()`, a query's or a relation's `get()`, `Model::all()`, `collect()` of a list) and goes only through calls that keep each key (`map()`, `mapInto()`, `each()`, `tap()`); a chain through `filter()`, `unique()` or `sortBy()`, or from a relation property or a variable, keeps Laravel's type and ends with `->values()->all()`, and an `array_values()` around a chain that is a list is now reported as redundant (`arrayValues.list`). The Kit Conversion's `SecurityPage` declares `list<PasskeyData>`. The Boost guideline and the `strictly-add-page` and `strictly-add-query-filters` skills teach `list<…>`. Rule-test kit cases: `packages/laravel/tests/PHPStan/DataListRuleTest.php`; type inference cases: `packages/laravel/tests/PHPStan/CollectionTypesTest.php`. Scenarios: `data-list-built-with-values-passes`, `data-int-keyed-array-fails-phpstan`.
 
 ### P-125
 

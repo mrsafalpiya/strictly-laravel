@@ -5,11 +5,15 @@ export type TranslationParams<Param extends string> = { [Name in Param]: string 
 
 /**
  * What `t()` takes after the key: nothing for a message without `:params`, else a value for each of them (Problem
- * P-056).
+ * P-056). For a key that isn't one (`Key` fell back to every key, Problem P-205), the params are optional, so `tsc`
+ * reports the key rather than a missing argument, as `ChoiceArgs` does for `choice()`.
  */
-export type TranslationArgs<Keys extends Record<string, string>, Key extends keyof Keys> = [Keys[Key]] extends [never]
-    ? []
-    : [params: TranslationParams<Keys[Key] & string>];
+export type TranslationArgs<Keys extends Record<string, string>, Key extends keyof Keys> =
+    IsEveryKey<Extract<keyof Keys, string>, Extract<Key, string>> extends true
+    ? [params?: TranslationParams<Keys[Key] & string>]
+    : [Keys[Key]] extends [never]
+      ? []
+      : [params: TranslationParams<Keys[Key] & string>];
 
 /**
  * The params `choice()` takes besides the count: the message's other `:params`, and optionally `count`, which replaces

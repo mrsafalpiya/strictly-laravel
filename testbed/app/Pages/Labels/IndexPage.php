@@ -8,7 +8,7 @@ use StrictlyLaravel\Inertia\Page;
 final class IndexPage extends Page
 {
     public function __construct(
-        /** @var array<int, LabelListItemData> */
+        /** @var list<LabelListItemData> */
         public array $labels,
     ) {}
 }

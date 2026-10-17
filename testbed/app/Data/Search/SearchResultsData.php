@@ -10,9 +10,9 @@ use Spatie\LaravelData\Data;
 final class SearchResultsData extends Data
 {
     public function __construct(
-        /** @var array<int, IssueReferenceData> */
+        /** @var list<IssueReferenceData> */
         public array $issues,
-        /** @var array<int, ProjectSummaryData> */
+        /** @var list<ProjectSummaryData> */
         public array $projects,
     ) {}
 }

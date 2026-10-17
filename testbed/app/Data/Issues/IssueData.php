@@ -29,11 +29,11 @@ final class IssueData extends Data
         public ProjectSummaryData $project,
         public UserSummaryData $reporter,
         public ?UserSummaryData $assignee,
-        /** @var array<int, LabelData> */
+        /** @var list<LabelData> */
         public array $labels,
         public ?CycleSummaryData $cycle,
         public ?IssueReferenceData $parent,
-        /** @var array<int, IssueReferenceData> */
+        /** @var list<IssueReferenceData> */
         public array $children,
         public ?CarbonInterface $completedAt,
         public CarbonInterface $createdAt,
@@ -55,12 +55,12 @@ final class IssueData extends Data
             project: ProjectSummaryData::fromModel($issue->project),
             reporter: UserSummaryData::fromModel($issue->reporter),
             assignee: $issue->assignee === null ? null : UserSummaryData::fromModel($issue->assignee),
-            labels: $issue->labels->map(LabelData::fromModel(...))->all(),
+            labels: $issue->labels->map(LabelData::fromModel(...))->values()->all(),
             cycle: $issue->cycle === null ? null : CycleSummaryData::fromModel($issue->cycle),
             parent: $issue->parent === null ? null : IssueReferenceData::fromModel($issue->parent),
-            children: $issue->children->map(IssueReferenceData::fromModel(...))->all(),
+            children: $issue->children->map(IssueReferenceData::fromModel(...))->values()->all(),
             completedAt: $issue->completed_at,
-            createdAt: $issue->created_at ?? now(),
+            createdAt: $issue->created_at,
         );
     }
 }

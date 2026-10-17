@@ -11,7 +11,7 @@ final class MembersPageAbilitiesData extends Data
 {
     public function __construct(
         public bool $invite,
-        /** @var array<int, WorkspaceRole> Roles the viewer may invite with or assign (empty when they can't manage). */
+        /** @var list<WorkspaceRole> Roles the viewer may invite with or assign (empty when they can't manage). */
         public array $assignableRoles,
     ) {}
 
@@ -23,7 +23,7 @@ final class MembersPageAbilitiesData extends Data
     /**
      * Only owners hand out ownership; guests only when the workspace allows them.
      *
-     * @return array<int, WorkspaceRole>
+     * @return list<WorkspaceRole>
      */
     public static function assignableRoles(Workspace $workspace, WorkspaceRole $role): array
     {

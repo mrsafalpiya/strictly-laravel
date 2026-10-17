@@ -16,8 +16,8 @@ final class IssueController extends Controller
     public function index(): IndexPage
     {
         return new IndexPage(
-            issues: array_values(Issue::query()->orderBy('number')->get()->map(IssueData::fromModel(...))->all()),
-            members: array_values(User::query()->orderBy('name')->get()->map(MemberData::fromModel(...))->all()),
+            issues: Issue::query()->orderBy('number')->get()->map(IssueData::fromModel(...))->all(),
+            members: User::query()->orderBy('name')->get()->map(MemberData::fromModel(...))->all(),
         );
     }
 

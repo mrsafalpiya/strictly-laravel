@@ -13,9 +13,9 @@ test('the reports page loads its deferred stats and lists the members', function
         title: 'Reports',
         stars: 3,
         stats: Lazy::inertiaDeferred(fn (): ReportStatsData => new ReportStatsData(openIssues: 3, closedIssues: 5)),
-        members: array_values(User::query()->orderBy('id')->get()->map(
+        members: User::query()->orderBy('id')->get()->map(
             fn (User $user): MemberData => new MemberData(name: $user->name, email: $user->email),
-        )->all()),
+        )->all(),
     ));
 
     // The page isn't in the app's Vite build.

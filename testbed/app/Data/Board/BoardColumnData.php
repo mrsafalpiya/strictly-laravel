@@ -15,7 +15,7 @@ final class BoardColumnData extends Data
 {
     public function __construct(
         public IssueStatus $status,
-        /** @var array<int, IssueListItemData> Ordered by position; at most the board's per-column cap. */
+        /** @var list<IssueListItemData> Ordered by position; at most the board's per-column cap. */
         public array $issues,
         /** Every issue in this column, shown or not. */
         public int $total,

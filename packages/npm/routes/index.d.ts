@@ -51,12 +51,14 @@ export type RouteKey<TModel extends string, TValue> = Key<
 >;
 
 /**
- * The key a `<Select>` value names: the one of `keys` whose `String()` it is, or null for any other value (the "none"
+ * The option a `<Select>` value names: the one of `keys` whose `String()` it is, or null for any other value (the "none"
  * item). A select's value is a string, and `Number(value)` would be a plain number, which an input's model key
  * (`Key<'User', 'id', number>`, `#[KeyOf(User::class)]`) doesn't take: looking it up among the options the server sent
- * keeps the brand, so only one of their keys can be chosen (Problem P-128).
+ * keeps the brand, so only one of their keys can be chosen (Problem P-128). The same lookup among an enum's values
+ * reads the value back as the enum, string- or int-backed, with no cast (Problem P-034).
  *
  *     onValueChange={(value) => setData({ leadId: selectedKey(members.map((member) => member.id), value) })}
+ *     onValueChange={(value) => setData({ status: selectedKey(enumValues.IssueStatus, value) })}
  */
 export declare function selectedKey<TKey extends string | number>(keys: readonly TKey[], value: string): TKey | null;
 

@@ -17,7 +17,7 @@ final class IndexPage extends Page
         /** The query string, parsed leniently and sent back so the filter bar is typed by the same class. */
         public IssueFiltersData $filters,
         public IssueFormOptionsData $options,
-        /** @var array<int, SavedViewData> The user's saved filters in this workspace, by name. */
+        /** @var list<SavedViewData> The user's saved filters in this workspace, by name. */
         public array $savedViews,
     ) {}
 }
