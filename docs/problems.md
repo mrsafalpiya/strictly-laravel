@@ -140,6 +140,7 @@ The register was seeded from the Reference Implementation (its overview, evaluat
 | [P-192](#p-192) | Whisper names and payloads are hand-typed | broadcasting | accepted gap |
 | [P-055](#p-055) | Translation keys are unchecked strings | translations | closed |
 | [P-056](#p-056) | Translation `:param` names are unchecked | translations | closed |
+| [P-205](#p-205) | A translation key that isn't one, called without params, fails `tsc` on a missing argument | translations | closed |
 | [P-057](#p-057) | Other locales can miss keys or params | translations | closed |
 | [P-136](#p-136) | A pluralised message has no typed `choice()` on the client | translations | closed |
 | [P-161](#p-161) | A message with a literal `\|` is a pluralised message | translations | accepted gap |
@@ -1748,6 +1749,21 @@ The Reference Implementation never exercised this Type Boundary. ADR-0006 decide
 **Manual workaround:** none.
 
 **Closed by:** `TranslationKeys` maps each key to the `:params` its default-locale message takes, named as Laravel's translator fills them (`:seconds`, `:Seconds` and `:SECONDS` are all the param `seconds`; a placeholder starts with a letter, so `10:30` is none), and `t(key, params)` takes exactly those: a misspelled param fails with `error TS2561: Object literal may only specify known properties, but 'second' does not exist in type 'TranslationParams<"seconds">'. Did you mean to write 'seconds'?`, a missing one with `error TS2554: Expected 2 arguments, but got 1.`, and a message without params takes none. At runtime `t()` fills them as Laravel does (`packages/npm/tests/translations.test.ts`). Scenarios: `translation-params-typed-passes`, `translation-param-misspelled-fails-tsc`, `translation-param-missing-fails-tsc`.
+
+### P-205
+
+**A translation key that isn't one, called without params, fails `tsc` on a missing argument**
+
+- **Type Boundary:** translations
+- **Source:** found building a Linear clone on the Overlay: a new `IssueStatus` case without its message
+- **Upstream:** none
+- **Status:** closed
+
+**Reproduction:** `lang/en/auth.php` defines `failed`, `password` and `throttle` (`… try again in :seconds seconds.`). `t('auth.pasword')`, and `` t(`auth.${error}`) `` with `type AuthError = 'failed' | 'password' | 'locked'`, both fail with `error TS2554: Expected 2 arguments, but got 1.`, which points at the params instead of the key. A key that matches no message leaves TypeScript nothing to infer `Key` from, so it falls back to every key, and `TranslationArgs` then requires params because `auth.throttle` takes them. TypeScript checks the argument count before the argument types, so the key's own error never shows. P-055's scenario passes its params (`t('auth.throtle', { seconds })`), so it met the key error. Every real app has a message with `:params`, so every misspelled key called without them, and every template-literal key with a member the lang files lack (an enum case added before its message), got the wrong diagnostic.
+
+**Manual workaround:** none; the developer has to work out that the key is the problem.
+
+**Closed by:** `TranslationArgs` ([`translations/index.d.ts`](../packages/npm/translations/index.d.ts)) makes the params optional when `Key` fell back to every key, as `ChoiceArgs` already did for `choice()` ([P-136](#p-136)). `tsc` then reports the key, `error TS2345: Argument of type '"auth.pasword"' is not assignable to parameter of type 'keyof TranslationKeys'.`, and for a template-literal key names the member that isn't one: `Type '"auth.locked"' is not assignable to type 'keyof TranslationKeys'.` A key that is one still requires its params (`translation-param-missing-fails-tsc`, [P-056](#p-056)). Scenarios: `translation-keys-typed-passes`, `translation-key-misspelled-without-params-fails-tsc`, `translation-template-key-undefined-member-fails-tsc`.
 
 ### P-057
 
