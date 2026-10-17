@@ -16,7 +16,7 @@ final class CommentData extends Data
         public int $id,
         public string $body,
         public UserSummaryData $author,
-        /** @var array<int, ReactionSummaryData> */
+        /** @var list<ReactionSummaryData> */
         public array $reactions,
         public CommentAbilitiesData $can,
         public CarbonInterface $createdAt,
@@ -45,7 +45,7 @@ final class CommentData extends Data
                 update: $viewer->can('update', $comment),
                 delete: $viewer->can('delete', $comment),
             ),
-            createdAt: $comment->created_at ?? now(),
+            createdAt: $comment->created_at,
             editedAt: $comment->edited_at,
         );
     }

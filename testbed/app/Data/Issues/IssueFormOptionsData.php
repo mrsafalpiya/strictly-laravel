@@ -17,13 +17,13 @@ use Spatie\LaravelData\Data;
 final class IssueFormOptionsData extends Data
 {
     public function __construct(
-        /** @var array<int, ProjectSummaryData> */
+        /** @var list<ProjectSummaryData> */
         public array $projects,
-        /** @var array<int, UserSummaryData> */
+        /** @var list<UserSummaryData> */
         public array $members,
-        /** @var array<int, LabelData> */
+        /** @var list<LabelData> */
         public array $labels,
-        /** @var array<int, CycleSummaryData> */
+        /** @var list<CycleSummaryData> */
         public array $cycles,
     ) {}
 

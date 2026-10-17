@@ -1,0 +1,9 @@
+{
+    "problem": "P-206",
+    "description": "A page prop typed array<int, LabelData>, which TypeScript reads as an array but PHP sends as a JSON object once a filter leaves a gap in its keys: PHPStan fails, naming the property and telling it to declare a list.",
+    "step": "test",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "App\\Pages\\Labels\\IndexPage::$labels is typed array<int, LabelData>,"
+    }
+}

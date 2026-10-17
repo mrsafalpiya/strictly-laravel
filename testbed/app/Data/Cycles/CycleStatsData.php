@@ -14,7 +14,7 @@ final class CycleStatsData extends Data
         public int $completed,
         /** 0–100, rounded down. */
         public int $percent,
-        /** @var array<int, BurndownPointData> One point per day from the start to today (or the end). */
+        /** @var list<BurndownPointData> One point per day from the start to today (or the end). */
         public array $burndown,
     ) {}
 }

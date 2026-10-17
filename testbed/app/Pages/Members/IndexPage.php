@@ -11,9 +11,9 @@ use StrictlyLaravel\Inertia\Page;
 final class IndexPage extends Page
 {
     public function __construct(
-        /** @var array<int, MemberData> */
+        /** @var list<MemberData> */
         public array $members,
-        /** @var array<int, InvitationData>|null Pending invitations; null when the viewer can't manage members. */
+        /** @var list<InvitationData>|null Pending invitations; null when the viewer can't manage members. */
         public ?array $invitations,
         public StoreInvitationData $inviteDefaults,
         public MembersPageAbilitiesData $can,

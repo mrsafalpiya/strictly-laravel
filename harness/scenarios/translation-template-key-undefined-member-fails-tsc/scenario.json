@@ -1,0 +1,9 @@
+{
+    "problem": "P-205",
+    "description": "A template-literal translation key with a member the default locale's lang files don't define fails tsc on that member, not on a missing argument: t(`auth.${error}`) when AuthError has a 'locked' case lang/en/auth.php lacks.",
+    "step": "tsc",
+    "expect": {
+        "outcome": "fail",
+        "errorContains": "Type '\"auth.locked\"' is not assignable to type 'keyof TranslationKeys'."
+    }
+}

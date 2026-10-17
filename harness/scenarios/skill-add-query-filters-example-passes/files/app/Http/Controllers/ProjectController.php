@@ -18,10 +18,12 @@ final class ProjectController extends Controller
         $projects = Project::query()
             ->when($search !== null, fn (Builder $query) => $query->whereLike('name', "%{$search}%"))
             ->orderBy($filters->sort === ProjectSort::Newest ? 'created_at' : 'name', $filters->sort === ProjectSort::Newest ? 'desc' : 'asc')
-            ->get();
+            ->get()
+            ->map(fn (Project $project): ProjectData => ProjectData::fromModel($project))
+            ->all();
 
         return new IndexPage(
-            projects: $projects->map(fn (Project $project): ProjectData => ProjectData::fromModel($project))->all(),
+            projects: $projects,
             filters: $filters,
         );
     }

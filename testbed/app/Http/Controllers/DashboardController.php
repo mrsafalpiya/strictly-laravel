@@ -97,7 +97,7 @@ final class DashboardController extends Controller
             ->get(['id', 'created_at', 'completed_at']);
 
         foreach ($issues as $issue) {
-            if ($issue->created_at !== null && $issue->created_at >= $first) {
+            if ($issue->created_at >= $first) {
                 $created[min($week($issue->created_at), self::THROUGHPUT_WEEKS - 1)]++;
             }
 

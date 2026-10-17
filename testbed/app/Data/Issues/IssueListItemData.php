@@ -26,7 +26,7 @@ final class IssueListItemData extends Data
         public ?CarbonInterface $dueOn,
         public ProjectSummaryData $project,
         public ?UserSummaryData $assignee,
-        /** @var array<int, LabelData> */
+        /** @var list<LabelData> */
         public array $labels,
         public int $commentsCount,
         public CarbonInterface $updatedAt,
@@ -46,9 +46,9 @@ final class IssueListItemData extends Data
             dueOn: $issue->due_on,
             project: ProjectSummaryData::fromModel($issue->project),
             assignee: $issue->assignee === null ? null : UserSummaryData::fromModel($issue->assignee),
-            labels: $issue->labels->map(LabelData::fromModel(...))->all(),
+            labels: $issue->labels->map(LabelData::fromModel(...))->values()->all(),
             commentsCount: $issue->comments_count ?? 0,
-            updatedAt: $issue->updated_at ?? $issue->created_at ?? now(),
+            updatedAt: $issue->updated_at,
         );
     }
 }

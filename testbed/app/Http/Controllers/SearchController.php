@@ -54,8 +54,8 @@ final class SearchController extends Controller
             ->get();
 
         return new SearchResultsData(
-            issues: $issues->map(fn (Issue $issue): IssueReferenceData => IssueReferenceData::fromModel($issue))->all(),
-            projects: $projects->map(fn (Project $project): ProjectSummaryData => ProjectSummaryData::fromModel($project))->all(),
+            issues: $issues->map(fn (Issue $issue): IssueReferenceData => IssueReferenceData::fromModel($issue))->values()->all(),
+            projects: $projects->map(fn (Project $project): ProjectSummaryData => ProjectSummaryData::fromModel($project))->values()->all(),
         );
     }
 }
