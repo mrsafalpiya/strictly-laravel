@@ -25,6 +25,12 @@ test('a project is created from its input', function () {
         ->assertRedirect('/dashboard');
 });
 
+test('a project is created with a description and tags', function () {
+    $this->actingAs(User::factory()->create())
+        ->post('/projects', projectPayload(['description' => 'The first release', 'tags' => ['launch']]))
+        ->assertRedirect('/dashboard');
+});
+
 test('a taken name is refused', function () {
     $this->actingAs(User::factory()->create())
         ->from('/dashboard')

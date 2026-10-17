@@ -26,6 +26,12 @@ test('a project is created from its input', function () {
         ->assertSessionHasNoErrors();
 });
 
+test('a project is created with a description and tags', function () {
+    $this->actingAs(User::factory()->create())
+        ->post('/projects', projectPayload(['description' => 'The first release', 'tags' => ['launch']]))
+        ->assertRedirect('/dashboard');
+});
+
 test('an invalid project is refused with errors on its fields, nested ones included', function () {
     $this->actingAs(User::factory()->create())
         ->from('/dashboard')
