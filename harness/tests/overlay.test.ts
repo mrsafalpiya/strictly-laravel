@@ -160,6 +160,45 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
         assertOutcome(await app.check('install'), { outcome: 'pass' });
     }, 10);
 
+    test('Laravel Boost is a dev dependency; an app that requires it in production, or not at all, fails ci:check:install (P-204)', async () => {
+        const app = await createApp('boost-dev-dependency');
+        const composerJson = join(app.dir, 'composer.json');
+        const original = readFileSync(composerJson, 'utf8');
+        type Manifest = { require: Record<string, string>; 'require-dev': Record<string, string> };
+        const manifest = () => JSON.parse(original) as Manifest;
+        const write = (edited: Manifest) => writeFileSync(composerJson, `${JSON.stringify(edited, null, 4)}\n`);
+        const lock = JSON.parse(readFileSync(join(app.dir, 'composer.lock'), 'utf8')) as Record<'packages' | 'packages-dev', { name: string }[]>;
+        const locked = (section: 'packages' | 'packages-dev') => lock[section].map(({ name }) => name);
+
+        // What `composer install --no-dev` installs in production.
+        assert.ok(!locked('packages').includes('laravel/boost'), 'composer.lock lists laravel/boost as a production package');
+        assert.ok(locked('packages-dev').includes('laravel/boost'), 'composer.lock does not list laravel/boost as a dev package');
+
+        const inProduction = manifest();
+        const constraint = inProduction['require-dev']['laravel/boost'];
+        assert.ok(constraint !== undefined, 'the app does not require laravel/boost as a dev dependency');
+        delete inProduction['require-dev']['laravel/boost'];
+        inProduction.require['laravel/boost'] = constraint;
+        write(inProduction);
+        assertOutcome(await app.check('install'), {
+            outcome: 'fail',
+            errorContains: 'composer.json requires laravel/boost in `require`, so it is installed in production',
+        });
+
+        const missing = manifest();
+        delete missing['require-dev']['laravel/boost'];
+        write(missing);
+        const check = await app.check('install');
+        assertOutcome(check, {
+            outcome: 'fail',
+            errorContains: 'composer.json does not require laravel/boost: run `composer require laravel/boost --dev`',
+        });
+        assert.match(check.output, /Strictly Laravel is not fully applied to this app: composer\.json: laravel\/boost a dev dependency \(not applied\)\./);
+
+        writeFileSync(composerJson, original);
+        assertOutcome(await app.check('install'), { outcome: 'pass' });
+    }, 10);
+
     test('Kit Conversion leaves a Base Kit file with unknown content untouched and reports it', async () => {
         const app = await createApp('kit-conversion-unknown-content', { install: false });
         const routes = join(app.dir, 'routes', 'web.php');

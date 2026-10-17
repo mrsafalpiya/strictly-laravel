@@ -126,6 +126,8 @@ export async function prepareInstalledFixture(options: { fresh?: boolean } = {})
     const repository = { type: 'path', url: relative(installedDir, composerPackageDir), options: { symlink: true } };
     await runOrThrow('composer', ['config', 'repositories.strictly-laravel', JSON.stringify(repository)], inInstalled);
     await runOrThrow('composer', ['require', `${composerPackageName}:*`, '--no-interaction'], inInstalled);
+    // Laravel Boost, which installs the package's guidance for AI coding agents, is the app's dev dependency (P-204).
+    await runOrThrow('composer', ['require', 'laravel/boost', '--dev', '--no-interaction'], inInstalled);
     // A full pnpm install too. The Base Kit arrives with Chisel's npm-installed node_modules and no pnpm-lock.yaml: the
     // installer's own `pnpm install --ansi` is rejected by pnpm 11 ("Unknown option: 'ansi'") yet reported as done.
     // Copied out of pnpm's store, not hard-linked to it: every app hard-links installed/'s files (createAppDir()), and a
