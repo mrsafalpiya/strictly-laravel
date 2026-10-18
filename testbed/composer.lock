@@ -3389,11 +3389,11 @@
         },
         {
             "name": "mrsafalpiya/strictly-laravel",
-            "version": "0.1.0",
+            "version": "0.2.0",
             "dist": {
                 "type": "path",
                 "url": "../packages/laravel",
-                "reference": "f9aa1a92beedc689ef417487b03a4fd5877f39fd"
+                "reference": "e5cdc459c0f0110c74a04c593bc3786a0383a819"
             },
             "require": {
                 "illuminate/console": "^13.0",
@@ -3434,6 +3434,11 @@
                 "MIT"
             ],
             "description": "Strictly Laravel: end-to-end type safety for Laravel + Inertia + React, applied as an Overlay on the official React starter kit.",
+            "homepage": "https://github.com/mrsafalpiya/strictly-laravel",
+            "support": {
+                "issues": "https://github.com/mrsafalpiya/strictly-laravel/issues",
+                "source": "https://github.com/mrsafalpiya/strictly-laravel/tree/main/packages/laravel"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true

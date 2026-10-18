@@ -1,8 +1,18 @@
 {
     "name": "@mrsafalpiya/strictly-laravel",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Strictly Laravel: end-to-end type safety for Laravel + Inertia + React (npm side of the Overlay).",
     "license": "MIT",
+    "homepage": "https://github.com/mrsafalpiya/strictly-laravel#readme",
+    "bugs": "https://github.com/mrsafalpiya/strictly-laravel/issues",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mrsafalpiya/strictly-laravel.git",
+        "directory": "packages/npm"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "type": "module",
     "exports": {
         ".": {
