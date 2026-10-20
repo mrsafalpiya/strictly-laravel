@@ -1,6 +1,6 @@
 {
     "problem": "P-072",
     "description": "A Data class that isn't final fails PHPStan (strictly.dataClassFinal), since its generated type must describe exactly what is sent.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Data class App\\Data\\ProjectData must be final." }
 }

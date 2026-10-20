@@ -1,6 +1,6 @@
 {
     "problem": "none",
     "description": "ADR-0007: a @phpstan-ignore without a reason in parentheses fails PHPStan.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Ignore with identifier argument.type has no comment." }
 }

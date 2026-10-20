@@ -1,7 +1,7 @@
 {
     "problem": "P-136",
     "description": "A locale whose message isn't pluralised where the default locale's is fails the locale parity test, since choice() picks a form from every locale's message: the German issue count has no | forms.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "de: issues.count isn't plural, but the en message is, so choice() can't pick its form"

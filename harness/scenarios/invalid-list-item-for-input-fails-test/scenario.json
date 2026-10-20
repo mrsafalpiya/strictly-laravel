@@ -1,7 +1,7 @@
 {
     "problem": "P-022",
     "description": "A test that sends an invalid backed-enum item in a typed list input and expects it accepted fails with the list item rule's message, not a 500.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "The statuses.1 value is invalid."

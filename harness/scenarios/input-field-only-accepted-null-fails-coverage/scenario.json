@@ -1,6 +1,7 @@
 {
     "problem": "P-209",
     "description": "An input's nullable field that every accepted request sends as null, so no test shows the server accepting the value TypeScript lets the client send: Contract Coverage fails, naming the field and the form endpoint.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ StoreProjectData.description is only ever null (at POST /projects › description): add a feature test that submits to POST /projects with description not null."

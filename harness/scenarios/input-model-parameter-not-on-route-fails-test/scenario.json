@@ -1,7 +1,7 @@
 {
     "problem": "P-126",
     "description": "An input's authorize() takes a model parameter the route has no parameter of that name for, so the request fails loudly naming the parameter and the route instead of authorizing against an empty model.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Data\\UpdateEmailData::authorize() takes App\\Models\\User $account, but the route users/{user}/email has no {account} parameter."

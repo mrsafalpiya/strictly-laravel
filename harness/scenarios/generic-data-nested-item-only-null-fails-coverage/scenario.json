@@ -1,6 +1,7 @@
 {
     "problem": "P-185",
     "description": "A generic Data class used inside another generic Data class's property (BoardData<IssueData>, whose columns are list<ListingData<TItem>>), whose innermost items' nullable field the feature tests only ever send as null: Contract Coverage binds the template through both classes and fails ci:check, naming the field at its full path.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ IssueData.assignee is only ever null (at board › board.columns[].items[].assignee): add a feature test that renders board with board.columns[].items[].assignee not null."

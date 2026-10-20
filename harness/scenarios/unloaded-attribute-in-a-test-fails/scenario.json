@@ -1,7 +1,7 @@
 {
     "problem": "P-039",
     "description": "A test that reads an attribute the query didn't select fails, because Eloquent strict mode is on.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "The attribute [name] either does not exist or was not retrieved for model [App\\Models\\User]."

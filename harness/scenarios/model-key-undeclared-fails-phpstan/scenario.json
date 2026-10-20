@@ -1,7 +1,7 @@
 {
     "problem": "P-128",
     "description": "An input property named like a model's key, or validated by an exists rule, that doesn't declare its model with #[KeyOf] fails PHPStan, listing each such property.",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Data\\BulkUpdateIssuesData::$ids is validated by an exists rule"

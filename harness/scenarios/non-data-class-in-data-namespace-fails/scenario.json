@@ -1,7 +1,7 @@
 {
     "problem": "P-072",
     "description": "A class in App\\Data that isn't a Data class fails PHPStan (strictly.dataNamespace), so the Data namespace holds only shapes with generated types.",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "Class App\\Data\\ProjectFormatter is in the App\\Data namespace but is"

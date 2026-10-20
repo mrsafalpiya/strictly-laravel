@@ -1,7 +1,7 @@
 {
     "problem": "P-112",
     "description": "A controller action that takes a query class but reads a key from the request ($request->input('tab')), bypassing the class's fallback to its default on an invalid value as $request->query('tab') would (P-106), fails PHPStan (strictly.inputRead).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Http\\Controllers\\DashboardController::index() reads input from"

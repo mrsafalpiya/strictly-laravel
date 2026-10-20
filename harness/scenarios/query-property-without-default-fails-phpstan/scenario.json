@@ -1,6 +1,6 @@
 {
     "problem": "P-104",
     "description": "A query Data class property without a default, which would make any URL that leaves its key out a 500, fails PHPStan (strictly.queryDefault).",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "App\\Data\\ProjectFiltersData::$sort has no default, so a query string" }
 }

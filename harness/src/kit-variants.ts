@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, globSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-import { fixturesDir } from './paths.ts';
+import { fixturesDir, repoRoot } from './paths.ts';
 import { progress, runOrThrow } from './run.ts';
 
 // The React starter kit asks which auth features to keep and cuts the rest out of its files (its chisel.php, which
@@ -177,4 +178,75 @@ export async function copyBaseKit(from: string, to: string, options: { ownDepend
     if (shared.length > 0) {
         await runOrThrow('cp', ['-al', ...shared.map((entry) => join(from, entry)), to], { cwd: fixturesDir });
     }
+}
+
+/**
+ * What the Base Kit at $baseKitDir holds at each of $paths in each of the 32 combinations of features (keyed by
+ * featuresKey()): the file's Kit Conversion hash, `"exists"` for a test (the rebuilt variants' tests are the kit's
+ * PHPUnit classes, not yet converted to Pest), or null when the variant has no such file. Rebuilding every variant
+ * takes minutes, and the answer changes only with the Base Kit, so it is kept in .fixtures/kit-variants.json, keyed by
+ * the Base Kit's stamp, $paths and this module.
+ */
+export async function variantFiles(
+    baseKit: { dir: string; info: { kitMainHead: string | null } },
+    paths: readonly string[],
+    concurrency: number,
+): Promise<Record<string, Record<string, string | null>>> {
+    const cacheFile = join(fixturesDir, 'kit-variants.json');
+    const key = variantsKey(baseKit.info, ...[...paths].sort());
+
+    if (existsSync(cacheFile)) {
+        const cached = JSON.parse(readFileSync(cacheFile, 'utf8')) as { key?: string; variants?: Record<string, Record<string, string | null>> };
+
+        if (cached.key === key && cached.variants !== undefined) {
+            return cached.variants;
+        }
+    }
+
+    if (baseKit.info.kitMainHead === null) {
+        throw new Error('The Base Kit stamp names no starter kit commit, so its feature variants cannot be rebuilt; regenerate it (--fresh)');
+    }
+
+    const source = await prepareKitSource(baseKit.info.kitMainHead);
+    const variantsDir = join(fixturesDir, 'kit-variants');
+    const variants: Record<string, Record<string, string | null>> = {};
+    const pending = featureSubsets();
+    mkdirSync(variantsDir, { recursive: true });
+    progress(`Rebuilding the Base Kit with each of the ${pending.length} combinations of auth features (logs: .fixtures/kit-variants/*.log)`);
+
+    // A few variants at a time: each runs the kit's script, Pint and Vite+ over a hard-linked copy of the Base Kit.
+    await Promise.all(Array.from({ length: concurrency }, async () => {
+        for (let features = pending.shift(); features !== undefined; features = pending.shift()) {
+            const dir = join(variantsDir, featuresSlug(features));
+            await copyBaseKit(baseKit.dir, dir, { ownDependencies: false });
+            await chiselBaseKit(dir, source, features, { logFile: `${dir}.log`, pest: false });
+            variants[featuresKey(features)] = Object.fromEntries(paths.map((path) => {
+                const file = join(dir, path);
+
+                return [path, !existsSync(file) ? null : path.startsWith('tests/') ? 'exists' : kitHash(readFileSync(file))];
+            }));
+            rmSync(dir, { recursive: true, force: true });
+        }
+    }));
+
+    writeFileSync(cacheFile, `${JSON.stringify({ key, variants }, null, 4)}\n`);
+
+    return variants;
+}
+
+/** The hash Kit Conversion compares (KitConversion::hash()): SHA-256 with "\r\n" line endings normalised to "\n". */
+export function kitHash(content: string | Buffer): string {
+    return createHash('sha256').update(content.toString().replaceAll('\r\n', '\n')).digest('hex');
+}
+
+/**
+ * A key for what the Base Kit's variants hold: it changes with the Base Kit, with this module (how they are rebuilt),
+ * and with $more.
+ */
+export function variantsKey(info: object, ...more: string[]): string {
+    return createHash('sha256')
+        .update(JSON.stringify(info))
+        .update(readFileSync(join(repoRoot, 'harness', 'src', 'kit-variants.ts')))
+        .update(JSON.stringify(more))
+        .digest('hex');
 }

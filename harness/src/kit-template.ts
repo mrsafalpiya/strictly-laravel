@@ -1,11 +1,10 @@
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { featuresKey, featureSubsets, kitFeatures } from './kit-variants.ts';
 import { composerPackageDir } from './paths.ts';
 
-// What the harness needs of Kit Conversion: its manifest, its hash, and a copy of the Composer package's KitTemplate
+// What the harness needs of Kit Conversion: its manifest and a copy of the Composer package's KitTemplate
 // (packages/laravel/src/Install/KitTemplate.php), which reads the feature sections of a file under kit/.
 // harness/tests/kit-conversion.test.ts checks that both render every kit file alike.
 
@@ -31,10 +30,6 @@ export function kitManifest(): Record<string, KitManifestEntry> {
     return JSON.parse(readFileSync(join(composerPackageDir, 'kit-conversion.json'), 'utf8')) as Record<string, KitManifestEntry>;
 }
 
-/** The hash Kit Conversion compares: SHA-256 with "\r\n" line endings normalised to "\n". */
-export function kitHash(content: string | Buffer): string {
-    return createHash('sha256').update(content.toString().replaceAll('\r\n', '\n')).digest('hex');
-}
 
 const marker = /^[ \t]*(?:\/\/|\{?\/\*)[ \t]*@(end-)?feature\b[ \t]*([^*\s]*)[ \t]*(?:\*\/\}?)?[ \t]*$/;
 

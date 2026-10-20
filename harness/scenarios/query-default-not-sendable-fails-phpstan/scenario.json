@@ -1,6 +1,6 @@
 {
     "problem": "P-105",
     "description": "A nullable query property defaulting to a value and a list defaulting to a non-empty list, which the server would read when the client sends null or [], fail PHPStan (strictly.queryDefault).",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "App\\Data\\ProjectFiltersData::$statuses is a list, so it must default" }
 }

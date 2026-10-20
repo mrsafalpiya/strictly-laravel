@@ -1,6 +1,7 @@
 {
     "problem": "P-066",
     "description": "A nullable shared prop that every recorded page received as null fails Contract Coverage, which names the shared props and the test to add.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ SharedProps.impersonator is only ever null (at shared props › impersonator): add a feature test that renders a page with impersonator not null."

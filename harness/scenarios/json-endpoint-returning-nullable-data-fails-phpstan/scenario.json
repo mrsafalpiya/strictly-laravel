@@ -1,7 +1,7 @@
 {
     "problem": "P-108",
     "description": "A controller action that returns a nullable Data class (?ProjectData) declares no response, so its route isn't branded and no Contract checks it: PHPStan fails (strictly.jsonResponse).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Data\\ProjectData|null, a nullable or union type, which declares"

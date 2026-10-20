@@ -1,6 +1,7 @@
 {
     "problem": "P-047",
     "description": "A route that flashes a toast of the wrong shape with Inertia::flash() (its PHPStan error suppressed) before redirecting fails the flash Contract its feature test records.",
+    "step": "pest+tsc",
     "expect": {
         "outcome": "fail",
         "errorContains": "error TS2353: Object literal may only specify known properties, and '\"text\"' does not exist in type '{ type: ToastType; message: string; }'."

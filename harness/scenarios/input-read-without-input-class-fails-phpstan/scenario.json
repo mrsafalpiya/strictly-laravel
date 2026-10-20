@@ -1,7 +1,7 @@
 {
     "problem": "P-112",
     "description": "A controller action without an input class that reads its payload from the request ($request->string('name')), so no type describes the keys it reads, fails PHPStan (strictly.inputRead).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Http\\Controllers\\ProjectController::store() reads input"

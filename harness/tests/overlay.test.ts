@@ -8,8 +8,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
 import { appConcurrency, createApp, prepareBaseKitVariant, prepareInstalledFixture } from '../src/fixture.ts';
-import { kitDir, kitHash, kitManifest, kitTemplateRenderings } from '../src/kit-template.ts';
-import { chiselBaseKit, copyBaseKit, featuresKey, featuresSlug, featureSubsets, kitFeatures, prepareKitSource } from '../src/kit-variants.ts';
+import { kitDir, kitManifest, kitTemplateRenderings } from '../src/kit-template.ts';
+import { chiselBaseKit, copyBaseKit, featuresKey, featuresSlug, featureSubsets, kitFeatures, prepareKitSource, variantFiles, variantsKey } from '../src/kit-variants.ts';
 import { fixturesDir, scenariosDir } from '../src/paths.ts';
 import { type BackgroundCommand, type CommandResult, tail } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario, type Scenario } from '../src/scenario.ts';
@@ -52,48 +52,35 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
     }
 
     test('Kit Conversion knows every upstream version of every auth feature variant of the Base Kit (P-211)', async () => {
-        const baseKit = await prepareBaseKitVariant(kitFeatures);
-        const source = await prepareKitSource(baseKit.info.kitMainHead ?? assert.fail('The Base Kit stamp names no starter kit commit'));
         const manifest = kitManifest();
-        const variantsDir = join(fixturesDir, 'kit-variants');
+        const variants = await variantFiles(await prepareBaseKitVariant(kitFeatures), Object.keys(manifest), appConcurrency());
         const gaps: string[] = [];
-        const pending = featureSubsets();
-        mkdirSync(variantsDir, { recursive: true });
 
-        // A few variants at a time: each runs the kit's script, Pint and Vite+ over a hard-linked copy of the Base Kit.
-        await Promise.all(Array.from({ length: appConcurrency() }, async () => {
-            for (let features = pending.shift(); features !== undefined; features = pending.shift()) {
-                const kept: readonly string[] = features;
-                const dir = join(variantsDir, featuresSlug(features));
-                await copyBaseKit(baseKit.dir, dir, { ownDependencies: false });
-                await chiselBaseKit(dir, source, features, { logFile: `${dir}.log`, pest: false });
+        for (const features of featureSubsets()) {
+            const kept: readonly string[] = features;
+            const files = variants[featuresKey(features)] ?? assert.fail(`No files recorded for ${featuresKey(features)}`);
 
-                for (const [path, entry] of Object.entries(manifest)) {
-                    const expected = entry.requires === undefined || kept.includes(entry.requires);
-                    const file = join(dir, path);
+            for (const [path, entry] of Object.entries(manifest)) {
+                const expected = entry.requires === undefined || kept.includes(entry.requires);
+                const hash = files[path];
 
-                    if (existsSync(file) !== expected) {
-                        gaps.push(`${path} ${expected ? 'is missing from' : 'exists in'} the Base Kit with ${featuresKey(features)}: ${expected ? 'set' : 'remove'} its "requires"`);
-                        continue;
-                    }
-
-                    // The variants' tests are the kit's PHPUnit classes, not yet converted to Pest: only whether they exist counts.
-                    if (!expected || path.startsWith('tests/')) {
-                        continue;
-                    }
-
-                    const key = featuresKey(kept.filter((feature) => entry.variesWith?.includes(feature)));
-                    const known = Array.isArray(entry.upstream) ? entry.upstream : (entry.upstream[key] ?? []);
-                    const hash = kitHash(readFileSync(file));
-
-                    if (!known.includes(hash)) {
-                        gaps.push(`${path} with ${featuresKey(features)}: add ${hash} to its "upstream"${Array.isArray(entry.upstream) ? '' : `["${key}"]`}, after checking its conversion fits`);
-                    }
+                if ((hash !== null) !== expected) {
+                    gaps.push(`${path} ${expected ? 'is missing from' : 'exists in'} the Base Kit with ${featuresKey(features)}: ${expected ? 'set' : 'remove'} its "requires"`);
+                    continue;
                 }
 
-                rmSync(dir, { recursive: true, force: true });
+                if (hash === null || hash === undefined || hash === 'exists') {
+                    continue;
+                }
+
+                const key = featuresKey(kept.filter((feature) => entry.variesWith?.includes(feature)));
+                const known = Array.isArray(entry.upstream) ? entry.upstream : (entry.upstream[key] ?? []);
+
+                if (!known.includes(hash)) {
+                    gaps.push(`${path} with ${featuresKey(features)}: add ${hash} to its "upstream"${Array.isArray(entry.upstream) ? '' : `["${key}"]`}, after checking its conversion fits`);
+                }
             }
-        }));
+        }
 
         assert.deepEqual([...new Set(gaps)].sort(), [], 'kit-conversion.json does not know these Base Kit files');
     }, 300);
@@ -129,6 +116,14 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
 
     test('the Base Kit rebuilt with every auth feature is the Base Kit itself, Pest tests included (P-211)', async () => {
         const baseKit = await prepareBaseKitVariant(kitFeatures);
+        // It takes a minute and can only change with the Base Kit or the rebuild, so a pass is kept for them.
+        const passed = join(fixturesDir, 'kit-rebuild.json');
+        const key = variantsKey(baseKit.info);
+
+        if (existsSync(passed) && (JSON.parse(readFileSync(passed, 'utf8')) as { key?: string }).key === key) {
+            return;
+        }
+
         const source = await prepareKitSource(baseKit.info.kitMainHead ?? assert.fail('The Base Kit stamp names no starter kit commit'));
         const dir = join(fixturesDir, 'kit-variants', 'rebuilt');
         const status = (cwd: string) => execFileSync('git', ['status', '--porcelain'], { cwd, encoding: 'utf8' });
@@ -139,6 +134,7 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
         assert.equal(status(dir), status(baseKit.dir), 'rebuilding the Base Kit with every feature changed its files');
         assert.equal(execFileSync('git', ['diff'], { cwd: dir, encoding: 'utf8' }), execFileSync('git', ['diff'], { cwd: baseKit.dir, encoding: 'utf8' }));
         rmSync(dir, { recursive: true, force: true });
+        writeFileSync(passed, `${JSON.stringify({ key }, null, 4)}\n`);
     }, 90);
 
     test("the Overlay leaves the Base Kit's TypeScript and Vite+ versions alone", async () => {
@@ -667,7 +663,7 @@ export default function ProjectStatuses() {
 
     for (const scenario of loadScenarios()) {
         test(`scenario ${scenario.name} [Problem: ${scenario.problem}]`, async () => {
-            assertOutcome(await runScenario(scenario), scenario.expect);
+            assertOutcome(await runScenario(scenario, { pooled: true }), scenario.expect);
         }, scenarioCost(scenario));
     }
 
@@ -676,11 +672,14 @@ export default function ProjectStatuses() {
     }
 });
 
-/** Roughly how many seconds a scenario takes on one CPU (CI's averages per step); the full ci:check when no step. */
+/**
+ * Roughly how many seconds a scenario takes on one CPU, summed over the steps it runs (CI's averages per step, with
+ * PHPStan's result cache warm in a pooled app); the full ci:check when no step.
+ */
 function scenarioCost(scenario: Scenario): number {
-    const stepCosts: Record<string, number> = { test: 10, tsc: 7, lint: 5 };
+    const stepCosts: Record<string, number> = { test: 10, pest: 6, phpstan: 3, pint: 2, tsc: 7, lint: 5 };
 
-    return scenario.step === undefined ? 18 : (stepCosts[scenario.step] ?? 2);
+    return scenario.step === undefined ? 18 : scenario.step.split('+').reduce((cost, step) => cost + (stepCosts[step] ?? 2), 0);
 }
 
 /** The `<label> .... <status>` rows strictly:install printed, one per hook and per Kit Conversion file. */

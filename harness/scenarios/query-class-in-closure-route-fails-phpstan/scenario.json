@@ -1,7 +1,7 @@
 {
     "problem": "P-151",
     "description": "A closure route that takes a query class, whose route function Wayfinder can't type with its keys, fails PHPStan (strictly.closureRoute).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "The closure route GET projects takes App\\Data\\ProjectFiltersData"

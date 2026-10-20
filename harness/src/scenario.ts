@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, normalize } from 'node:path';
 
-import { createApp } from './fixture.ts';
+import { type App, createApp, withPooledApp } from './fixture.ts';
 import { scenariosDir } from './paths.ts';
 import { type CommandResult, tail } from './run.ts';
 
@@ -127,31 +127,36 @@ function isAppRelative(path: string): boolean {
     return normalized !== '' && !normalized.startsWith('..') && !normalized.startsWith('/');
 }
 
-/** Apply the scenario to a fresh app (`scenario-<name>`) and run its check. `step` overrides the scenario's step. */
-export async function runScenario(scenario: Scenario, options: { step?: string } = {}): Promise<CommandResult> {
-    const app = await createApp(`scenario-${scenario.name}`);
+/**
+ * Apply the scenario to an app and run its check. `step` overrides the scenario's step. The app is a fresh one
+ * (`scenario-<name>`, left on disk to inspect) unless `pooled`, when it is borrowed from the pool (withPooledApp()).
+ */
+export async function runScenario(scenario: Scenario, options: { step?: string; pooled?: boolean } = {}): Promise<CommandResult> {
+    const apply = async (app: App): Promise<CommandResult> => {
+        for (const path of scenario.delete) {
+            rmSync(join(app.dir, path), { recursive: true, force: true });
+        }
 
-    for (const path of scenario.delete) {
-        rmSync(join(app.dir, path), { recursive: true, force: true });
-    }
+        if (scenario.filesDir !== undefined) {
+            cpSync(scenario.filesDir, app.dir, { recursive: true, force: true });
+        }
 
-    if (scenario.filesDir !== undefined) {
-        cpSync(scenario.filesDir, app.dir, { recursive: true, force: true });
-    }
+        if (!scenario.reinstall) {
+            return app.check(options.step ?? scenario.step);
+        }
 
-    if (!scenario.reinstall) {
-        return app.check(options.step ?? scenario.step);
-    }
+        const install = await app.run('php', ['artisan', 'strictly:install', '--no-interaction']);
 
-    const install = await app.run('php', ['artisan', 'strictly:install', '--no-interaction']);
+        if (install.exitCode !== 0) {
+            return install;
+        }
 
-    if (install.exitCode !== 0) {
-        return install;
-    }
+        const check = await app.check(options.step ?? scenario.step);
 
-    const check = await app.check(options.step ?? scenario.step);
+        return { command: `${install.command} && ${check.command}`, exitCode: check.exitCode, output: `${install.output}${check.output}` };
+    };
 
-    return { command: `${install.command} && ${check.command}`, exitCode: check.exitCode, output: `${install.output}${check.output}` };
+    return options.pooled === true ? withPooledApp(apply, { label: `scenario ${scenario.name}` }) : apply(await createApp(`scenario-${scenario.name}`));
 }
 
 /** Assert a check result matches an expectation; failures carry the tail of the check's output. */

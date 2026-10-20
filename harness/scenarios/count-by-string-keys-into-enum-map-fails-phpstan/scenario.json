@@ -1,7 +1,7 @@
 {
     "problem": "P-207",
     "description": "countBy() with a callback that returns a plain string, such as an issue's title, can't fill an array<value-of<IssueStatus>, int> map: PHPStan fails with the keys' type.",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "expects array<'closed'|'open', int>, array<string, int<1, max>>"

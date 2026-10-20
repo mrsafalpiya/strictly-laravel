@@ -1,7 +1,7 @@
 {
     "problem": "P-109",
     "description": "A closure route that returns a Data class, whose route function Wayfinder can't brand with that response, so useRouteHttp() types its result unknown, fails PHPStan (strictly.closureRoute).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "The closure route GET stats returns App\\Data\\StatsData"

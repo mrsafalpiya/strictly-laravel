@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, totalmem } from 'node:os';
 import { join, relative } from 'node:path';
 
@@ -8,6 +8,7 @@ import { describeDiagnostic, failureReport } from './failure-report.ts';
 import { chiselBaseKit, copyBaseKit, featuresKey, featuresSlug, kitFeatures, prepareKitSource } from './kit-variants.ts';
 import { composerPackageDir, fixturesDir, npmPackageDir, repoRoot } from './paths.ts';
 import { type BackgroundCommand, type CommandResult, ensureRootTooling, progress, run, runOrThrow, start } from './run.ts';
+import { runStep, type Step, stepError } from './steps.ts';
 
 // Fixture apps are cached in layers, all directly under .fixtures/ (same depth, so the relative symlinks Composer
 // and pnpm create for the local packages keep working in copies):
@@ -230,8 +231,8 @@ export interface App {
     readonly dir: string;
     /** Run `php artisan strictly:install --no-interaction`; throws if it exits non-zero, not on a reported row. */
     install(): Promise<CommandResult>;
-    /** Run `composer ci:check`, or only its named step (`composer ci:check:<step>`). */
-    check(step?: string): Promise<CommandResult>;
+    /** Run the app's `ci:check`, or only a step of it (src/steps.ts), as `composer ci:check[:<step>]` would. */
+    check(step?: Step): Promise<CommandResult>;
     /** The `ci:check` step names the installed app defines. */
     steps(): string[];
     commitAll(message: string): Promise<void>;
@@ -281,11 +282,13 @@ export async function createApp(name: string, options: { install?: boolean; feat
         dir,
         install: () => runOrThrow('php', ['artisan', 'strictly:install', '--no-interaction'], inApp),
         check: async (step) => {
-            if (step !== undefined && !steps().includes(step)) {
-                throw new Error(`Unknown ci:check step "${step}"; this app defines: ${steps().join(', ') || '(none)'}`);
+            const error = step === undefined ? null : stepError(step, steps());
+
+            if (error !== null) {
+                throw new Error(error);
             }
 
-            return run('composer', ['--no-ansi', step === undefined ? 'ci:check' : `ci:check:${step}`], inApp);
+            return runStep(dir, step, inApp);
         },
         steps,
         commitAll: async (message) => {
@@ -310,6 +313,88 @@ export async function createApp(name: string, options: { install?: boolean; feat
     }
 
     return app;
+}
+
+/**
+ * The scenarios' apps. A scenario only edits files and runs a check, so instead of a fresh copy of the installed fixture
+ * each one borrows an app from a pool, one per scenario running at once, which is reset to its state after
+ * `strictly:install` before each use. The app keeps its TMPDIR between scenarios, and with it PHPStan's result cache,
+ * so PHPStan analyses only what the scenario changed instead of the whole app. Tests that need an app of their own
+ * (a dev server, a fresh clone, commits) still call createApp().
+ */
+interface PoolSlot {
+    readonly app: App;
+    /** The commit the app is reset to. */
+    readonly base: string;
+}
+
+interface Pool {
+    readonly free: PoolSlot[];
+    readonly waiting: ((slot: PoolSlot) => void)[];
+    created: number;
+}
+
+const pools = new Map<string, Pool>();
+
+/** Paths a reset keeps as they are: the shared, read-only dependencies and the Vite build the feature tests read. */
+const keptByReset = ['/vendor/', '/node_modules/', '/public/build/'];
+
+/** Run $fn on a pooled app (call prepareInstalledFixture() first, with the same `features`), reset before it's lent. */
+export async function withPooledApp<T>(fn: (app: App) => Promise<T>, options: { features?: Features; label?: string } = {}): Promise<T> {
+    const layer = layerName('installed', options.features ?? kitFeatures);
+    const pool = pools.get(layer) ?? { free: [], waiting: [], created: 0 };
+    pools.set(layer, pool);
+
+    let slot = pool.free.pop();
+
+    if (slot === undefined && pool.created < appConcurrency()) {
+        pool.created++;
+        slot = await createPoolSlot(`pool-${layer}-${pool.created}`, options.features ?? kitFeatures);
+    } else if (slot === undefined) {
+        slot = await new Promise<PoolSlot>((resolve) => pool.waiting.push(resolve));
+    }
+
+    try {
+        await resetPoolSlot(slot);
+        appendFileSync(`${slot.app.dir}.log`, `\n=== ${options.label ?? 'next use'}: reset to the pool's base ===\n`);
+
+        return await fn(slot.app);
+    } finally {
+        const next = pool.waiting.shift();
+
+        if (next === undefined) {
+            pool.free.push(slot);
+        } else {
+            next(slot);
+        }
+    }
+}
+
+async function createPoolSlot(name: string, features: Features): Promise<PoolSlot> {
+    const app = await createApp(name, { features });
+    await app.commitAll('The pool\'s base: strictly:install has run');
+    const base = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: app.dir, encoding: 'utf8' }).trim();
+    // The gitignored files the install left (.env, the Wayfinder output it patches, Laravel's caches), which a reset
+    // removes with everything else that's gitignored and then restores.
+    const ignored = execFileSync('git', ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory'], { cwd: app.dir, encoding: 'utf8' })
+        .split('\n')
+        .filter((path) => path !== '' && !keptByReset.includes(`/${path}`));
+    const backup = `${app.dir}.ignored`;
+    rmSync(backup, { recursive: true, force: true });
+    mkdirSync(backup);
+
+    if (ignored.length > 0) {
+        await runOrThrow('cp', ['-a', '--parents', ...ignored, backup], { cwd: app.dir });
+    }
+
+    return { app, base };
+}
+
+async function resetPoolSlot(slot: PoolSlot): Promise<void> {
+    const inApp = { cwd: slot.app.dir };
+    await runOrThrow('git', ['reset', '--hard', '--quiet', slot.base], inApp);
+    await runOrThrow('git', ['clean', '-fdxq', ...keptByReset.flatMap((path) => ['-e', path])], inApp);
+    await runOrThrow('cp', ['-a', `${slot.app.dir}.ignored/.`, slot.app.dir], inApp);
 }
 
 /**

@@ -1,6 +1,6 @@
 {
     "problem": "P-137",
     "description": "A translation key the default locale's lang files don't define fails PHPStan in PHP too: __('projects.flash.saevd') when lang/en/projects.php defines flash.saved.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Translation key 'projects.flash.saevd' isn't defined in locale en." }
 }

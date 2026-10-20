@@ -1,6 +1,7 @@
 {
     "problem": "P-197",
     "description": "A JSON endpoint that returns ListingData<IssueData>, whose items' nullable field the feature tests only ever get as null: Contract Coverage walks the items as IssueData, not the template's bound, and fails ci:check naming the field and the test to add.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ IssueData.assignee is only ever null (at GET /backlog/issues › items[].assignee): add a feature test that calls GET /backlog/issues with items[].assignee not null."
