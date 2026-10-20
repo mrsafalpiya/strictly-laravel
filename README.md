@@ -60,7 +60,7 @@ There are no switches to turn a check off ([ADR-0007](docs/adr/0007-all-or-nothi
 
 You need PHP 8.4, Laravel 13, Node 26 and pnpm.
 
-1. Generate the starter kit with `laravel new my-app --react --pest --pnpm`.
+1. Generate the starter kit with `laravel new my-app --react --pest --pnpm`. Keep whichever of its auth features you want; the conversion follows them.
 2. Require both packages with `composer require mrsafalpiya/strictly-laravel` and `pnpm add @mrsafalpiya/strictly-laravel`.
 3. Require Laravel Boost as a dev dependency with `composer require laravel/boost --dev`.
 4. Run `php artisan strictly:install`. It edits the app's tooling (tsconfig, Vite config, oxlint, PHPStan, Composer scripts) and converts the starter kit's own pages, controllers and types. It prints one row per change and never overwrites a file it doesn't recognise. Running it again changes nothing.

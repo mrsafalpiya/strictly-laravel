@@ -9,7 +9,7 @@ The template as a whole: the Overlay, its conventions, and the guidance that enf
 _Avoid_: the starter kit, the boilerplate
 
 **Base Kit**:
-The official Laravel React starter kit, freshly generated at its latest version, before anything from Strictly Laravel is applied.
+The official Laravel React starter kit, freshly generated at its latest version, before anything from Strictly Laravel is applied. It comes with whichever of the kit's optional auth features (email verification, registration, two-factor authentication, passkeys, password confirmation) the app kept while `laravel new` ran; Kit Conversion follows them (ADR-0011).
 _Avoid_: starter kit (ambiguous), upstream template
 
 **Overlay**:
