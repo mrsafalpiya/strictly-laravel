@@ -1,6 +1,6 @@
 {
     "name": "@mrsafalpiya/strictly-laravel",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Strictly Laravel: end-to-end type safety for Laravel + Inertia + React (npm side of the Overlay).",
     "license": "MIT",
     "homepage": "https://github.com/mrsafalpiya/strictly-laravel#readme",
