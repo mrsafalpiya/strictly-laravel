@@ -1,6 +1,6 @@
 {
     "problem": "P-052",
     "description": "A broadcast event that sends a hand-built broadcastWith() array instead of a Data class fails PHPStan.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Broadcast event App\\Events\\ProjectUpdated sends a payload that has no" }
 }

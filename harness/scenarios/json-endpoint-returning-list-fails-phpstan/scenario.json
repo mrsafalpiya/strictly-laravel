@@ -1,7 +1,7 @@
 {
     "problem": "P-108",
     "description": "A controller action that returns a list of Data objects (array, with @return list<ProjectData>) answers JSON that no Data class types, so its route isn't branded and no Contract checks it: PHPStan fails (strictly.jsonResponse).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Http\\Controllers\\ProjectController::recent() returns array, which"

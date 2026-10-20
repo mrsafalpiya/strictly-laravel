@@ -1,6 +1,7 @@
 {
     "problem": "P-132",
     "description": "A prop typed as a discriminated union of Data classes with the same keys (they differ only in their literal `type`) that the feature tests only ever send as one variant: Contract Coverage tells the variants apart by the literal and fails ci:check, naming the variant never seen.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ ChangePage.change is never seen as PriorityChangedData (at change › change): add a feature test that renders change with change as PriorityChangedData."

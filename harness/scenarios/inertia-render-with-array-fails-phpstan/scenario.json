@@ -1,6 +1,6 @@
 {
     "problem": "P-009",
     "description": "A controller that renders a page with Inertia::render() and an array of props, which no generated type describes, fails PHPStan.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Inertia::render() renders a page whose props have no generated type." }
 }

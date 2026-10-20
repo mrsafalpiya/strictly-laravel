@@ -1,5 +1,6 @@
 {
     "problem": "P-144",
     "description": "An event whose broadcastOn() also sends it to a channel its #[BroadcastsOn] doesn't declare, where no typed listener can hear it, fails its recorded Contract.",
+    "step": "pest+tsc",
     "expect": { "outcome": "fail", "errorContains": "error TS2322: Type '\"App.Models.User.{id}\"' is not assignable to type '\"projects.{project}\"'." }
 }

@@ -1,6 +1,7 @@
 {
     "problem": "P-066",
     "description": "An Optional prop that no feature test ever sends, so tsc never checked its type: Contract Coverage fails ci:check, naming the prop and the test to add.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ BillingPage.discount is only ever absent (at billing › discount): add a feature test that renders billing with discount sent."

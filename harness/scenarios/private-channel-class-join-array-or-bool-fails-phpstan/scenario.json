@@ -1,6 +1,6 @@
 {
     "problem": "P-145",
     "description": "A channel class whose join() returns array|bool, as make:channel writes it, fails PHPStan asking for bool (private) or a Data class (presence), instead of being taken for a presence channel.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Channel projects.{project} returns an array or a bool" }
 }

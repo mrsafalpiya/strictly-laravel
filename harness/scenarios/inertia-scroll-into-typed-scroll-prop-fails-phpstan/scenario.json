@@ -1,6 +1,6 @@
 {
     "problem": "P-042",
     "description": "An infinite-scroll page prop typed ScrollProp<PaginatedDataCollection<array-key, EntryData>> but filled with Inertia::scroll($paginator), which would send Laravel's flat paginator JSON: PHPStan rejects the untyped ScrollProp<mixed> the facade returns.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Inertia\\ScrollProp<mixed> given." }
 }

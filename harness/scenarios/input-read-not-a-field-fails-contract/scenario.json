@@ -1,5 +1,6 @@
 {
     "problem": "P-024",
     "description": "An action that reads a request key its input Data class doesn't declare ($request->boolean('notify')) records an input Contract that fails tsc, since the typed form never sends that key.",
+    "step": "pest+tsc",
     "expect": { "outcome": "fail", "errorContains": "error TS2322: Type '\"notify\"' is not assignable to type '\"name\" | \"public\"'." }
 }

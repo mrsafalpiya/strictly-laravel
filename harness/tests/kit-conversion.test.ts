@@ -4,8 +4,8 @@ import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
-import { kitDir, kitHash, kitManifest, kitTemplateRenderings } from '../src/kit-template.ts';
-import { featureSubsets } from '../src/kit-variants.ts';
+import { kitDir, kitManifest, kitTemplateRenderings } from '../src/kit-template.ts';
+import { featureSubsets, kitHash } from '../src/kit-variants.ts';
 import { repoRoot } from '../src/paths.ts';
 
 // Kit Conversion reports a file as already converted only if its hash is the current converted version, for some

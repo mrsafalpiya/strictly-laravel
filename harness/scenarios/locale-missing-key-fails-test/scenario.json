@@ -1,7 +1,7 @@
 {
     "problem": "P-057",
     "description": "A locale that lacks a key of the default locale fails the locale parity test: lang/de/auth.php has no password message.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "de: auth.password is missing"

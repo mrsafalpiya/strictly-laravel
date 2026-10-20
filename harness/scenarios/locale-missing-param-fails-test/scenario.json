@@ -1,7 +1,7 @@
 {
     "problem": "P-057",
     "description": "A locale whose message drops a :param of the default locale's fails the locale parity test: the German throttle message has no :seconds.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "de: auth.throttle lacks :seconds"

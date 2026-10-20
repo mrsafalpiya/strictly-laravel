@@ -6,6 +6,7 @@ import { describe, test } from 'node:test';
 import plugin from '../../packages/npm/oxlint/index.js';
 import { composerPackageDir } from '../src/paths.ts';
 import { loadScenarios } from '../src/scenario.ts';
+import { ciCheckStepOf } from '../src/steps.ts';
 
 // The Boost guidance the Composer package ships (Problem P-146) can't rot: every skill's worked example is a harness
 // scenario that passes the full ci:check, each code block a skill attributes to a file (```php title="app/…"```) is in
@@ -139,8 +140,9 @@ describe('Boost guidance', () => {
 
             for (const { step, message } of diagnostics(text)) {
                 quoted++;
-                // A scenario that runs the full ci:check fails at whichever step catches it.
-                const match = breaking.find((scenario) => scenario.message === message && (scenario.step === undefined || scenario.step === step));
+                // A scenario that runs the full ci:check fails at whichever step catches it; one that runs a part of a
+                // step (`phpstan`) or several (`pest+coverage`) fails at the ci:check step its last part belongs to.
+                const match = breaking.find((scenario) => scenario.message === message && (scenario.step === undefined || ciCheckStepOf(scenario.step) === step));
 
                 assert.ok(match !== undefined, `${document}: no breaking scenario fails ci:check:${step} with "${message}"`);
             }

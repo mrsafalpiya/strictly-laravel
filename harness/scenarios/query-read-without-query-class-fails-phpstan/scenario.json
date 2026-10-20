@@ -1,7 +1,7 @@
 {
     "problem": "P-106",
     "description": "A controller action that reads the query string from the request instead of a query class, which no route function can send and nothing types, fails PHPStan (strictly.queryRead).",
-    "step": "test",
+    "step": "phpstan",
     "expect": {
         "outcome": "fail",
         "errorContains": "App\\Http\\Controllers\\DashboardController::index() reads the query"

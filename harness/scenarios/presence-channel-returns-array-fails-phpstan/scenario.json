@@ -1,6 +1,6 @@
 {
     "problem": "P-145",
     "description": "A presence channel whose callback returns its members' data as an array, which no generated type describes, fails PHPStan.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Presence channel projects.{project}.viewers returns its members' data" }
 }

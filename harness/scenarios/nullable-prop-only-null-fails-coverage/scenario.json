@@ -1,6 +1,7 @@
 {
     "problem": "P-066",
     "description": "A nullable Data field that every feature test sends as null, so tsc never checked its other type: Contract Coverage fails ci:check, naming the field, where it was seen and the test to add.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ ProjectData.lead is only ever null (at projects/show › project.lead): add a feature test that renders projects/show with project.lead not null."

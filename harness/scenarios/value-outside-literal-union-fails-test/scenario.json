@@ -1,7 +1,7 @@
 {
     "problem": "P-020",
     "description": "A test that sends a value outside an input property's PHPDoc literal union and expects it accepted fails with the inferred `in:` rule's message.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "The selected week starts on is invalid."

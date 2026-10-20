@@ -1,6 +1,7 @@
 {
     "problem": "P-025",
     "description": "The Reference Implementation's first finding: a declared payload for Fortify's registration that leaves out `remember`, which Fortify reads to log the new user in, fails the input Contract the registration test records.",
+    "step": "pest+tsc",
     "expect": {
         "outcome": "fail",
         "errorContains": "error TS2322: Type '\"remember\"' is not assignable to type '\"name\" | \"email\" | \"password\" | \"password_confirmation\"'."

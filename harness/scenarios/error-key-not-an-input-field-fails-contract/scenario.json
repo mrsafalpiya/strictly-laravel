@@ -1,5 +1,6 @@
 {
     "problem": "P-029",
     "description": "An action that reports a validation error under a key its input Data class doesn't have records a validation-error Contract that fails tsc, since the client's typed errors would never show it.",
+    "step": "pest+tsc",
     "expect": { "outcome": "fail", "errorContains": "error TS2353: Object literal may only specify known properties, and '\"project\"' does not exist in type 'Partial<Record<\"name\" | \"description\" | \"estimate\"" }
 }

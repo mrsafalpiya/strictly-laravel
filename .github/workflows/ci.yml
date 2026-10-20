@@ -145,6 +145,30 @@ jobs:
             .fixtures/base-kit.stamp.json
           key: base-kit-${{ runner.os }}-${{ steps.today.outputs.date }}-${{ hashFiles('composer.lock', 'harness/src/fixture.ts') }}
 
+      # The fixtures built on today's Base Kit: the Overlay required into it (installed/), which every shard needs, and
+      # what only the shards with P-211's tests build (the Base Kit with other auth features, and what the tests learnt
+      # of every variant). Each layer's stamp still decides whether it's current, so a stale one is rebuilt.
+      - name: Restore today's installed fixture
+        id: installed
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .fixtures/installed
+            .fixtures/installed.stamp.json
+          key: installed-${{ runner.os }}-${{ steps.today.outputs.date }}-${{ hashFiles('composer.lock', 'harness/src/fixture.ts', 'harness/src/kit-variants.ts', 'packages/laravel/composer.json', 'packages/npm/package.json') }}
+
+      - name: Restore this shard's feature variant fixtures
+        id: variants
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .fixtures/base-kit-*
+            .fixtures/installed-*
+            .fixtures/kit-source
+            .fixtures/kit-variants.json
+            .fixtures/kit-rebuild.json
+          key: variants-${{ runner.os }}-${{ steps.today.outputs.date }}-${{ hashFiles('composer.lock', 'harness/src/fixture.ts', 'harness/src/kit-variants.ts', 'packages/laravel/composer.json', 'packages/npm/package.json') }}-shard-${{ matrix.shard }}
+
       # Without a cached Base Kit, this generates the latest one first.
       - name: Package tests and harness scenarios
         run: pnpm test
@@ -165,6 +189,27 @@ jobs:
             .fixtures/base-kit
             .fixtures/base-kit.stamp.json
           key: ${{ steps.base-kit.outputs.cache-primary-key }}
+
+      - name: Save today's installed fixture
+        if: always() && matrix.shard == 1 && steps.installed.outputs.cache-hit != 'true' && hashFiles('.fixtures/installed.stamp.json') != ''
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .fixtures/installed
+            .fixtures/installed.stamp.json
+          key: ${{ steps.installed.outputs.cache-primary-key }}
+
+      - name: Save this shard's feature variant fixtures
+        if: always() && steps.variants.outputs.cache-hit != 'true' && (hashFiles('.fixtures/kit-variants.json', '.fixtures/kit-rebuild.json') != '' || hashFiles('.fixtures/installed-*.stamp.json') != '')
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .fixtures/base-kit-*
+            .fixtures/installed-*
+            .fixtures/kit-source
+            .fixtures/kit-variants.json
+            .fixtures/kit-rebuild.json
+          key: ${{ steps.variants.outputs.cache-primary-key }}
 
       - name: Upload fixture logs
         if: failure()

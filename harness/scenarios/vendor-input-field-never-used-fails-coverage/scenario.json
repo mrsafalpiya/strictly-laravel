@@ -1,6 +1,7 @@
 {
     "problem": "P-025",
     "description": "A field declared for Fortify's login that Fortify never validates, reads or reports an error for is a Contract Coverage gap, since the declaration types a form field the server ignores.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "\u2717 LoginData.nickname is declared for a vendor action that never uses it (at POST /login): add a feature test that submits to POST /login with nickname, or remove it from the declaration in config/strictly.php if Laravel\\Fortify\\Http\\Controllers\\AuthenticatedSessionController@store doesn't validate or read it."

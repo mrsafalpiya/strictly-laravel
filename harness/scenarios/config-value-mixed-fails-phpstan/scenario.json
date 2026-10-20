@@ -1,6 +1,6 @@
 {
     "problem": "P-060",
     "description": "A config() value, which is mixed, passed to a typed property of the shared props Data class fails PHPStan, so nothing reaches React that isn't proven to be the type its TypeScript promises.",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Parameter $name of class App\\Data\\SharedProps constructor expects" }
 }

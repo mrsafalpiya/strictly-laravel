@@ -1,6 +1,7 @@
 {
     "problem": "P-052",
     "description": "A broadcast event no feature test broadcasts is a Contract Coverage gap, since its payload type was never checked.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ ProjectUpdated: no feature test broadcasts this event: add a feature test that broadcasts App\\Events\\ProjectUpdated, so its App\\Data\\ProjectData payload is checked."

@@ -1,7 +1,7 @@
 {
     "problem": "P-173",
     "description": "A test that sends toISOString()'s timestamp for a datetime input with its own #[DateFormat(DATE_ATOM)] and expects it accepted fails with that format's validation message: only a property without a format of its own also reads toISOString()'s.",
-    "step": "test",
+    "step": "pest",
     "expect": {
         "outcome": "fail",
         "errorContains": "The starts at field must match the format Y-m-d"

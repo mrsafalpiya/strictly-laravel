@@ -1,6 +1,7 @@
 {
     "problem": "P-080",
     "description": "An app whose tsconfig.json lost the noUncheckedIndexedAccess hook fails ci:check until strictly:install is run again, instead of silently compiling an unchecked index.",
+    "step": "install",
     "expect": {
         "outcome": "fail",
         "errorContains": "Strictly Laravel is not fully applied to this app: tsconfig.json: strictness flags (missing). Run `php artisan strictly:install`"

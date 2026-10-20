@@ -1,6 +1,7 @@
 {
     "problem": "P-050",
     "description": "A declared vendor JSON response that no feature test calls fails Contract Coverage, since tsc never checked it against a real response.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "\u2717 GET /user/confirmed-password-status: no feature test calls this JSON endpoint: add a feature test that calls GET /user/confirmed-password-status and gets a successful `{ confirmed: boolean }` response."

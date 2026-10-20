@@ -1,6 +1,6 @@
 {
     "problem": "P-030",
     "description": "A controller action that takes an input Data class and authorizes in its body, after validation, fails PHPStan (strictly.authorizeInInput), which points to the input's authorize().",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "Gate::authorize() after App\\Data\\StoreProjectData was validated, so" }
 }

@@ -1,6 +1,6 @@
 {
     "problem": "P-126",
     "description": "A query Data class's rules() take a model parameter, which only an InputData's authorize() and rules() receive from the route, so it would be a new, empty model and PHPStan rejects it (strictly.routeModelParameter).",
-    "step": "test",
+    "step": "phpstan",
     "expect": { "outcome": "fail", "errorContains": "App\\Data\\TeamFiltersData::rules() takes App\\Models\\User $user" }
 }

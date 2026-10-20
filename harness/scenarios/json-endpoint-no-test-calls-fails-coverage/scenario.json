@@ -1,6 +1,7 @@
 {
     "problem": "P-048",
     "description": "A JSON endpoint (an action returning a Data class) that no feature test calls is a Contract Coverage gap, since no response of it was ever checked against its type.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ GET /search/stats: no feature test calls this JSON endpoint: add a feature test that calls GET /search/stats and gets a successful App\\Data\\SearchStatsData response."

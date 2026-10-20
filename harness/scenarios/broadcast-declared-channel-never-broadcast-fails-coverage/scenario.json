@@ -1,6 +1,7 @@
 {
     "problem": "P-144",
     "description": "A channel an event's #[BroadcastsOn] declares but no feature test broadcasts it on, a stale declaration whose listeners would never hear it, is a Contract Coverage gap.",
+    "step": "pest+coverage",
     "expect": {
         "outcome": "fail",
         "errorContains": "✗ ProjectUpdated on App.Models.User.{id}: no feature test broadcasts this event on this channel: add a feature test that broadcasts App\\Events\\ProjectUpdated on it, or remove #[BroadcastsOn('App.Models.User.{id}')] if it is never sent there."
