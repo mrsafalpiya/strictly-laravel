@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { appendFileSync, cpSync, existsSync, globSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { before, describe, test as nodeTest } from 'node:test';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import plugin from '../../packages/npm/oxlint/index.js';
 import { failureReport } from '../src/failure-report.ts';
-import { appConcurrency, createApp, prepareInstalledFixture } from '../src/fixture.ts';
+import { appConcurrency, createApp, prepareBaseKitVariant, prepareInstalledFixture } from '../src/fixture.ts';
+import { kitDir, kitHash, kitManifest, kitTemplateRenderings } from '../src/kit-template.ts';
+import { chiselBaseKit, copyBaseKit, featuresKey, featuresSlug, featureSubsets, kitFeatures, prepareKitSource } from '../src/kit-variants.ts';
 import { fixturesDir, scenariosDir } from '../src/paths.ts';
 import { type BackgroundCommand, type CommandResult, tail } from '../src/run.ts';
 import { assertOutcome, loadScenarios, runScenario, type Scenario } from '../src/scenario.ts';
@@ -36,6 +39,107 @@ describe('Overlay on the latest Base Kit', { concurrency: appConcurrency() }, ()
 
         assertOutcome(await app.check(), { outcome: 'pass' });
     });
+
+    // The starter kit lets an app keep only some of its auth features (P-211). These two variants run the whole of
+    // ci:check: none of them, and a mix that keeps some sections of a file and cuts others.
+    for (const features of [[], ['registration', '2fa']]) {
+        test(`a fresh install on a Base Kit with only these auth features passes ci:check: ${featuresKey(features)} (P-211)`, async () => {
+            await prepareInstalledFixture({ features });
+            const app = await createApp(`fresh-install-${featuresSlug(features).replaceAll('+', '-')}`, { features });
+
+            assertOutcome(await app.check(), { outcome: 'pass' });
+        }, 120);
+    }
+
+    test('Kit Conversion knows every upstream version of every auth feature variant of the Base Kit (P-211)', async () => {
+        const baseKit = await prepareBaseKitVariant(kitFeatures);
+        const source = await prepareKitSource(baseKit.info.kitMainHead ?? assert.fail('The Base Kit stamp names no starter kit commit'));
+        const manifest = kitManifest();
+        const variantsDir = join(fixturesDir, 'kit-variants');
+        const gaps: string[] = [];
+        const pending = featureSubsets();
+        mkdirSync(variantsDir, { recursive: true });
+
+        // A few variants at a time: each runs the kit's script, Pint and Vite+ over a hard-linked copy of the Base Kit.
+        await Promise.all(Array.from({ length: appConcurrency() }, async () => {
+            for (let features = pending.shift(); features !== undefined; features = pending.shift()) {
+                const kept: readonly string[] = features;
+                const dir = join(variantsDir, featuresSlug(features));
+                await copyBaseKit(baseKit.dir, dir, { ownDependencies: false });
+                await chiselBaseKit(dir, source, features, { logFile: `${dir}.log`, pest: false });
+
+                for (const [path, entry] of Object.entries(manifest)) {
+                    const expected = entry.requires === undefined || kept.includes(entry.requires);
+                    const file = join(dir, path);
+
+                    if (existsSync(file) !== expected) {
+                        gaps.push(`${path} ${expected ? 'is missing from' : 'exists in'} the Base Kit with ${featuresKey(features)}: ${expected ? 'set' : 'remove'} its "requires"`);
+                        continue;
+                    }
+
+                    // The variants' tests are the kit's PHPUnit classes, not yet converted to Pest: only whether they exist counts.
+                    if (!expected || path.startsWith('tests/')) {
+                        continue;
+                    }
+
+                    const key = featuresKey(kept.filter((feature) => entry.variesWith?.includes(feature)));
+                    const known = Array.isArray(entry.upstream) ? entry.upstream : (entry.upstream[key] ?? []);
+                    const hash = kitHash(readFileSync(file));
+
+                    if (!known.includes(hash)) {
+                        gaps.push(`${path} with ${featuresKey(features)}: add ${hash} to its "upstream"${Array.isArray(entry.upstream) ? '' : `["${key}"]`}, after checking its conversion fits`);
+                    }
+                }
+
+                rmSync(dir, { recursive: true, force: true });
+            }
+        }));
+
+        assert.deepEqual([...new Set(gaps)].sort(), [], 'kit-conversion.json does not know these Base Kit files');
+    }, 300);
+
+    test("every auth feature combination of every converted file passes the app's Pint and oxfmt (P-211)", async () => {
+        const app = await createApp('kit-renderings', { install: false });
+        const renderingsDir = join(app.dir, 'kit-renderings');
+        const templates = globSync('**/*', { cwd: kitDir, withFileTypes: true })
+            .filter((entry) => entry.isFile())
+            .map((entry) => join(entry.parentPath, entry.name))
+            .concat(join(kitDir, '..', 'stubs', 'strictly.php'));
+        let formatted = 0;
+
+        for (const template of templates) {
+            const path = template.startsWith(kitDir) ? template.slice(kitDir.length + 1) : 'config/strictly.php';
+
+            for (const [key, rendering] of kitTemplateRenderings(readFileSync(template, 'utf8'))) {
+                // The app's oxfmt leaves its shadcn components alone, so the check does too.
+                if (!path.startsWith('resources/js/components/ui/')) {
+                    mkdirSync(dirname(join(renderingsDir, key, path)), { recursive: true });
+                    writeFileSync(join(renderingsDir, key, path), rendering);
+                    formatted++;
+                }
+            }
+        }
+
+        assert.ok(formatted > templates.length, 'no converted file has feature sections');
+        const pint = await app.run('vendor/bin/pint', ['--test', 'kit-renderings']);
+        assert.equal(pint.exitCode, 0, `Pint would reformat a converted file for some combination of features:\n${tail(pint.output)}`);
+        const oxfmt = await app.run('pnpm', ['exec', 'vp', 'fmt', '--check', 'kit-renderings']);
+        assert.equal(oxfmt.exitCode, 0, `oxfmt would reformat a converted file for some combination of features:\n${tail(oxfmt.output)}`);
+    }, 20);
+
+    test('the Base Kit rebuilt with every auth feature is the Base Kit itself, Pest tests included (P-211)', async () => {
+        const baseKit = await prepareBaseKitVariant(kitFeatures);
+        const source = await prepareKitSource(baseKit.info.kitMainHead ?? assert.fail('The Base Kit stamp names no starter kit commit'));
+        const dir = join(fixturesDir, 'kit-variants', 'rebuilt');
+        const status = (cwd: string) => execFileSync('git', ['status', '--porcelain'], { cwd, encoding: 'utf8' });
+
+        await copyBaseKit(baseKit.dir, dir, { ownDependencies: true });
+        await chiselBaseKit(dir, source, kitFeatures, { logFile: `${dir}.log`, pest: true });
+
+        assert.equal(status(dir), status(baseKit.dir), 'rebuilding the Base Kit with every feature changed its files');
+        assert.equal(execFileSync('git', ['diff'], { cwd: dir, encoding: 'utf8' }), execFileSync('git', ['diff'], { cwd: baseKit.dir, encoding: 'utf8' }));
+        rmSync(dir, { recursive: true, force: true });
+    }, 90);
 
     test("the Overlay leaves the Base Kit's TypeScript and Vite+ versions alone", async () => {
         const app = await createApp('toolchain-versions');

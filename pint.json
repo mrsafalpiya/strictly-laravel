@@ -1,0 +1,5 @@
+{
+    "preset": "laravel",
+    "exclude": ["kit"],
+    "notPath": ["stubs/strictly.php"]
+}

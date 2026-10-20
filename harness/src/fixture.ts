@@ -5,15 +5,21 @@ import { availableParallelism, totalmem } from 'node:os';
 import { join, relative } from 'node:path';
 
 import { describeDiagnostic, failureReport } from './failure-report.ts';
+import { chiselBaseKit, copyBaseKit, featuresKey, featuresSlug, kitFeatures, prepareKitSource } from './kit-variants.ts';
 import { composerPackageDir, fixturesDir, npmPackageDir, repoRoot } from './paths.ts';
 import { type BackgroundCommand, type CommandResult, ensureRootTooling, progress, run, runOrThrow, start } from './run.ts';
 
 // Fixture apps are cached in layers, all directly under .fixtures/ (same depth, so the relative symlinks Composer
 // and pnpm create for the local packages keep working in copies):
 //
-//   base-kit/   the latest Base Kit as `laravel new` generates it. Regenerated on demand only.
+//   base-kit/   the latest Base Kit as `laravel new` generates it, with every auth feature. Regenerated on demand only.
+//   base-kit-<features>/
+//               the same Base Kit generated with only some auth features (src/kit-variants.ts), for the tests that
+//               ask for them. Rebuilt when base-kit/ is.
 //   installed/  base-kit + both Overlay packages required from local paths. Rebuilt when the Base Kit or a package
 //               manifest changes. Package code is symlinked, so code edits need no rebuild.
+//   installed-<features>/
+//               the same for base-kit-<features>/.
 //   <app>/      a throwaway copy of installed/ on which `strictly:install` has just run; one per test or scenario,
 //               left in place afterwards for inspection. Its vendor/ and node_modules/ are hard links to installed/'s
 //               (see createAppDir()), so an app costs about 30 MB and a second to create instead of about 1 GB and 9 s.
@@ -21,8 +27,19 @@ import { type BackgroundCommand, type CommandResult, ensureRootTooling, progress
 
 const baseKitDir = join(fixturesDir, 'base-kit');
 const baseKitStamp = join(fixturesDir, 'base-kit.stamp.json');
-const installedDir = join(fixturesDir, 'installed');
-const installedStamp = join(fixturesDir, 'installed.stamp.json');
+
+/** The starter kit's auth features a fixture keeps: every one, unless a test asks for a variant (src/kit-variants.ts). */
+export type Features = readonly string[];
+
+/** Whether $features is every feature, the Base Kit as `laravel new --no-interaction` generates it. */
+function everyFeature(features: Features): boolean {
+    return featuresKey(features) === featuresKey(kitFeatures);
+}
+
+/** A fixture layer's name for $features: "base-kit" or "installed", or with a "-<features>" suffix for a variant. */
+function layerName(layer: 'base-kit' | 'installed', features: Features): string {
+    return everyFeature(features) ? layer : `${layer}-${featuresSlug(features)}`;
+}
 
 /** The app directories every app shares with installed/ through hard links. */
 const sharedDependencyDirs = ['vendor', 'node_modules'];
@@ -100,25 +117,71 @@ export async function prepareBaseKit(options: { fresh?: boolean } = {}): Promise
     return info;
 }
 
-/** Ensure .fixtures/installed holds the cached Base Kit with both Overlay packages required from local paths. */
-export async function prepareInstalledFixture(options: { fresh?: boolean } = {}): Promise<void> {
-    const baseKit = await prepareBaseKit(options);
+/**
+ * Ensure .fixtures/base-kit-<features> holds the cached Base Kit generated with only $features (src/kit-variants.ts),
+ * and return its directory; for every feature, that is base-kit/ itself.
+ */
+export async function prepareBaseKitVariant(features: Features, options: { fresh?: boolean } = {}): Promise<{ dir: string; info: BaseKitInfo }> {
+    const info = await prepareBaseKit(options);
+
+    if (everyFeature(features)) {
+        return { dir: baseKitDir, info };
+    }
+
+    const name = layerName('base-kit', features);
+    const dir = join(fixturesDir, name);
+    const stamp = join(fixturesDir, `${name}.stamp.json`);
+    const key = createHash('sha256').update(JSON.stringify(info)).update(featuresKey(features)).digest('hex');
+
+    if (existsSync(stamp) && existsSync(dir) && readJson(stamp).key === key) {
+        return { dir, info };
+    }
+
+    if (info.kitMainHead === null) {
+        throw new Error('The Base Kit stamp names no starter kit commit, so its feature variants cannot be rebuilt; regenerate it (--fresh)');
+    }
+
+    rmSync(stamp, { force: true });
+    const logFile = join(fixturesDir, `${name}.log`);
+    writeFileSync(logFile, '');
+    progress(`Generating the Base Kit with only these auth features into ${relative(repoRoot, dir)}: ${featuresKey(features)} (log: ${relative(repoRoot, logFile)})`);
+    const source = await prepareKitSource(info.kitMainHead);
+    await copyBaseKit(baseKitDir, dir, { ownDependencies: true });
+    await chiselBaseKit(dir, source, features, { logFile, pest: true });
+    await runOrThrow('git', ['add', '--all'], { cwd: dir, logFile });
+    await runOrThrow('git', ['commit', '--quiet', '--allow-empty', '--message', `Keep only these auth features: ${featuresKey(features)}`], { cwd: dir, logFile });
+    writeFileSync(stamp, `${JSON.stringify({ key }, null, 4)}\n`);
+
+    return { dir, info };
+}
+
+/**
+ * Ensure .fixtures/installed holds the cached Base Kit with both Overlay packages required from local paths, or, for a
+ * feature variant, .fixtures/installed-<features> the variant's.
+ */
+export async function prepareInstalledFixture(options: { fresh?: boolean; features?: Features } = {}): Promise<void> {
+    const features = options.features ?? kitFeatures;
+    const baseKit = await prepareBaseKitVariant(features, options);
+    const name = layerName('installed', features);
+    const installedDir = join(fixturesDir, name);
+    const installedStamp = join(fixturesDir, `${name}.stamp.json`);
     const key = createHash('sha256')
-        .update(JSON.stringify(baseKit))
+        .update(JSON.stringify(baseKit.info))
+        .update(featuresKey(features))
         .update(readFileSync(join(composerPackageDir, 'composer.json')))
         .update(readFileSync(join(npmPackageDir, 'package.json')))
         .digest('hex');
 
     if (existsSync(installedStamp) && existsSync(installedDir) && readJson(installedStamp).key === key) {
-        await sealDependencies();
+        await sealDependencies(installedDir);
 
         return;
     }
 
     rmSync(installedStamp, { force: true });
-    await copyApp(baseKitDir, installedDir);
+    await copyApp(baseKit.dir, installedDir);
 
-    const logFile = join(fixturesDir, 'installed.log');
+    const logFile = join(fixturesDir, `${name}.log`);
     writeFileSync(logFile, '');
     progress(`Requiring the Overlay packages from local paths into ${relative(repoRoot, installedDir)}`);
 
@@ -137,7 +200,7 @@ export async function prepareInstalledFixture(options: { fresh?: boolean } = {})
     await runOrThrow('pnpm', ['add', `${npmPackageName}@link:${relative(installedDir, npmPackageDir)}`, '--package-import-method=copy'], inInstalled);
     await runOrThrow('git', ['add', '--all'], inInstalled);
     await runOrThrow('git', ['commit', '--quiet', '--message', 'Require the Overlay packages from local paths'], inInstalled);
-    await sealDependencies();
+    await sealDependencies(installedDir);
 
     writeFileSync(installedStamp, `${JSON.stringify({ key }, null, 4)}\n`);
 }
@@ -181,23 +244,25 @@ export interface App {
 }
 
 /**
- * A fresh app: a copy of the installed fixture (call prepareInstalledFixture() first) on which
+ * A fresh app: a copy of the installed fixture (call prepareInstalledFixture() first, with the same `features`) on which
  * `strictly:install` has run, unless `install: false`. Any previous app of the same name is replaced.
  * Throws when the install reports a row that isn't applied or unchanged, such as a Kit Conversion skip.
  */
-export async function createApp(name: string, options: { install?: boolean } = {}): Promise<App> {
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(name) || ['base-kit', 'installed'].includes(name)) {
+export async function createApp(name: string, options: { install?: boolean; features?: Features } = {}): Promise<App> {
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(name) || /^(base-kit|installed|kit-source)(-|$)/.test(name)) {
         throw new Error(`Invalid app name "${name}"`);
     }
 
-    if (!existsSync(installedStamp)) {
-        throw new Error('No installed fixture; call prepareInstalledFixture() first');
+    const installedDir = join(fixturesDir, layerName('installed', options.features ?? kitFeatures));
+
+    if (!existsSync(`${installedDir}.stamp.json`)) {
+        throw new Error(`No installed fixture at ${relative(repoRoot, installedDir)}; call prepareInstalledFixture() first`);
     }
 
     const dir = join(fixturesDir, name);
     const logFile = join(fixturesDir, `${name}.log`);
     const tmpDir = join(fixturesDir, `${name}.tmp`);
-    await createAppDir(dir);
+    await createAppDir(installedDir, dir);
     rmSync(tmpDir, { recursive: true, force: true });
     mkdirSync(tmpDir);
     writeFileSync(logFile, '');
@@ -266,7 +331,7 @@ async function ensureFixturesDir(): Promise<void> {
  * tool that writes into a dependency in place fails with "Permission denied" instead of changing it for every later
  * app; such a file belongs in appOwnedDependencyFiles.
  */
-async function createAppDir(dir: string): Promise<void> {
+async function createAppDir(installedDir: string, dir: string): Promise<void> {
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir);
     const entries = readdirSync(installedDir);
@@ -287,8 +352,8 @@ async function createAppDir(dir: string): Promise<void> {
     }
 }
 
-/** Make every file in installed/'s shared directories read-only; apps hard-link them (createAppDir()). */
-async function sealDependencies(): Promise<void> {
+/** Make every file in an installed fixture's shared directories read-only; apps hard-link them (createAppDir()). */
+async function sealDependencies(installedDir: string): Promise<void> {
     const dirs = sharedDependencyDirs.map((entry) => join(installedDir, entry)).filter((dir) => existsSync(dir));
 
     // Symlinks (the Overlay packages, pnpm's layout) are skipped: chmod would follow them into the monorepo.
